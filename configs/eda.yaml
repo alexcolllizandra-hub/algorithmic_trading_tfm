@@ -1,0 +1,19 @@
+# Parameters for the reusable EDA library (src/perp_lab/eda).
+# These are analysis choices, not part of the data contract.
+
+# "log" or "simple" returns. Log returns are used throughout for additivity.
+return_kind: "log"
+
+# Rolling windows (in bars) for realised/rolling volatility. Defaults are tuned
+# for 5m bars: 24 bars = 2h, 96 bars = 8h (one funding interval), 672 bars = ~2.3d.
+rolling_vol_windows: [24, 96, 672]
+
+# Maximum lag for autocorrelation plots (returns and squared/abs returns).
+acf_max_lag: 100
+
+# Crypto trades 24/7 -> annualize with 365 days, NOT the 252-day equity year.
+trading_days_per_year: 365
+
+# A return is FLAGGED (never dropped) as extreme when it exceeds this many
+# rolling standard deviations. Used by the data-quality report.
+extreme_return_sigma: 10.0

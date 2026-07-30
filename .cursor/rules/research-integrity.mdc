@@ -1,0 +1,38 @@
+---
+description: Research-integrity invariants (splits, holdout, leakage, seeds)
+alwaysApply: true
+---
+
+# Research integrity
+
+These invariants outrank convenience and features. Never violate them.
+
+1. **Chronological splits only.** Never use random train/test/validation splits.
+   Preserve time order everywhere.
+2. **Frozen holdout.** The final holdout partition must never inform EDA
+   decisions, feature choices, or parameter/strategy selection. It is opened
+   once, for the final report.
+3. **No look-ahead / leakage.** Any value used as a feature or decision input is
+   computed from past data only (rolling/expanding, shifted signals).
+   Full-sample statistics are allowed ONLY for descriptive EDA that does not
+   feed model or parameter choices, and must be explicitly labeled as such.
+4. **Determinism.** Seed from `AppSettings.seed` (Python, NumPy, PYTHONHASHSEED).
+   Every stochastic component seeds from the same value.
+
+## Examples
+
+```python
+# BAD: full-sample z-score used as a model feature (leaks future).
+z = (x - x.mean()) / x.std()
+
+# GOOD: causal rolling standardization.
+z = (x - x.rolling_mean(w)) / x.rolling_std(w)
+```
+
+```python
+# BAD
+train, test = train_test_split(df, shuffle=True)
+
+# GOOD
+split = split_by_holdout(df, holdout_start)  # chronological
+```

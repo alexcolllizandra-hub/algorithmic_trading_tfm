@@ -1,0 +1,10 @@
+# Normalize line endings: store text as LF in the repo for reproducibility.
+* text=auto eol=lf
+
+# Explicitly binary artifacts (should be gitignored, but be safe).
+*.zip binary
+*.parquet binary
+*.feather binary
+*.png binary
+*.jpg binary
+*.pdf binary

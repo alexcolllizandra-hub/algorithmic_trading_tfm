@@ -1,0 +1,45 @@
+# =========================================================================== #
+# DATA CONTRACT v0.1.0
+# Human-readable rationale: docs/data_contract.md
+#
+# This file is the single source of truth for WHICH market data the thesis
+# uses. Changing it is a versioned decision (bump `version` and record an ADR
+# under docs/decisions/).
+# =========================================================================== #
+version: "0.1.0"
+
+# Binance USDT-M (linear) perpetual futures. "um" = USD-M in data.binance.vision.
+exchange: "binance"
+market_type: "um"
+
+# Base bars are downloaded at 5m; 15m and 1h are CONSTRUCTED from the 5m bars
+# (and cross-checked against Binance native klines during QC).
+base_timeframe: "5m"
+derived_timeframes: ["15m", "1h"]
+
+# Auxiliary streams pulled alongside klines. openInterest is intentionally
+# excluded: it is only available for recent history via the REST API, not in
+# the bulk archive (documented as a limitation in docs/data_contract.md).
+aux_streams: ["fundingRate", "markPriceKlines"]
+
+# Perpetual contracts. `listing_date` is the nominal contract launch; the exact
+# first bar available in the bulk archive is discovered and recorded per-symbol
+# in its manifest at ingestion time.
+symbols:
+  - symbol: "BTCUSDT"
+    listing_date: "2019-09-08"
+    description: "Bitcoin USDT-margined perpetual"
+  - symbol: "ETHUSDT"
+    listing_date: "2019-11-27"
+    description: "Ether USDT-margined perpetual"
+
+# Exclusive upper bound of the dataset. Default = first day of the current
+# month at project start, i.e. we only ingest fully-closed prior months.
+cutoff_date: "2026-07-01"
+
+# Final holdout: frozen and NEVER used for EDA-driven decisions, selection or
+# tuning. Pinned to an explicit start so the boundary is exact and deterministic:
+# holdout = [2026-01-01 00:00 UTC, cutoff) = the last 6 months before the cutoff.
+holdout:
+  months: 6
+  start: "2026-01-01"

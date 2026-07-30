@@ -1,0 +1,28 @@
+---
+description: Python code quality standards for src and tests
+globs: **/*.py
+alwaysApply: false
+---
+
+# Python quality
+
+- Target Python 3.12. Use full type hints; code must pass `pyright` (standard
+  mode) and `ruff`.
+- Prefer small, pure functions that take and return Polars frames. Keep I/O
+  (network, disk) at module edges, not inside computation helpers.
+- Public functions get concise docstrings stating intent and any non-obvious
+  invariants (e.g. "returns are shifted to avoid look-ahead").
+- Do NOT add narration comments (`# import numpy`). Comment only non-obvious
+  intent, trade-offs, or constraints.
+- Every new behavior gets a unit test in `tests/`. Network tests are marked
+  `@pytest.mark.network` and excluded from the default run.
+- Timestamps are tz-aware UTC. Never create naive datetimes for market data.
+
+```python
+# GOOD
+def add_log_returns(df: pl.DataFrame, price_col: str = "close") -> pl.DataFrame:
+    """Append ln(P_t / P_{t-1}); first row is null."""
+    return df.with_columns(
+        (pl.col(price_col).log() - pl.col(price_col).log().shift(1)).alias("log_return")
+    )
+```

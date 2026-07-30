@@ -1,0 +1,88 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# --- uv / virtual environments ---
+.venv/
+.uv/
+
+# --- Legacy stray virtualenv committed at repo root (to be removed) ---
+/Lib/
+/Scripts/
+/Include/
+/share/
+/pyvenv.cfg
+
+# --- Environment / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Data lake (large, reproducible from the data contract) ---
+data/raw/
+data/validated/
+data/processed/
+# Manifests are small provenance records and MUST be committed:
+!data/manifests/
+!data/manifests/**
+
+# --- Heavy data artifacts anywhere (belt-and-suspenders) ---
+*.zip
+*.parquet
+*.feather
+*.csv
+*.db
+*.sqlite
+*.sqlite3
+*.h5
+*.pkl
+*.pickle
+# ...but keep tiny committed provenance/config text:
+!data/manifests/**
+
+# --- Reports (generated artifacts) ---
+reports/figures/*
+reports/tables/*
+!reports/figures/.gitkeep
+!reports/tables/.gitkeep
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+notebooks/**/*.nbconvert.ipynb
+
+# --- ML / experiment tracking (future phases) ---
+mlruns/
+mlartifacts/
+
+# --- Tooling caches ---
+.pytest_cache/
+.ruff_cache/
+.pyright/
+.mypy_cache/
+.ipynb_checkpoints/
+htmlcov/
+.coverage
+.coverage.*
+
+# --- Logs / temp / heavy results ---
+*.log
+*.tmp
+*.temp
+logs/
+tmp/
+outputs/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# --- Probe artifacts ---
+shell_probe.txt
+probe*.txt
