@@ -29,7 +29,12 @@ from perp_lab.data.manifest import read_manifest
 from perp_lab.data.providers.base import KLINE_SCHEMA
 from perp_lab.data.splits import resolve_holdout_start
 from perp_lab.eda.datasets import DataLake, assert_no_holdout
-from perp_lab.features.causal import build_features, feature_metadata
+from perp_lab.features.registry import (
+    build_feature_frame,
+    feature_columns,
+    resolve_feature_set,
+    specs_to_metadata,
+)
 from perp_lab.strategies.base import SIDE_COL
 from perp_lab.strategies.momentum import MomentumCrossover
 from perp_lab.tracking.run import RunTracker, environment_info, git_state
@@ -201,34 +206,29 @@ def run_dev_pipeline(
     assert_no_holdout(frame, holdout_start)
     log.info("Holdout guard PASSED | no timestamp >= %s", holdout_start)
 
-    # -- Stage 3: causal features ------------------------------------------- #
-    atr_window = experiment.features.atr_windows[0]
-    vol_window = experiment.features.volatility_windows[0]
-    momentum_window = experiment.features.momentum_windows[0]
-    relvol_window = experiment.features.relative_volume_windows[0]
-    context_lag = experiment.features.min_lookback_shift_bars
-    feats = build_features(
-        frame,
-        ma_windows=(fast, slow),
-        momentum_window=momentum_window,
-        atr_window=atr_window,
-        vol_window=vol_window,
-        relvol_window=relvol_window,
-        context_lag=context_lag,
-        holdout_start=holdout_start,
-    )
-    feat_meta = feature_metadata(
-        ma_windows=(fast, slow),
-        momentum_window=momentum_window,
-        atr_window=atr_window,
-        vol_window=vol_window,
-        relvol_window=relvol_window,
-        context_lag=context_lag,
-    )
-    feature_names = [str(m["name"]) for m in feat_meta]
+    # -- Stage 3: causal features (config-driven engine) -------------------- #
+    specs = resolve_feature_set(experiment.features.feature_set, ensure_sma=(fast, slow))
+    feats, resolved = build_feature_frame(frame, specs, holdout_start=holdout_start)
+    feat_meta = specs_to_metadata(resolved)
+    feature_names = feature_columns(resolved)
     null_counts = {name: int(feats[name].null_count()) for name in feature_names}
-    log.info("Stage 3/6 features | %d features: %s", len(feature_names), ", ".join(feature_names))
+    inf_counts = {
+        name: int(feats[name].is_infinite().sum() or 0)
+        for name in feature_names
+        if feats[name].dtype.is_float()
+    }
+    total_inf = sum(inf_counts.values())
+    log.info(
+        "Stage 3/6 features | %d specs -> %d columns: %s",
+        len(resolved),
+        len(feature_names),
+        ", ".join(feature_names),
+    )
     log.info("Warm-up/null counts | %s", null_counts)
+    if total_inf:  # pragma: no cover - guarded builders make this unreachable
+        log.error("Non-finite feature values detected | %s", inf_counts)
+        raise ValueError("Features produced infinities; refusing to pass them to the strategy.")
+    log.info("Infinity check PASSED | 0 non-finite values across %d columns", len(feature_names))
 
     # -- Stage 4: momentum signals ------------------------------------------ #
     strategy = MomentumCrossover(fast=fast, slow=slow, direction="both")

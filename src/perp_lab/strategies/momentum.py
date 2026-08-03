@@ -39,7 +39,9 @@ class MomentumCrossover:
         fast_col, slow_col = f"sma_{self.fast}", f"sma_{self.slow}"
         missing = [c for c in (fast_col, slow_col) if c not in features.columns]
         if missing:
-            raise ValueError(f"Missing feature columns {missing}; build them with build_features.")
+            raise ValueError(
+                f"Missing feature columns {missing}; build them with the feature engine."
+            )
 
         raw = (
             pl.when(pl.col(fast_col).is_null() | pl.col(slow_col).is_null())

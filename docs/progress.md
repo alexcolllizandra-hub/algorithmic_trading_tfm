@@ -329,3 +329,93 @@ Status legend: **[impl]** implemented, **[test]** tested, **[prov]** provisional
 Generalise and validate the causal feature engine (broaden the catalogue set
 with the same leakage tests) before implementing the full baseline strategy set
 and the walk-forward framework.
+
+---
+
+## Chapter 5 — Config-driven causal feature engine (this stage)
+
+_Last updated: 2026-08-03. Builds on commit `001390b`. See ADR 0007._
+
+### Feature contract + engine [impl][test]
+- `src/perp_lab/features/spec.py`: dependency-light `KIND_REGISTRY` of feature
+  *kinds* + frozen, JSON-serialisable `FeatureSpec` (name, family, inputs,
+  asset/timeframe dependency, params/lookback, availability, shift, warm-up,
+  null/inf policy, consumers, leakage risk, dtype, `IMPL_VERSION`). Validation
+  (`validate_feature_item`) rejects unknown kinds, missing/extra windows,
+  invalid lags and unknown sources.
+- `src/perp_lab/features/causal.py`: pure Polars builders (returns/momentum,
+  SMA, price-distance-from-MA, price z-score, rolling volatility, ATR,
+  normalised range, relative volume, volume z-score, cyclical hour/day-of-week,
+  lagged taker-buy imbalance). No in-place mutation; guarded denominators (no
+  infinities).
+- `src/perp_lab/features/registry.py`: `resolve_feature_set` (validate,
+  de-duplicate, inject baseline SMAs), `build_feature_frame` (dependency check →
+  holdout guard → deterministic build → `(frame, specs)`), `specs_to_metadata`.
+
+### Configuration-driven selection [impl][test]
+- `ExperimentConfig.features.feature_set` (+ `configs/experiment.yaml`) lists the
+  concrete features; validated at load time against the registry, and checked
+  for duplicate output columns. Distinct from the wider search-space window
+  lists.
+
+### Default feature set (14 columns, BTC/ETH 1h, same code)
+`log_return` (ln P_t/P_{t-1}, warm-up 1) · `momentum_12`, `momentum_24`
+(ln P_t/P_{t-w}, warm-up w) · `sma_24`, `sma_96` (trailing mean, warm-up w−1) ·
+`price_dist_sma_48` (P/sma−1, warm-up w−1) · `zscore_48` ((P−mean)/std sample,
+std=0→null, warm-up w−1) · `rvol_96` (rolling std of log return, warm-up w) ·
+`atr_14` (trailing mean of true range with prev close, warm-up w−1) ·
+`range_norm` ((high−low)/close, warm-up 0) · `rel_volume_24` (volume/rolling
+mean, mean≤0→null, warm-up w−1) · `hour_sin`, `hour_cos` (ex-ante, shift 0,
+warm-up 0) · `taker_buy_imbalance` (2·taker/quote−1, lagged 1, denom≤0→null).
+`volume_zscore_w` and `dow_sin/dow_cos` are registered but off by default.
+- Availability: close-based features `shift = 0` / "close t" (the t+1 execution
+  delay is applied once by the backtester); contextual imbalance `shift = lag`;
+  cyclical time is the ex-ante exception.
+
+### Causality / numerical tests [test]
+- `tests/unit/test_features_causal.py` (17 tests) proves the 15 invariants:
+  append-future invariance, future-mutation invariance, trailing-only rolling
+  (hand calcs for sma/log-return/momentum/zscore/rvol/atr), exact-once shift,
+  declared warm-up == actual leading nulls for every feature, deterministic
+  null handling, no infinities (incl. flat prices / zero volume / constant
+  windows), alignment + tz preserved, input immutability, deterministic column
+  order, BTC/ETH independence, reproducibility, holdout isolation.
+- `tests/unit/test_features_registry.py` (12 tests): contract completeness +
+  JSON-serialisability for every kind, validation rejections, `resolve_feature_set`
+  ordering/dedupe/SMA injection, and config rejection (unknown kind, bad params,
+  duplicate columns).
+
+### Pipeline + artifact integration [impl][test]
+- `experiments/pipeline.py` Stage 3 now resolves `feature_set` (ensuring the
+  baseline SMAs), builds via `build_feature_frame`, logs specs→columns, warm-up/
+  null counts and an explicit **infinity check**, and writes the resolved
+  `FeatureSpec` contract to `feature_metadata.json`. The momentum baseline and
+  next-bar execution semantics are unchanged.
+
+### Verification (this stage) — exact results
+- `uv run ruff check .` → All checks passed!
+- `uv run ruff format --check .` → 144 files already formatted; the only flag is
+  the **pre-existing, out-of-scope** `docs/methodology/module_specification.md`
+  (embedded code-block drift already on `origin/main`), intentionally not
+  reformatted in this stage.
+- `uv run pyright` → 0 errors, 0 warnings, 0 informations.
+- `uv run pytest -m "not network"` → 196 passed, 1 deselected.
+- Synthetic smoke run (`perp-lab pipeline development --synthetic`, **not** a
+  research result) built the 14-column set, passed the holdout + infinity
+  guards and wrote 9 artifacts. **Real development-data execution remains
+  unverified locally** (no `data/processed/` present); the integration is
+  covered by deterministic fixtures + synthetic mode.
+
+### Still provisional / deferred (not assumed)
+- Cross-asset (BTC–ETH corr/beta), funding/basis and causal expanding
+  vol-regime features remain **Planned** (documented, not approximated): they
+  need aux data alignment tests and must not touch the holdout.
+- Feature *windows* are not tuned on performance (out of scope). Transaction
+  costs remain provisional (ADR 0005). Walk-forward, RS, GA, triple-barrier,
+  meta-labeling, robustness and holdout evaluation are unchanged / not started.
+
+### Recommended next task (updated)
+Implement the interpretable **baseline strategy family set** on the shared
+parameter space (breakout + mean-reversion alongside momentum), reusing the
+config-driven feature engine, then wire the **expanding walk-forward** harness
+with purge/embargo — before any Random Search / GA.

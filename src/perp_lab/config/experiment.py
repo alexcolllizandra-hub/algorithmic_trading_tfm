@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from perp_lab.features.spec import resolve_spec, validate_feature_item
 from perp_lab.utils.timeutils import TIMEFRAME_TO_MS
 
 _PosIntTuple = tuple[int, ...]
@@ -90,6 +91,46 @@ class Periods(_Strict):
         return self
 
 
+class FeatureItem(_Strict):
+    """One requested feature: a registered kind plus its parameters.
+
+    Validated against ``perp_lab.features.spec.KIND_REGISTRY`` so an unknown
+    kind, a missing/superfluous window or an invalid lag is a hard error at load
+    time, *before* any computation runs.
+    """
+
+    kind: str
+    window: int | None = None
+    lag: int | None = None
+    source: str | None = None
+
+    @model_validator(mode="after")
+    def _valid(self) -> FeatureItem:
+        validate_feature_item(self.kind, window=self.window, lag=self.lag, source=self.source)
+        return self
+
+
+# The concrete causal feature set built by the development pipeline / baseline.
+# Windows are drawn from the search-space lists below and justified in
+# docs/methodology/feature_catalogue.md. This is distinct from those lists,
+# which describe the wider space later searched by Random Search and the GA.
+_DEFAULT_FEATURE_SET: tuple[FeatureItem, ...] = (
+    FeatureItem(kind="log_return"),
+    FeatureItem(kind="momentum", window=12),
+    FeatureItem(kind="momentum", window=24),
+    FeatureItem(kind="sma", window=24),
+    FeatureItem(kind="sma", window=96),
+    FeatureItem(kind="price_dist_sma", window=48),
+    FeatureItem(kind="zscore", window=48),
+    FeatureItem(kind="rvol", window=96),
+    FeatureItem(kind="atr", window=14),
+    FeatureItem(kind="range_norm"),
+    FeatureItem(kind="rel_volume", window=24),
+    FeatureItem(kind="hour_cyclical"),
+    FeatureItem(kind="taker_buy_imbalance", lag=1),
+)
+
+
 class Features(_Strict):
     return_windows: _PosIntTuple = (1, 3, 6, 12, 24)
     ma_windows: _PosIntTuple = (12, 24, 48, 96, 168)
@@ -104,6 +145,20 @@ class Features(_Strict):
     funding_change_windows: _PosIntTuple = (3, 8, 24)
     corr_windows: _PosIntTuple = (168, 336)
     min_lookback_shift_bars: int = Field(default=1, ge=1)
+    feature_set: tuple[FeatureItem, ...] = _DEFAULT_FEATURE_SET
+
+    @model_validator(mode="after")
+    def _feature_set_unique(self) -> Features:
+        if not self.feature_set:
+            raise ValueError("features.feature_set must list at least one feature.")
+        seen: set[str] = set()
+        for item in self.feature_set:
+            spec = resolve_spec(item.kind, window=item.window, lag=item.lag, source=item.source)
+            for col in spec.columns:
+                if col in seen:
+                    raise ValueError(f"Duplicate feature column {col!r} in features.feature_set.")
+                seen.add(col)
+        return self
 
     @field_validator(
         "return_windows",

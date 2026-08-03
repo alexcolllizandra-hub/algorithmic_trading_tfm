@@ -56,6 +56,24 @@ features:
   funding_change_windows: [3, 8, 24] # funding deltas over N funding intervals
   corr_windows: [168, 336] # rolling BTC-ETH return correlation (bars)
   min_lookback_shift_bars: 1 # every feature is shifted >= 1 bar before use
+  # Concrete causal feature set the development pipeline / baseline builds.
+  # Each item is validated against features.spec.KIND_REGISTRY at load time
+  # (unknown kind / bad window / bad lag -> hard error). Windows are chosen
+  # from the search-space lists above; see feature_catalogue.md for rationale.
+  feature_set:
+    - { kind: log_return } # ln(close_t / close_{t-1})
+    - { kind: momentum, window: 12 } # short-horizon momentum
+    - { kind: momentum, window: 24 } # medium-horizon momentum
+    - { kind: sma, window: 24 } # fast trend (baseline fast MA)
+    - { kind: sma, window: 96 } # slow trend (baseline slow MA)
+    - { kind: price_dist_sma, window: 48 } # scale-free distance from trend
+    - { kind: zscore, window: 48 } # trailing price z-score
+    - { kind: rvol, window: 96 } # rolling return volatility
+    - { kind: atr, window: 14 } # average true range
+    - { kind: range_norm } # normalised current-bar range
+    - { kind: rel_volume, window: 24 } # volume vs causal baseline
+    - { kind: hour_cyclical } # UTC hour-of-day (sin/cos)
+    - { kind: taker_buy_imbalance, lag: 1 } # lagged order-flow context
 
 # --------------------------------------------------------------------------- #
 # Baseline interpretable strategy families and their parameter ranges.

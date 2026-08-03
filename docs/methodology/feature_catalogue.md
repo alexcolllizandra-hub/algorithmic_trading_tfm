@@ -3,12 +3,28 @@
 Every feature is **causal**: computed from information available at or before
 the bar it is attached to, and **shifted ≥ 1 bar** before it can influence a
 signal or a model. Signals derived at the close of bar *t* execute at the
-**open of bar *t+1*** (see `experimental_design.md` §12). **Implementation status (v0.1 slice).** The `features/` engine is now
-**partially implemented** in `src/perp_lab/features/causal.py` for the BTCUSDT
-1h development slice: `log_return` (k=1), `momentum_w`, `sma_w`, `rvol_w`,
-`atr_w`, `rel_volume_w` and a lagged `taker_buy_imbalance`. Each ships with
-causal-invariance tests (`tests/unit/test_features_causal.py`). The remaining
-rows below stay *Planned*.
+**open of bar *t+1*** (see `experimental_design.md` §12).
+
+**Implementation status (v0.2 — config-driven engine).** The `features/`
+package is now a small **configuration-driven registry**:
+`features/spec.py` declares every feature *kind* and its full contract
+(`KIND_REGISTRY` + serialisable `FeatureSpec`); `features/causal.py` holds the
+pure, causal column builders; `features/registry.py` resolves a requested set
+(`resolve_feature_set`) and builds it (`build_feature_frame`). The concrete set
+built by the development pipeline is selected in
+`configs/experiment.yaml → features.feature_set` and validated at load time
+(unknown kind / bad window / bad lag → hard error). The resolved metadata is
+written to each run's `feature_metadata.json`.
+
+The default set is **14 columns** (BTCUSDT/ETHUSDT 1h, same code, no
+duplication): `log_return`, `momentum_12`, `momentum_24`, `sma_24`, `sma_96`,
+`price_dist_sma_48`, `zscore_48`, `rvol_96`, `atr_14`, `range_norm`,
+`rel_volume_24`, `hour_sin`, `hour_cos`, plus the lagged `taker_buy_imbalance`
+context feature. `volume_zscore_w` and `dow_sin/dow_cos` are **registered and
+available** but excluded from the default set to avoid redundancy. Each shipped
+feature has causal-invariance tests
+(`tests/unit/test_features_causal.py`, `tests/unit/test_features_registry.py`).
+The remaining rows below stay *Planned*.
 
 Conventions:
 - **Timeframe:** primary = 1h unless noted. Windows are in bars of that
@@ -33,14 +49,17 @@ Random Search and the GA.
 | `abs_return`, `sq_return` | Returns | `|r_1|`, `r_1^2` | close | 1 | bar close | ≥1 | warm-up NaN | RG,ML | Low | Planned |
 | `sma_w`, `ema_w` | Moving average | rolling / exp mean of close | close | w ∈ {12,24,48,96,168} | bar close | ≥1 | warm-up NaN | BS,GA | Low | sma Implemented; ema Planned |
 | `ma_cross` | Momentum | sign(`sma_fast` − `sma_slow`) | close | fast/slow | bar close | ≥1 | warm-up NaN | BS,GA | Low | Planned |
-| `momentum_w` | Momentum | cumulative return over w | close | w ∈ {12,24,72} | bar close | ≥1 | warm-up NaN | BS,GA | Low | Implemented |
+| `momentum_w` | Momentum | `ln(close_t / close_{t-w})` over w | close | w ∈ {12,24,72} | bar close | ≥1 | warm-up NaN | BS,GA | Low | Implemented (12, 24) |
+| `price_dist_sma_w` | Trend | `close_t / sma_w − 1` (scale-free) | close | w ∈ {12,24,48,96,168} | bar close | ≥1 | warm-up NaN; sma≤0→NaN | BS,GA,ML | Low | Implemented (48) |
 | `donchian_high_w`, `donchian_low_w` | Breakout | rolling max(high)/min(low) **excluding current bar** | high, low | w ∈ {24,48,96} | bar close | ≥1 | warm-up NaN | BS,GA | Medium (must exclude bar t) | Planned |
 | `breakout_flag` | Breakout | close > `donchian_high_w` (long) / < low | close, donchian | w | bar close | ≥1 | warm-up NaN | BS,GA | Medium | Planned |
 | `rsi_w` | Oscillator | Wilder RSI | close | w ∈ {14,24} | bar close | ≥1 | warm-up NaN | BS,GA | Low | Planned |
-| `zscore_w` | Mean reversion | `(close − sma_w) / std_w` | close | w ∈ {24,48,96} | bar close | ≥1 | warm-up NaN; std=0→NaN | BS,GA | Low | Planned |
-| `atr_w` | Volatility | Wilder ATR of true range | high, low, close | w ∈ {14,24,48} | bar close | ≥1 | warm-up NaN | BS,GA,RK | Low | Implemented (SMA of TR) |
-| `rvol_w` | Volatility | rolling std of `log_return_1` | close | w ∈ {24,96,168} | bar close | ≥1 | warm-up NaN | BS,GA,RG,RK | Low | Implemented |
-| `rel_volume_w` | Activity | `volume / rolling_mean(volume, w)` | volume | w ∈ {24,96} | bar close | ≥1 | mean=0→NaN | BS,GA | Low | Implemented |
+| `zscore_w` | Mean reversion | `(close − sma_w) / std_w` (sample std) | close | w ∈ {24,48,96} | bar close | ≥1 | warm-up NaN; std=0→NaN | BS,GA | Low | Implemented (48) |
+| `atr_w` | Volatility | trailing mean of true range (uses prev close) | high, low, close | w ∈ {14,24,48} | bar close | ≥1 | warm-up NaN | BS,GA,RK | Low | Implemented (14; SMA of TR) |
+| `range_norm` | Range | `(high − low) / close` (current bar) | high, low, close | 1 | bar close | ≥1 | close≤0→NaN | BS,GA,ML,RG | Low | Implemented |
+| `rvol_w` | Volatility | rolling std of 1-bar log return | close | w ∈ {24,96,168} | bar close | ≥1 | warm-up NaN | BS,GA,RG,RK | Low | Implemented (96) |
+| `rel_volume_w` | Activity | `volume / rolling_mean(volume, w)` | volume | w ∈ {24,96} | bar close | ≥1 | mean≤0→NaN | BS,GA | Low | Implemented (24) |
+| `volume_zscore_w` | Activity | `(volume − mean_w) / std_w` | volume | w ∈ {24,96} | bar close | ≥1 | warm-up NaN; std=0→NaN | GA,ML,RG | Low | Implemented (available, off by default) |
 | `vol_regime` | Regime filter | past-only bucket of `rvol_w` into low/med/high via **expanding** quantiles | close | regime_vol_windows | bar close | ≥1 | warm-up→"unknown" | BS,GA,RG | **High if full-sample** → must be expanding | Planned |
 
 > Note on `vol_regime`: the EDA `regimes.py` tag uses **full-sample** quantiles
@@ -63,7 +82,8 @@ as context, never as contemporaneous predictors.
 | `btc_eth_corr_w` | Cross-asset | rolling corr of BTC/ETH `log_return_1` | close (both) | w ∈ {168,336} | bar close | ≥1 | warm-up NaN; aligned ts | ML,RK | Medium (alignment) | Planned |
 | `btc_eth_beta_w` | Cross-asset | rolling OLS beta of asset vs. BTC | close (both) | w | bar close | ≥1 | warm-up NaN | ML | Medium | Planned |
 | `vol_regime` (context) | Regime | causal expanding vol-regime bucket | close | regime_vol_windows | bar close | ≥1 | warm-up→"unknown" | ML | High if full-sample | Planned |
-| `hour_sin`, `hour_cos`, `dow_sin`, `dow_cos` | Temporal | cyclical UTC hour / day-of-week encodings | open_time | n/a | bar open | 0 (known ex-ante) | none | ML | None | Planned |
+| `hour_sin`, `hour_cos` | Temporal | cyclical UTC hour-of-day encoding | open_time | n/a | bar open | 0 (known ex-ante) | none | ML,RG | None | Implemented |
+| `dow_sin`, `dow_cos` | Temporal | cyclical UTC day-of-week encoding | open_time | n/a | bar open | 0 (known ex-ante) | none | ML,RG | None | Implemented (available, off by default) |
 | `signal_side`, `signal_strength` | Signal meta | direction and magnitude of the base signal | base signal | n/a | bar close | ≥1 | none | ML | Low | Planned |
 | `bars_since_last_trade` | Signal meta | recency of prior base trade | trade log | expanding | bar close | ≥1 | none | ML | Low | Planned |
 
@@ -75,7 +95,21 @@ as context, never as contemporaneous predictors.
    denominators become missing (no infinities).
 4. Funding and mark price are joined **as-of the past** with a declared
    tolerance and never forward-filled into the future.
-5. Every feature is shifted ≥ 1 bar; signals at close *t* fill at open *t+1*.
-6. The `features/` engine will ship with **leakage-validation tests** (a feature
-   recomputed on a truncated history must equal the same feature on the full
-   history up to the truncation point).
+5. **Shift semantics.** Close-based indicators are recorded with `shift = 0`
+   and *availability = "close t"*; the mandatory decision→execution delay to the
+   **open of bar *t+1*** is applied once, by the backtester (not by an extra
+   feature shift). Contextual microstructure variables carry an explicit
+   `shift = lag ≥ 1`. Cyclical calendar encodings are the ex-ante exception
+   (`shift = 0`, known before the bar). This is enforced by
+   `test_availability_metadata_is_consistent`.
+6. The `features/` engine ships **leakage-validation tests** covering the 15
+   invariants (truncation invariance, future-mutation invariance, exact-once
+   shift, deterministic warm-up/null, no infinities, flat/zero/constant safety,
+   alignment, input immutability, deterministic column order, multi-asset
+   independence, reproducibility, holdout isolation) in
+   `tests/unit/test_features_causal.py` and `tests/unit/test_features_registry.py`.
+7. Each implemented feature registers a full, serialisable contract
+   (`features/spec.py`): name, family, inputs, asset/timeframe dependency,
+   params/lookback, availability, shift, warm-up, null/inf policy, consumers,
+   leakage risk, output dtype and an implementation version, written into every
+   run's `feature_metadata.json`.
