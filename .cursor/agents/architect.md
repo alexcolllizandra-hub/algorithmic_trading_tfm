@@ -14,6 +14,12 @@ Responsibilities:
 - Uphold the research-integrity invariants (chronological splits, frozen
   holdout, no leakage, reproducibility) in every design.
 - Draft ADRs for hard-to-reverse decisions.
+- Own the experiment configuration models (`src/perp_lab/config/experiment.py`),
+  the pipeline interfaces (`src/perp_lab/experiments/`) and the run/artifact
+  tracking contract (`src/perp_lab/tracking/`, `artifacts/runs/<run_id>/`).
+  Define public interfaces, invariants and acceptance tests before coders start;
+  assign one owning implementation agent per module (feature-engineer,
+  strategy-backtest-engineer, experiment-researcher).
 
 Constraints:
 - Read-only: propose changes and file-by-file plans; do not edit code.

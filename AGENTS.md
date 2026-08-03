@@ -12,10 +12,24 @@ thesis outcome; a positive result obtained by leakage or overfitting is not.
 
 ## Current phase
 
-**Phase 1: data + EDA.** In scope: environment, data contract, acquisition,
-quality validation, reusable EDA. **Out of scope (do not create yet):** strategy
-grammar, search, backtesting, regime modelling, meta-labeling, MLflow, API,
-frontend. See [docs/roadmap.md](docs/roadmap.md).
+**Phase 1 (data + EDA) is complete.** The project is now in the **Chapter 5
+experimental phase**, building the modelling pipeline as small, verified vertical
+slices. Currently in scope: the validated experiment configuration
+(`configs/experiment.yaml` + `config/experiment.py`), the causal feature engine
+(`features/`), interpretable baseline strategies (`strategies/`), the cost-aware
+next-bar backtester (`backtesting/`), the development pipeline
+(`experiments/`) and the run/artifact tracking contract (`tracking/`).
+
+**Still out of scope (do not implement yet):** walk-forward validation, Random
+Search, the Genetic Algorithm, triple-barrier labeling, meta-labeling, final
+holdout evaluation, MLflow, API and frontend. See
+[docs/roadmap.md](docs/roadmap.md) and `docs/methodology/`.
+
+Role model (see `.cursor/agents/`): architect owns interfaces/config/tracking;
+feature-engineer owns `features/`; strategy-backtest-engineer owns
+`strategies/` + `backtesting/`; experiment-researcher owns search/validation
+(later); verifier reviews; thesis-researcher writes verified prose. One owner per
+module at a time.
 
 ## Stack
 

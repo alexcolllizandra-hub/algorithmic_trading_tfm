@@ -3,9 +3,12 @@
 Every feature is **causal**: computed from information available at or before
 the bar it is attached to, and **shifted ≥ 1 bar** before it can influence a
 signal or a model. Signals derived at the close of bar *t* execute at the
-**open of bar *t+1*** (see `experimental_design.md` §12). This catalogue is a
-specification; the `features/` engine is **not implemented yet** (status:
-*Planned*).
+**open of bar *t+1*** (see `experimental_design.md` §12). **Implementation status (v0.1 slice).** The `features/` engine is now
+**partially implemented** in `src/perp_lab/features/causal.py` for the BTCUSDT
+1h development slice: `log_return` (k=1), `momentum_w`, `sma_w`, `rvol_w`,
+`atr_w`, `rel_volume_w` and a lagged `taker_buy_imbalance`. Each ships with
+causal-invariance tests (`tests/unit/test_features_causal.py`). The remaining
+rows below stay *Planned*.
 
 Conventions:
 - **Timeframe:** primary = 1h unless noted. Windows are in bars of that
@@ -26,18 +29,18 @@ Random Search and the GA.
 
 | Feature | Family | Formula / calculation | Input columns | Lookback | Availability | Shift | Missing policy | Consumer | Leakage risk | Status |
 |---------|--------|-----------------------|---------------|----------|--------------|-------|----------------|----------|--------------|--------|
-| `log_return_k` | Returns | `ln(close_t / close_{t-k})` | close | k ∈ {1,3,6,12,24} | bar close | ≥1 | warm-up NaN | BS,GA,ML | Low (past-only) | Planned |
+| `log_return_k` | Returns | `ln(close_t / close_{t-k})` | close | k ∈ {1,3,6,12,24} | bar close | ≥1 | warm-up NaN | BS,GA,ML | Low (past-only) | Implemented (k=1) |
 | `abs_return`, `sq_return` | Returns | `|r_1|`, `r_1^2` | close | 1 | bar close | ≥1 | warm-up NaN | RG,ML | Low | Planned |
-| `sma_w`, `ema_w` | Moving average | rolling / exp mean of close | close | w ∈ {12,24,48,96,168} | bar close | ≥1 | warm-up NaN | BS,GA | Low | Planned |
+| `sma_w`, `ema_w` | Moving average | rolling / exp mean of close | close | w ∈ {12,24,48,96,168} | bar close | ≥1 | warm-up NaN | BS,GA | Low | sma Implemented; ema Planned |
 | `ma_cross` | Momentum | sign(`sma_fast` − `sma_slow`) | close | fast/slow | bar close | ≥1 | warm-up NaN | BS,GA | Low | Planned |
-| `momentum_w` | Momentum | cumulative return over w | close | w ∈ {12,24,72} | bar close | ≥1 | warm-up NaN | BS,GA | Low | Planned |
+| `momentum_w` | Momentum | cumulative return over w | close | w ∈ {12,24,72} | bar close | ≥1 | warm-up NaN | BS,GA | Low | Implemented |
 | `donchian_high_w`, `donchian_low_w` | Breakout | rolling max(high)/min(low) **excluding current bar** | high, low | w ∈ {24,48,96} | bar close | ≥1 | warm-up NaN | BS,GA | Medium (must exclude bar t) | Planned |
 | `breakout_flag` | Breakout | close > `donchian_high_w` (long) / < low | close, donchian | w | bar close | ≥1 | warm-up NaN | BS,GA | Medium | Planned |
 | `rsi_w` | Oscillator | Wilder RSI | close | w ∈ {14,24} | bar close | ≥1 | warm-up NaN | BS,GA | Low | Planned |
 | `zscore_w` | Mean reversion | `(close − sma_w) / std_w` | close | w ∈ {24,48,96} | bar close | ≥1 | warm-up NaN; std=0→NaN | BS,GA | Low | Planned |
-| `atr_w` | Volatility | Wilder ATR of true range | high, low, close | w ∈ {14,24,48} | bar close | ≥1 | warm-up NaN | BS,GA,RK | Low | Planned |
-| `rvol_w` | Volatility | rolling std of `log_return_1` | close | w ∈ {24,96,168} | bar close | ≥1 | warm-up NaN | BS,GA,RG,RK | Low | Planned |
-| `rel_volume_w` | Activity | `volume / rolling_mean(volume, w)` | volume | w ∈ {24,96} | bar close | ≥1 | mean=0→NaN | BS,GA | Low | Planned |
+| `atr_w` | Volatility | Wilder ATR of true range | high, low, close | w ∈ {14,24,48} | bar close | ≥1 | warm-up NaN | BS,GA,RK | Low | Implemented (SMA of TR) |
+| `rvol_w` | Volatility | rolling std of `log_return_1` | close | w ∈ {24,96,168} | bar close | ≥1 | warm-up NaN | BS,GA,RG,RK | Low | Implemented |
+| `rel_volume_w` | Activity | `volume / rolling_mean(volume, w)` | volume | w ∈ {24,96} | bar close | ≥1 | mean=0→NaN | BS,GA | Low | Implemented |
 | `vol_regime` | Regime filter | past-only bucket of `rvol_w` into low/med/high via **expanding** quantiles | close | regime_vol_windows | bar close | ≥1 | warm-up→"unknown" | BS,GA,RG | **High if full-sample** → must be expanding | Planned |
 
 > Note on `vol_regime`: the EDA `regimes.py` tag uses **full-sample** quantiles
@@ -56,7 +59,7 @@ as context, never as contemporaneous predictors.
 | `funding_change_w` | Funding | change in funding over w intervals | fundingRate | w ∈ {3,8,24} | funding time | ≥1 | as-of past | ML | Medium | Planned |
 | `funding_sign_run` | Funding | length of current same-sign funding run (past) | fundingRate | expanding | funding time | ≥1 | as-of past | ML | Medium | Planned |
 | `basis_bps_lag` | Basis | `1e4*(trade_close−mark_close)/mark_close`, **lagged** | close, mark close | matched ts | bar close | ≥1 | matched ts only; no imputation | ML | **High if contemporaneous** → must lag | Planned |
-| `taker_buy_imbalance_lag` | Order flow | `2*(taker_buy_quote/quote_volume)−1`, **lagged** | taker_buy_quote, quote_volume | 1 | bar close | ≥1 | denom=0→NaN (no inf) | ML | **High if contemporaneous** → must lag | Planned |
+| `taker_buy_imbalance_lag` | Order flow | `2*(taker_buy_quote/quote_volume)−1`, **lagged** | taker_buy_quote, quote_volume | 1 | bar close | ≥1 | denom=0→NaN (no inf) | ML | **High if contemporaneous** → must lag | Implemented (context) |
 | `btc_eth_corr_w` | Cross-asset | rolling corr of BTC/ETH `log_return_1` | close (both) | w ∈ {168,336} | bar close | ≥1 | warm-up NaN; aligned ts | ML,RK | Medium (alignment) | Planned |
 | `btc_eth_beta_w` | Cross-asset | rolling OLS beta of asset vs. BTC | close (both) | w | bar close | ≥1 | warm-up NaN | ML | Medium | Planned |
 | `vol_regime` (context) | Regime | causal expanding vol-regime bucket | close | regime_vol_windows | bar close | ≥1 | warm-up→"unknown" | ML | High if full-sample | Planned |

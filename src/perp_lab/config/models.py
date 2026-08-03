@@ -52,10 +52,16 @@ class Paths(BaseModel):
 
     data_root: Path = Path("data")
     reports_root: Path = Path("reports")
+    artifacts_root: Path = Path("artifacts")
 
     @property
     def raw_dir(self) -> Path:
         return self.data_root / "raw"
+
+    @property
+    def runs_dir(self) -> Path:
+        """Root for reproducible experiment run records (git-ignored)."""
+        return self.artifacts_root / "runs"
 
     @property
     def validated_dir(self) -> Path:

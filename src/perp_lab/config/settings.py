@@ -9,11 +9,13 @@ import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from perp_lab.config.experiment import ExperimentConfig
 from perp_lab.config.models import DataContract, EdaConfig, Paths
 
 CONFIGS_DIR = Path("configs")
 DEFAULT_DATA_CONTRACT = CONFIGS_DIR / "data_contract.yaml"
 DEFAULT_EDA_CONFIG = CONFIGS_DIR / "eda.yaml"
+DEFAULT_EXPERIMENT_CONFIG = CONFIGS_DIR / "experiment.yaml"
 
 
 class AppSettings(BaseSettings):
@@ -55,6 +57,11 @@ def load_eda_config(path: str | Path = DEFAULT_EDA_CONFIG) -> EdaConfig:
     if not Path(path).exists():
         return EdaConfig()
     return EdaConfig.model_validate(_read_yaml(path))
+
+
+def load_experiment_config(path: str | Path = DEFAULT_EXPERIMENT_CONFIG) -> ExperimentConfig:
+    """Load and validate the Chapter 5 experiment contract from a YAML file."""
+    return ExperimentConfig.model_validate(_read_yaml(path))
 
 
 def load_settings() -> AppSettings:

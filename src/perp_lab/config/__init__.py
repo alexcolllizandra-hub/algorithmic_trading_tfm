@@ -5,6 +5,7 @@ models. Environment variables override YAML for operational settings such as
 paths and the random seed.
 """
 
+from perp_lab.config.experiment import ExperimentConfig
 from perp_lab.config.models import (
     ContractSpec,
     DataContract,
@@ -16,6 +17,7 @@ from perp_lab.config.settings import (
     AppSettings,
     load_data_contract,
     load_eda_config,
+    load_experiment_config,
     load_settings,
 )
 
@@ -24,9 +26,11 @@ __all__ = [
     "ContractSpec",
     "DataContract",
     "EdaConfig",
+    "ExperimentConfig",
     "HoldoutSpec",
     "Paths",
     "load_data_contract",
     "load_eda_config",
+    "load_experiment_config",
     "load_settings",
 ]

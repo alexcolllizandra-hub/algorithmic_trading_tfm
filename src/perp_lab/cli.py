@@ -1,9 +1,11 @@
-"""Command-line entry point for Phase 1 data operations.
+"""Command-line entry point for perp-lab operations.
 
 Examples
 --------
 uv run perp-lab download --config configs/data_contract.yaml
 uv run perp-lab validate --config configs/data_contract.yaml
+uv run perp-lab pipeline development --config configs/experiment.yaml
+uv run perp-lab pipeline development --synthetic   # offline smoke run (not a research result)
 """
 
 from __future__ import annotations
@@ -14,10 +16,11 @@ from pathlib import Path
 
 import polars as pl
 
-from perp_lab.config import load_data_contract, load_settings
+from perp_lab.config import load_data_contract, load_experiment_config, load_settings
 from perp_lab.data.download import run_ingestion
 from perp_lab.data.providers.binance_vision import BinanceVisionBulkProvider
-from perp_lab.utils.logging import get_logger
+from perp_lab.experiments.pipeline import run_dev_pipeline
+from perp_lab.utils.logging import add_file_logging, get_logger
 from perp_lab.utils.seeds import set_global_seed
 from perp_lab.validation.quality import quality_report
 
@@ -84,18 +87,76 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pipeline(args: argparse.Namespace) -> int:
+    """Run a bounded pipeline stage end to end (currently: development)."""
+    if args.stage != "development":
+        _log.error("Unknown pipeline stage %r (only 'development' is available).", args.stage)
+        return 2
+    experiment = load_experiment_config(args.config)
+    contract = load_data_contract(args.data_contract)
+    settings = load_settings()
+    try:
+        res = run_dev_pipeline(
+            contract=contract,
+            experiment=experiment,
+            paths=settings.paths,
+            symbol=args.symbol,
+            timeframe=args.timeframe,
+            fast=args.fast,
+            slow=args.slow,
+            synthetic=args.synthetic,
+            synthetic_bars=args.synthetic_bars,
+            write_artifacts=True,
+            attach_run_file_log=True,
+            logger=_log,
+        )
+    except FileNotFoundError:
+        _log.error("Aborting: required market data is not available locally.")
+        return 1
+    _log.info(
+        "pipeline development complete | run_id=%s | %s %s | rows=%d | Sharpe=%.4f | equity=%.4f",
+        res.run_id,
+        res.symbol,
+        res.timeframe,
+        res.n_rows,
+        res.metrics.get("sharpe", float("nan")),
+        res.result.final_equity,
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="perp-lab", description="Phase 1 data operations.")
+    parser = argparse.ArgumentParser(prog="perp-lab", description="perp-lab operations.")
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--log-dir", default="logs", type=Path, help="Directory for run logs.")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_dl = sub.add_parser("download", help="Download and process the data contract.")
+    p_dl = sub.add_parser("download", parents=[common], help="Download and process the contract.")
     p_dl.add_argument("--config", default="configs/data_contract.yaml", type=Path)
     p_dl.add_argument("--no-checksum", action="store_true", help="Skip checksum verification.")
     p_dl.set_defaults(func=cmd_download)
 
-    p_val = sub.add_parser("validate", help="Run the data-quality report.")
+    p_val = sub.add_parser("validate", parents=[common], help="Run the data-quality report.")
     p_val.add_argument("--config", default="configs/data_contract.yaml", type=Path)
     p_val.set_defaults(func=cmd_validate)
+
+    p_pipe = sub.add_parser(
+        "pipeline", parents=[common], help="Run a bounded modelling pipeline stage end to end."
+    )
+    p_pipe.add_argument("stage", choices=["development"], help="Pipeline stage to run.")
+    p_pipe.add_argument("--config", default="configs/experiment.yaml", type=Path)
+    p_pipe.add_argument("--data-contract", default="configs/data_contract.yaml", type=Path)
+    p_pipe.add_argument("--symbol", default="BTCUSDT")
+    p_pipe.add_argument("--timeframe", default="1h")
+    p_pipe.add_argument("--fast", default=24, type=int, help="Fast moving-average window (bars).")
+    p_pipe.add_argument("--slow", default=96, type=int, help="Slow moving-average window (bars).")
+    p_pipe.add_argument(
+        "--synthetic",
+        action="store_true",
+        help="Use a deterministic synthetic series (offline smoke test, not a research result).",
+    )
+    p_pipe.add_argument("--synthetic-bars", default=2000, type=int)
+    p_pipe.set_defaults(func=cmd_pipeline)
 
     return parser
 
@@ -103,6 +164,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    log_path = add_file_logging(getattr(args, "log_dir", "logs"))
+    _log.info("perp-lab %s | logging to %s", args.command, log_path)
     return int(args.func(args))
 
 

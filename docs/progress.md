@@ -244,3 +244,88 @@ confirming the provisional cost schedule.
 ### Next implementation milestone
 **Implement the causal feature engine and leakage-validation tests**
 (`src/perp_lab/features/` + `tests/unit/test_features_*.py`).
+
+---
+
+## Chapter 5 — First executable vertical slice (governance + slice)
+
+Status legend: **[impl]** implemented, **[test]** tested, **[prov]** provisional.
+
+### Governance upgrade (experimental phase)
+- `.cursor/agents/`: added `feature-engineer`, `strategy-backtest-engineer`,
+  `experiment-researcher`, `thesis-researcher`; extended `architect` (config +
+  tracking ownership) and `verifier` (causality/parity/holdout/tracking checks).
+- `.cursor/skills/`: added `implement-causal-feature`,
+  `validate-feature-causality`, `implement-baseline-strategy`,
+  `validate-backtest-engine`, `register-experiment-run`.
+- `.cursor/rules/`: added `causal-modeling.mdc`, `holdout-isolation.mdc`,
+  `experiment-parity.mdc`, `evidence.mdc`; moved `project-core.mdc` and
+  `AGENTS.md` "current phase" to the Chapter 5 experimental slice.
+
+### Configuration [impl][test]
+- `src/perp_lab/config/experiment.py`: strict, frozen `ExperimentConfig`
+  (`extra="forbid"`). Validated: UTC/ordered/contiguous dates, dev ends at
+  holdout start, positive feature windows, strategy parameter bounds
+  (ATR multiples > 0, momentum fast < slow, mean-reversion entry > exit,
+  known directions), RS/GA budget parity, derived purge (96) / embargo (118)
+  bars, deterministic seed, provisional flags preserved, holdout cross-check.
+
+### Causal feature engine [impl][test]
+- `src/perp_lab/features/causal.py`: `log_return`, `momentum_w`, `sma_w`,
+  `rvol_w`, `atr_w` (SMA of true range), `rel_volume_w` and a lagged
+  `taker_buy_imbalance` (context). Rolling with `min_samples == window`, no
+  centring; contextual feature shifted ≥ 1; zero denominators → null (no inf).
+  `feature_metadata()` documents each column for run records.
+- Availability: all close-t causal; `taker_buy_imbalance` lagged by
+  `min_lookback_shift_bars`. Execution delay to t+1 is applied by the backtester.
+
+### Baseline strategy [impl][test]
+- `src/perp_lab/strategies/momentum.py`: `MomentumCrossover` emits
+  `side ∈ {-1,0,1}` from `sma_fast` vs `sma_slow` at close *t* (warm-up → flat).
+
+### Backtester [impl][test][prov costs]
+- `src/perp_lab/backtesting/`: next-bar execution (`position = side.shift(1)`,
+  open-to-open return), per-side fee + slippage charged on `|Δposition|`
+  (adverse for both sides), 365-day annualised metrics. Funding **not** included
+  in the minimal path (documented). Costs provisional (ADR 0005).
+
+### Development pipeline + tracking [impl][test]
+- `src/perp_lab/experiments/pipeline.py`: data → manifest verify → holdout guard
+  → features → signals → next-bar backtest → metrics → artifacts, with Rich
+  per-stage logging (run id, interval, rows, hash, holdout status, feature names,
+  warm-up/null counts, execution timing, costs, trades/exposure, metrics,
+  artifact paths, elapsed, status).
+- `src/perp_lab/tracking/`: `RunTracker` writes the contract
+  `artifacts/runs/<run_id>/` (`resolved_config.yaml`, `dataset_manifests.json`,
+  `environment.json`, `git_state.json`, `metrics.json`, `feature_metadata.json`,
+  `trades.parquet`, `equity.parquet`, `logs/`, `figures/`). `artifacts/` is
+  git-ignored. The run id ties config + data hashes + git + seed + metrics +
+  strategy + artifacts.
+- CLI: `uv run perp-lab pipeline development --config configs/experiment.yaml`
+  (plus `--synthetic` offline smoke). Timestamped file logs; non-zero exit on
+  failure.
+
+### Holdout protection [impl][test]
+- Development load defaults to the development partition and asserts
+  `max(open_time) < holdout_start`; `build_features` re-checks; the pipeline runs
+  an explicit third guard. Tests prove `HoldoutLeakageError` on any crossing.
+
+### Verification (this task) — exact results
+- `uv run ruff check .` → All checks passed!
+- `uv run ruff format --check .` → 141 files already formatted
+- `uv run pyright` → 0 errors, 0 warnings, 0 informations
+- `uv run pytest -m "not network"` → 177 passed, 1 deselected, 19 warnings
+- Real run (development data, in-sample, **not** a thesis result):
+  BTCUSDT 1h, 52,608 bars `2020-01-01 … 2025-12-31 23:00 UTC`, momentum(24,96),
+  Sharpe ≈ 0.264, final equity ≈ 0.830; 9 artifacts under
+  `artifacts/runs/<run_id>/`.
+
+### Still unresolved / deferred (not assumed)
+- Transaction fees/slippage (provisional, ADR 0005); funding in the backtest;
+  walk-forward folds, purge/embargo application; Random Search, GA,
+  triple-barrier, meta-labeling, robustness, final holdout evaluation.
+
+### Recommended next task
+Generalise and validate the causal feature engine (broaden the catalogue set
+with the same leakage tests) before implementing the full baseline strategy set
+and the walk-forward framework.
