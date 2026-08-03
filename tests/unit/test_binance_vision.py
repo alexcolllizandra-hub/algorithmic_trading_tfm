@@ -29,11 +29,9 @@ def test_monthly_kline_relpath():
 
 
 def test_monthly_mark_relpath():
+    # Mark-price archives reuse the klines file naming; only the directory differs.
     path = monthly_mark_relpath("um", "ETHUSDT", "5m", 2020, 12)
-    assert (
-        path
-        == "data/futures/um/monthly/markPriceKlines/ETHUSDT/5m/ETHUSDT-markPriceKlines-5m-2020-12.zip"
-    )
+    assert path == "data/futures/um/monthly/markPriceKlines/ETHUSDT/5m/ETHUSDT-5m-2020-12.zip"
 
 
 def test_monthly_funding_relpath():

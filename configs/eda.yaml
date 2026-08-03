@@ -17,3 +17,7 @@ trading_days_per_year: 365
 # A return is FLAGGED (never dropped) as extreme when it exceeds this many
 # rolling standard deviations. Used by the data-quality report.
 extreme_return_sigma: 10.0
+
+# Window (in calendar days) for rolling distribution moments (annualised
+# volatility, skewness, excess kurtosis) reported on the 1h series.
+rolling_moment_window_days: 30

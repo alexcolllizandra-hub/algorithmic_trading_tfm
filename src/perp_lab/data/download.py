@@ -130,6 +130,35 @@ def ingest_symbol(
                 )
             )
 
+    # Mark-price klines (auxiliary stream), stored at the base timeframe. Used
+    # for mark/index basis context and as an independent price cross-check. Only
+    # attempted if the provider exposes native mark-price klines.
+    if "markPriceKlines" in contract.aux_streams and hasattr(provider, "fetch_mark_klines"):
+        mark = provider.fetch_mark_klines(spec.symbol, contract.base_timeframe, start, end)
+        if not mark.is_empty():
+            manifests.append(
+                write_manifest(
+                    mark,
+                    data_path=base_dir / f"markPrice_{contract.base_timeframe}.parquet",
+                    manifests_dir=paths.manifests_dir,
+                    dataset_id=dataset_id(
+                        contract.exchange,
+                        contract.market_type,
+                        spec.symbol,
+                        "markPriceKlines",
+                        contract.base_timeframe,
+                    ),
+                    source=provider.name,
+                    exchange=contract.exchange,
+                    market_type=contract.market_type,
+                    symbol=spec.symbol,
+                    stream="markPriceKlines",
+                    timeframe=contract.base_timeframe,
+                    repo_root=repo_root,
+                    notes="Mark-price klines at the base timeframe (auxiliary).",
+                )
+            )
+
     # Funding rate (auxiliary stream).
     if "fundingRate" in contract.aux_streams:
         funding = provider.fetch_funding(spec.symbol, start, end)

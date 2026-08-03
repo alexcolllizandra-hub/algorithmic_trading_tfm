@@ -82,10 +82,15 @@ def monthly_kline_relpath(
 def monthly_mark_relpath(
     market_type: str, symbol: str, timeframe: str, year: int, month: int
 ) -> str:
-    """Relative archive path for a monthly mark-price kline zip."""
+    """Relative archive path for a monthly mark-price kline zip.
+
+    Note: mark-price archives reuse the *same* file naming as ordinary klines
+    (``{SYMBOL}-{tf}-{YYYY}-{MM}.zip``); only the parent directory differs
+    (``markPriceKlines`` instead of ``klines``).
+    """
     return (
         f"data/futures/{market_type}/monthly/markPriceKlines/{symbol}/{timeframe}/"
-        f"{symbol}-markPriceKlines-{timeframe}-{year:04d}-{month:02d}.zip"
+        f"{symbol}-{timeframe}-{year:04d}-{month:02d}.zip"
     )
 
 

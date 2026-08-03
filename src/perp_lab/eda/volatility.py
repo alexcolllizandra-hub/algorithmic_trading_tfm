@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import math
+
 import polars as pl
 
 from perp_lab.eda.returns import annualization_factor
+
+_ONE_OVER_4LN2 = 1.0 / (4.0 * math.log(2.0))
+_GK_C = 2.0 * math.log(2.0) - 1.0
 
 
 def rolling_volatility(
@@ -50,4 +55,60 @@ def annualized_volatility(
         (pl.col(ret_col).rolling_std(window_size=window, min_samples=window) * factor).alias(
             out_col
         )
+    )
+
+
+def parkinson_volatility(
+    df: pl.DataFrame,
+    window: int,
+    high_col: str = "high",
+    low_col: str = "low",
+    out_col: str | None = None,
+) -> pl.DataFrame:
+    """Append the Parkinson (high-low range) realised-volatility estimator.
+
+    ``sigma = sqrt( (1 / 4 ln2) * mean( ln(H/L)^2 ) )`` over ``window`` bars.
+    More efficient than close-to-close when intrabar range is informative; it
+    assumes continuous trading and ignores overnight/opening gaps.
+    """
+    out_col = out_col or f"parkinson_vol_{window}"
+    term = (_ONE_OVER_4LN2 * (pl.col(high_col) / pl.col(low_col)).log().pow(2)).alias("_pk")
+    return (
+        df.with_columns(term)
+        .with_columns(
+            pl.col("_pk").rolling_mean(window_size=window, min_samples=window).sqrt().alias(out_col)
+        )
+        .drop("_pk")
+    )
+
+
+def garman_klass_volatility(
+    df: pl.DataFrame,
+    window: int,
+    open_col: str = "open",
+    high_col: str = "high",
+    low_col: str = "low",
+    close_col: str = "close",
+    out_col: str | None = None,
+) -> pl.DataFrame:
+    """Append the Garman-Klass OHLC realised-volatility estimator.
+
+    ``sigma^2 = mean( 0.5 ln(H/L)^2 - (2 ln2 - 1) ln(C/O)^2 )`` over ``window``.
+    Uses the full OHLC bar and is more efficient than close-to-close when bars
+    are well formed.
+    """
+    out_col = out_col or f"garman_klass_vol_{window}"
+    hl = (pl.col(high_col) / pl.col(low_col)).log().pow(2)
+    co = (pl.col(close_col) / pl.col(open_col)).log().pow(2)
+    term = (0.5 * hl - _GK_C * co).alias("_gk")
+    return (
+        df.with_columns(term)
+        .with_columns(
+            pl.col("_gk")
+            .rolling_mean(window_size=window, min_samples=window)
+            .clip(lower_bound=0.0)
+            .sqrt()
+            .alias(out_col)
+        )
+        .drop("_gk")
     )

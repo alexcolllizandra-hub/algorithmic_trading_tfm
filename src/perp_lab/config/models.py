@@ -178,6 +178,9 @@ class EdaConfig(BaseModel):
     # Threshold (in rolling-sigma units) above which a return is *flagged* as
     # extreme. Flagged, never dropped.
     extreme_return_sigma: float = 10.0
+    # Window (in calendar days) for rolling distribution moments (vol/skew/kurt)
+    # reported on the 1h series. Economically interpretable default of 30 days.
+    rolling_moment_window_days: int = 30
 
     @field_validator("return_kind")
     @classmethod

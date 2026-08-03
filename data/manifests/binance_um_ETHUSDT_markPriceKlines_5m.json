@@ -1,0 +1,18 @@
+{
+  "dataset_id": "binance_um_ETHUSDT_markPriceKlines_5m",
+  "source": "binance_vision",
+  "exchange": "binance",
+  "market_type": "um",
+  "symbol": "ETHUSDT",
+  "stream": "markPriceKlines",
+  "timeframe": "5m",
+  "period_start": "2020-01-01T00:00:00Z",
+  "period_end": "2026-06-30T23:55:00Z",
+  "row_count": 682545,
+  "relative_path": "data/validated/ETHUSDT/markPrice_5m.parquet",
+  "data_sha256": "c4f3ac6dcd51eba9dea67d7b845dcfe236792ecb249becfcda26e9880e0c2a9c",
+  "code_version": "0.1.0",
+  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
+  "generated_at": "2026-07-30T11:21:31.875299Z",
+  "notes": "Mark-price klines at the base timeframe (auxiliary)."
+}

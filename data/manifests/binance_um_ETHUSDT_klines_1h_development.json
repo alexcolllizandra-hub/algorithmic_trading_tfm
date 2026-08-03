@@ -1,0 +1,18 @@
+{
+  "dataset_id": "binance_um_ETHUSDT_klines_1h_development",
+  "source": "binance_vision",
+  "exchange": "binance",
+  "market_type": "um",
+  "symbol": "ETHUSDT",
+  "stream": "klines",
+  "timeframe": "1h",
+  "period_start": "2020-01-01T00:00:00Z",
+  "period_end": "2025-12-31T23:00:00Z",
+  "row_count": 52608,
+  "relative_path": "data/processed/ETHUSDT/1h_development.parquet",
+  "data_sha256": "8c2b03db26c673e81451c88e0a112401dbdd4e3b585c8d7f1d3447ae445e6917",
+  "code_version": "0.1.0",
+  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
+  "generated_at": "2026-07-30T11:18:49.035904Z",
+  "notes": "Built from 5m. Partition=development. Holdout starts 2026-01-01T00:00:00+00:00 and is frozen."
+}

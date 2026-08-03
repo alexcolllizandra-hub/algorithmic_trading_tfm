@@ -1,0 +1,18 @@
+{
+  "dataset_id": "binance_um_BTCUSDT_klines_1h_holdout",
+  "source": "binance_vision",
+  "exchange": "binance",
+  "market_type": "um",
+  "symbol": "BTCUSDT",
+  "stream": "klines",
+  "timeframe": "1h",
+  "period_start": "2026-01-01T00:00:00Z",
+  "period_end": "2026-06-30T23:00:00Z",
+  "row_count": 4344,
+  "relative_path": "data/processed/BTCUSDT/1h_holdout.parquet",
+  "data_sha256": "dec28172d8089dc77a9c9ed4dfdb5270d23fee2dbf5f45c91b4bb9e7e7b50721",
+  "code_version": "0.1.0",
+  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
+  "generated_at": "2026-07-30T11:16:00.506829Z",
+  "notes": "Built from 5m. Partition=holdout. Holdout starts 2026-01-01T00:00:00+00:00 and is frozen."
+}

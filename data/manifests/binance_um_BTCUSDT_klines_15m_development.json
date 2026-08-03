@@ -1,0 +1,18 @@
+{
+  "dataset_id": "binance_um_BTCUSDT_klines_15m_development",
+  "source": "binance_vision",
+  "exchange": "binance",
+  "market_type": "um",
+  "symbol": "BTCUSDT",
+  "stream": "klines",
+  "timeframe": "15m",
+  "period_start": "2020-01-01T00:00:00Z",
+  "period_end": "2025-12-31T23:45:00Z",
+  "row_count": 210432,
+  "relative_path": "data/processed/BTCUSDT/15m_development.parquet",
+  "data_sha256": "dad0700e02ec485e41125d5cd12324df49ec1534d793c26af62f703172a40329",
+  "code_version": "0.1.0",
+  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
+  "generated_at": "2026-07-30T11:15:59.973862Z",
+  "notes": "Built from 5m. Partition=development. Holdout starts 2026-01-01T00:00:00+00:00 and is frozen."
+}

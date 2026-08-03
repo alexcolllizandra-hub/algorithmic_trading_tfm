@@ -1,0 +1,18 @@
+{
+  "dataset_id": "binance_um_BTCUSDT_klines_5m",
+  "source": "binance_vision",
+  "exchange": "binance",
+  "market_type": "um",
+  "symbol": "BTCUSDT",
+  "stream": "klines",
+  "timeframe": "5m",
+  "period_start": "2020-01-01T00:00:00Z",
+  "period_end": "2026-06-30T23:55:00Z",
+  "row_count": 683424,
+  "relative_path": "data/validated/BTCUSDT/5m.parquet",
+  "data_sha256": "5b4b87752774679433bc9074dfca26779bfdaea0ff0a9fcb6b58ed68b3866265",
+  "code_version": "0.1.0",
+  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
+  "generated_at": "2026-07-30T11:15:59.682365Z",
+  "notes": "Base timeframe downloaded directly from source."
+}
