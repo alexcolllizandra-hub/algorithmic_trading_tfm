@@ -138,8 +138,10 @@ Note: one harmless `DeprecationWarning` from pandera internals (`pl.concat`
 2. [DONE] Generated `.venv/` and `uv.lock` via `uv sync --extra dev`.
 3. [DONE] Ran the full quality gate; fixed only scaffold errors; re-ran until green.
 4. [DONE] Recorded the real output above.
-5. [IN PROGRESS] Initialize Git and prepare a private GitHub repo (no push
-   without explicit confirmation).
+5. [DONE] Initialised Git and connected the private GitHub remote
+   (`origin`, branch `main`). The EDA deliverable was committed and pushed
+   (`feat: add reproducible narrative EDA notebook and analysis library`);
+   `main` tracks `origin/main`.
 
 ### Decisions locked
 
@@ -153,5 +155,92 @@ Note: one harmless `DeprecationWarning` from pandera internals (`pl.concat`
 - `.gitignore` hardened to exclude secrets, virtualenvs, heavy data
   (zip/parquet/csv/db), logs, caches and temp artifacts; manifests, code,
   configs, docs and `uv.lock` are tracked.
-- Repository initialization and the private-remote connection are handled in the
-  Git step (local commit only; no push/publish without explicit confirmation).
+- Two commits on `main`, pushed to the private remote
+  `github.com/alexcolllizandra-hub/tfm-algorithmic-trading`: the Phase-1
+  scaffold and the EDA deliverable. Heavy artifacts (figures/tables PNG/CSV,
+  data lake) remain git-ignored; the EDA notebook is versioned with its
+  rendered outputs.
+
+---
+
+## Chapter 5 - Methodology & experimental contract (SPECIFICATION ONLY)
+
+_Last updated: 2026-08-03. No modelling code implemented; specification only._
+
+### Inspected
+`README.md`, `pyproject.toml`, `configs/{data_contract,eda}.yaml`,
+`docs/{roadmap,experimental_protocol,progress}.md`, ADRs 0001-0003,
+`src/perp_lab/{config,data,validation,eda,reporting,utils}`, the tracked test
+suite, committed data manifests, and the executed EDA notebook + its metadata.
+
+### Repository audit (status classification)
+- **Implemented & verified** (offline gate green, 129 tests): `config`, `data`
+  (providers, bars, splits, manifest, download), `validation`, `eda`,
+  `reporting`, `utils`, CLI `download`, EDA notebook.
+- **Implemented, not verified**: network ingestion path (`pytest -m network`
+  is opt-in and not run offline); local data lake exists (manifests committed)
+  but data files are git-ignored.
+- **Partially implemented**: CLI exposes only data commands (no experiment
+  entry points); `regimes.py` provides a *descriptive* full-sample regime tag
+  (fine for EDA, must not feed modelling).
+- **Planned (missing)**: `features/`, `strategies/`, `labeling/`,
+  `backtesting/`, `search/`, `models/`, `evaluation/`, `tracking/` packages;
+  `configs/experiment.yaml` consumer (`ExperimentConfig` model).
+
+### Inconsistencies / risks noted (not refactored)
+- `docs/roadmap.md` phase numbering (Phase 2/3/4) does not match the thesis
+  Chapter 5 sub-sections; the methodology docs use Chapter-5 numbering.
+- `pyproject.toml` intentionally has no strategy/search/ML deps yet; these are
+  deferred until the corresponding module is implemented.
+- **Leakage watch:** the descriptive `vol_regime` uses full-sample quantiles;
+  the causal Chapter-5 regime feature must use expanding/rolling quantiles.
+  Contemporaneous `basis_bps` / `taker_buy_imbalance` must be lagged before any
+  predictive use. No code currently touches the frozen holdout.
+
+### Created (this task)
+- `configs/experiment.yaml` - experiment contract (provisional values flagged).
+- `docs/methodology/experimental_design.md` - RQs, hypotheses, protocols,
+  binding leakage rules.
+- `docs/methodology/hypothesis_matrix.md` - traceability matrix (H1-H5).
+- `docs/methodology/feature_catalogue.md` - causal feature catalogue (sets A/B).
+- `docs/methodology/strategy_specification.md` - baseline families, GA
+  chromosome, RS/GA parity, fitness.
+- `docs/methodology/validation_protocol.md` - walk-forward, purge/embargo,
+  costs, metrics, robustness.
+- `docs/methodology/module_specification.md` - planned module public APIs.
+- `docs/architecture.md` - pipeline + Mermaid diagram + module responsibilities.
+- ADR 0004 (methodology contract), ADR 0005 (provisional transaction costs).
+
+### Verification performed
+- `configs/experiment.yaml` parses as valid YAML (checked).
+- Full offline quality gate re-run after adding docs/config (see table above):
+  ruff / ruff format / pyright / `pytest -m "not network"` all green.
+- No code changed, so no behavioural tests were added in this task.
+
+### Open decisions (not silently assumed)
+Transaction fees/slippage (provisional, ADR 0005); exact walk-forward fold
+geometry (recommended, pending confirmation); position-sizing method and vol
+target; triple-barrier widths/horizon; GA per-asset vs. joint; final
+meta-labeling model family and calibration.
+
+### Blockers
+None for specification. Implementation will require adding modelling
+dependencies (`scikit-learn`, optional `lightgbm`, a GA implementation) and
+confirming the provisional cost schedule.
+
+### Staged implementation plan (next milestones)
+1. **Causal feature engine** (`features/`) + leakage-validation tests. *(next)*
+2. Baseline strategies (`strategies/`) with the shared parameter space.
+3. Cost-aware backtester (`backtesting/`) - next-bar, fees/slippage/funding.
+4. Temporal validation (walk-forward folds + purge/embargo).
+5. Random Search over the shared space.
+6. Genetic Algorithm (matched budget/space/folds/costs/seeds).
+7. Triple-barrier labels (`labeling/`).
+8. Meta-labeling models (`models/`) with calibration.
+9. Robustness tests (`evaluation/`).
+10. Final frozen-holdout evaluation (opened once).
+11. Dashboard and paper trading (later phase).
+
+### Next implementation milestone
+**Implement the causal feature engine and leakage-validation tests**
+(`src/perp_lab/features/` + `tests/unit/test_features_*.py`).

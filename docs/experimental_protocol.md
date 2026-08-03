@@ -22,11 +22,26 @@ search, backtesting and evaluation protocols are defined in later phases (see
 5. **Provenance.** Every dataset consumed by an experiment is identified by its
    manifest (id + SHA-256), so results are traceable to exact inputs.
 
-## To be defined in later phases
+## Chapter 5 methodology (now specified)
 
-- Walk-forward scheme, purging and embargo lengths.
-- Strategy grammar and search space.
-- Random-search vs. evolutionary-search budget parity.
-- Backtesting cost model (fees, slippage, funding) and execution timing.
-- Triple-barrier labeling and meta-labeling protocol.
-- Candidate promotion gate and robustness / Monte Carlo tests.
+The items below are specified in the Chapter 5 methodology contract (ADR 0004),
+which operationalises them without yet implementing the code:
+
+- Walk-forward scheme, purging and embargo lengths →
+  [`methodology/validation_protocol.md`](methodology/validation_protocol.md).
+- Strategy grammar and search space →
+  [`methodology/strategy_specification.md`](methodology/strategy_specification.md).
+- Random-search vs. evolutionary-search budget parity → same document.
+- Backtesting cost model (fees, slippage, funding) and execution timing →
+  validation protocol + ADR 0005 (provisional costs).
+- Triple-barrier labeling and meta-labeling protocol →
+  [`methodology/experimental_design.md`](methodology/experimental_design.md).
+- Candidate promotion gate and robustness / Monte Carlo tests → validation
+  protocol.
+- Causal feature catalogue →
+  [`methodology/feature_catalogue.md`](methodology/feature_catalogue.md).
+- Machine-readable configuration →
+  [`../configs/experiment.yaml`](../configs/experiment.yaml).
+
+These remain a **specification**; values flagged *provisional* must be confirmed
+via ADR before they influence any reported result.

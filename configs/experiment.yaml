@@ -1,0 +1,213 @@
+# =========================================================================== #
+# EXPERIMENT CONTRACT v0.1.0 (Chapter 5 methodology)
+#
+# Human-readable rationale: docs/methodology/experimental_design.md
+#
+# This file is the single source of truth for HOW strategies are discovered,
+# labeled, validated and evaluated. It is NOT yet consumed by code: the Chapter
+# 5 modelling package (features/strategies/labeling/backtesting/search/models/
+# evaluation) is specified but not implemented. Values flagged `provisional: true`
+# are configurable placeholders that MUST be confirmed and recorded in an ADR
+# before they influence any reported result.
+#
+# Invariants inherited from the data contract (configs/data_contract.yaml) and
+# ADR 0003 (frozen holdout) are NOT restated as authoritative here; they are
+# mirrored for convenience and cross-checked at load time.
+# =========================================================================== #
+version: "0.1.0"
+random_seed: 42 # mirrors AppSettings.seed; every stochastic component derives from it
+
+# --------------------------------------------------------------------------- #
+# Scope: assets and timeframes (mirror of the data contract)
+# --------------------------------------------------------------------------- #
+assets: ["BTCUSDT", "ETHUSDT"]
+timeframes:
+  primary: "1h" # main modelling and backtesting timeframe
+  secondary: "15m" # complementary experiments only
+  base: "5m" # source bars; 15m/1h are deterministically resampled from 5m
+annualization_days: 365 # crypto trades 24/7
+
+# --------------------------------------------------------------------------- #
+# Temporal boundaries (mirror of data contract + ADR 0003). All UTC.
+# The frozen holdout is NEVER loaded during development, selection or tuning.
+# --------------------------------------------------------------------------- #
+periods:
+  development_start: "2020-01-01T00:00:00Z"
+  development_end_exclusive: "2026-01-01T00:00:00Z" # development = [start, this)
+  holdout_start: "2026-01-01T00:00:00Z"
+  cutoff_exclusive: "2026-07-01T00:00:00Z" # holdout = [holdout_start, cutoff)
+
+# --------------------------------------------------------------------------- #
+# Causal feature windows (in bars of the PRIMARY timeframe unless noted).
+# All features are past-only; see docs/methodology/feature_catalogue.md.
+# --------------------------------------------------------------------------- #
+features:
+  return_windows: [1, 3, 6, 12, 24] # log-return horizons (bars)
+  ma_windows: [12, 24, 48, 96, 168] # moving-average lengths (bars); 168 = 1 week @ 1h
+  momentum_windows: [12, 24, 72] # cumulative-return lookbacks
+  breakout_windows: [24, 48, 96] # rolling high/low channels (Donchian-style)
+  rsi_windows: [14, 24] # Wilder RSI lengths
+  zscore_windows: [24, 48, 96] # price/return z-score lookbacks
+  atr_windows: [14, 24, 48] # Average True Range lengths
+  volatility_windows: [24, 96, 168] # rolling return std (matches EDA vol windows)
+  relative_volume_windows: [24, 96] # volume / rolling-mean volume
+  regime_vol_windows: [96, 168] # windows feeding the causal volatility-regime tag
+  # Contextual (meta-labeling) feature lookbacks:
+  funding_change_windows: [3, 8, 24] # funding deltas over N funding intervals
+  corr_windows: [168, 336] # rolling BTC-ETH return correlation (bars)
+  min_lookback_shift_bars: 1 # every feature is shifted >= 1 bar before use
+
+# --------------------------------------------------------------------------- #
+# Baseline interpretable strategy families and their parameter ranges.
+# Random Search and the Genetic Algorithm share EXACTLY this space.
+# Full rule definitions: docs/methodology/strategy_specification.md.
+# --------------------------------------------------------------------------- #
+strategies:
+  execution: "next_bar_open" # signal at close of t -> fill at open of t+1
+  allowed_directions: ["long", "short", "both"]
+  families:
+    momentum:
+      fast_ma: [6, 12, 24, 48]
+      slow_ma: [48, 96, 168, 336]
+      trend_filter_ma: [168, 336] # optional regime/trend gate
+    breakout:
+      channel_window: [24, 48, 96]
+      confirmation_bars: [1, 2, 3]
+    mean_reversion:
+      zscore_window: [24, 48, 96]
+      entry_z: [1.5, 2.0, 2.5, 3.0]
+      exit_z: [0.0, 0.5, 1.0]
+  # Shared risk/exit parameters (units = ATR multiples or bars).
+  stop_loss_atr: [1.0, 1.5, 2.0, 3.0]
+  take_profit_atr: [1.0, 2.0, 3.0, 4.0]
+  max_holding_bars: [24, 48, 96] # hard time-based exit
+  volatility_filter:
+    enabled_options: [true, false]
+    regime_gate_options: [["low", "medium"], ["medium", "high"], ["low", "medium", "high"]]
+  position_sizing:
+    method: "volatility_target" # provisional; alternative: "fixed_fraction"
+    provisional: true
+    annual_vol_target_pct: 20.0 # provisional target for vol-scaled sizing
+    max_leverage: 3.0 # provisional exposure cap
+    fixed_fraction: 1.0 # used if method == fixed_fraction
+
+# --------------------------------------------------------------------------- #
+# Triple-barrier labeling and meta-labeling (Chapter 5.6).
+# Barriers are set in ATR / volatility units, horizon in PRIMARY-timeframe bars.
+# --------------------------------------------------------------------------- #
+labeling:
+  upper_barrier_atr: 2.0 # provisional profit-taking barrier
+  lower_barrier_atr: 2.0 # provisional stop-loss barrier
+  vertical_barrier_bars: 24 # provisional max label horizon (1 day @ 1h)
+  provisional: true
+  min_return_bps: 0.0 # dead-band; label as 0 within +/- this net move
+  meta_labeling:
+    task: "binary" # predict whether the base signal's trade is profitable after costs
+    models: ["logistic_regression", "random_forest", "lightgbm"] # LightGBM optional dep
+    calibration: "isotonic" # probability calibration on validation folds
+    decision_threshold: "tuned_on_validation" # never tuned on holdout
+
+# --------------------------------------------------------------------------- #
+# Temporal validation: expanding walk-forward with purging + embargo.
+# Purge and embargo are DERIVED from the max label horizon / holding period,
+# not chosen arbitrarily. See docs/methodology/validation_protocol.md.
+# --------------------------------------------------------------------------- #
+walk_forward:
+  scheme: "expanding" # anchored training window that grows each fold
+  initial_train_days: 730 # >= 2 years initial history before first OOS fold
+  validation_days: 90 # candidate selection / meta-label validation slice
+  test_days: 90 # out-of-sample fold length
+  step_days: 90 # roll forward by one test window (non-overlapping OOS)
+  min_folds: 8 # sanity check; abort if development span yields fewer
+  purge:
+    # Purge training observations whose label horizon overlaps the validation/test
+    # window. Derived: >= labeling.vertical_barrier_bars (+ max_holding_bars).
+    derive_from: "max(label_horizon, max_holding)"
+    bars: null # computed at runtime from labeling + strategies blocks
+  embargo:
+    # Embargo bars AFTER each test window before training resumes.
+    derive_from: "max(label_horizon, max_holding)"
+    fraction_of_test: 0.01 # additional small embargo as a fraction of test span
+    bars: null # computed at runtime; = purge bars + fraction_of_test
+
+# --------------------------------------------------------------------------- #
+# Transaction-cost model. PROVISIONAL: Binance USDT-M VIP-0 style assumptions.
+# These MUST be confirmed against the live fee schedule and recorded in an ADR
+# before any reported net performance is treated as final. See docs ADR-0005.
+# --------------------------------------------------------------------------- #
+costs:
+  provisional: true
+  fee_model: "taker" # conservative: assume market/taker execution
+  taker_fee_bps: 4.0 # provisional 0.040% per side
+  maker_fee_bps: 2.0 # provisional 0.020% per side
+  slippage:
+    baseline_bps: 1.0 # provisional per-side slippage on next-bar open
+    scenarios_bps: [0.0, 1.0, 2.0, 5.0] # robustness sweep
+  funding:
+    treatment: "realized" # pay/receive funding on open positions at funding times
+    align: "as_of_past" # funding known before the bar it is charged on (no leakage)
+  min_notional_usdt: 100.0 # provisional exchange minimum per order
+
+# --------------------------------------------------------------------------- #
+# Search budgets. Random Search and GA receive the SAME number of candidate
+# evaluations for a fair comparison. One "evaluation" = one full walk-forward
+# backtest of one candidate.
+# --------------------------------------------------------------------------- #
+search:
+  evaluation_budget: 2000 # identical for both methods (provisional)
+  provisional: true
+  random_search:
+    sampler: "uniform_over_space"
+  genetic_algorithm:
+    population_size: 100
+    generations: 20 # population * generations = 2000 = budget
+    crossover_rate: 0.7
+    mutation_rate: 0.2
+    elitism: 5
+    selection: "tournament"
+    tournament_size: 3
+    chromosome: "fixed_length" # see docs/methodology/strategy_specification.md
+
+# --------------------------------------------------------------------------- #
+# Multi-objective / penalised fitness. Maximised. Computed on walk-forward OOS
+# folds only (never on the holdout).
+# --------------------------------------------------------------------------- #
+fitness:
+  primary_objective: "walk_forward_sharpe" # net-of-cost, OOS, aggregated over folds
+  weights:
+    sharpe: 1.0
+    max_drawdown_penalty: 0.5 # penalise deep drawdowns
+    turnover_penalty: 0.2 # penalise cost-inducing churn
+    fold_instability_penalty: 0.3 # penalise variance of per-fold performance
+    complexity_penalty: 0.1 # penalise number of active rules/parameters
+  constraints:
+    min_trades_total: 50 # provisional; below this the candidate is penalised/rejected
+    min_trades_per_fold: 3
+    max_leverage: 3.0
+  provisional: true
+
+# --------------------------------------------------------------------------- #
+# Robustness battery (Chapter 5.8). Applied to promoted candidates BEFORE the
+# single final holdout evaluation.
+# --------------------------------------------------------------------------- #
+robustness:
+  higher_cost_scenarios_bps: [2.0, 5.0, 10.0] # extra round-trip cost stress
+  parameter_perturbation_pct: [5.0, 10.0, 20.0] # jitter parameters, re-evaluate
+  delayed_execution_bars: [1, 2] # fill one/two bars later than next-bar open
+  subperiod_stability: "per_year" # report metrics per calendar year
+  asset_transfer: true # fit on one asset, evaluate on the other
+  regime_conditioned: true # report metrics per volatility regime
+  monte_carlo:
+    method: "trade_order_bootstrap"
+    resamples: 1000
+  deflated_sharpe: true # account for multiple-testing / selection bias
+  benchmarks: ["buy_and_hold", "flat_cash", "random_entry_matched_exposure"]
+
+# --------------------------------------------------------------------------- #
+# Risk limits applied inside the backtester.
+# --------------------------------------------------------------------------- #
+risk:
+  max_position_leverage: 3.0 # provisional
+  max_gross_exposure: 1.0 # single-asset backtests hold at most 1x by default
+  max_daily_loss_pct: null # optional circuit breaker (disabled by default)
+  provisional: true
