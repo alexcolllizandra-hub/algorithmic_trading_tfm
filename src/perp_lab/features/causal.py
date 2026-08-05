@@ -70,6 +70,72 @@ def add_sma(
     )
 
 
+def add_ema(
+    df: pl.DataFrame, window: int, *, price_col: str = "close", out_col: str | None = None
+) -> pl.DataFrame:
+    """Append an exponential moving average ``ema_{w}`` (causal, past-only).
+
+    Uses ``ewm_mean`` with ``span = window`` and ``adjust=False`` (a standard
+    recursive EMA that depends only on the current and previous values). The
+    first ``window - 1`` rows are set to null so warm-up matches the SMA of the
+    same length and the value is comparable once the window is populated.
+    """
+    name = out_col or f"ema_{window}"
+    ema = pl.col(price_col).ewm_mean(span=window, adjust=False, min_samples=window)
+    return df.with_columns(ema.alias(name))
+
+
+def add_cum_return(
+    df: pl.DataFrame, *, price_col: str = "close", out_col: str = "cum_return"
+) -> pl.DataFrame:
+    """Append the cumulative log return since the first bar ``ln(P_t / P_0)``.
+
+    This is an expanding (not rolling) quantity but strictly causal: the value
+    at row *t* uses only ``P_0`` and ``P_t``, both known at or before *t*. The
+    first row is ``0.0`` (no warm-up nulls).
+    """
+    logp = pl.col(price_col).log()
+    return df.with_columns((logp - logp.first()).alias(out_col))
+
+
+def add_rolling_std(
+    df: pl.DataFrame, window: int, *, price_col: str = "close", out_col: str | None = None
+) -> pl.DataFrame:
+    """Append the trailing standard deviation of the *price level* ``roll_std_{w}``.
+
+    Distinct from :func:`add_rolling_volatility`, which is the std of *returns*.
+    Warm-up is ``w - 1`` rows.
+    """
+    name = out_col or f"roll_std_{window}"
+    return df.with_columns(
+        pl.col(price_col).rolling_std(window_size=window, min_samples=window).alias(name)
+    )
+
+
+def add_ma_distance(
+    df: pl.DataFrame,
+    fast: int,
+    slow: int,
+    *,
+    price_col: str = "close",
+    out_col: str | None = None,
+) -> pl.DataFrame:
+    """Append the scale-free distance between a fast and a slow SMA (causal).
+
+    ``(sma_fast - sma_slow) / sma_slow``. Positive when the fast trend leads the
+    slow trend. A non-positive slow average maps to null (no infinities).
+    Warm-up is ``slow - 1`` rows (the slower average dominates). Requires
+    ``fast < slow``.
+    """
+    if fast >= slow:
+        raise ValueError(f"ma_distance requires fast ({fast}) < slow ({slow}).")
+    name = out_col or f"ma_distance_{fast}_{slow}"
+    sma_fast = pl.col(price_col).rolling_mean(window_size=fast, min_samples=fast)
+    sma_slow = pl.col(price_col).rolling_mean(window_size=slow, min_samples=slow)
+    expr = pl.when(sma_slow > 0).then(sma_fast / sma_slow - 1.0).otherwise(None)
+    return df.with_columns(expr.alias(name))
+
+
 def add_price_distance_ma(
     df: pl.DataFrame, window: int, *, price_col: str = "close", out_col: str | None = None
 ) -> pl.DataFrame:
@@ -128,6 +194,22 @@ def add_atr(df: pl.DataFrame, window: int, *, out_col: str | None = None) -> pl.
     return df.with_columns(
         true_range.rolling_mean(window_size=window, min_samples=window).alias(name)
     )
+
+
+def add_true_range(df: pl.DataFrame, *, out_col: str = "true_range") -> pl.DataFrame:
+    """Append the raw True Range ``max(H-L, |H-C_{t-1}|, |L-C_{t-1}|)`` (causal).
+
+    Uses the current bar's high/low and the *previous* close, so it is available
+    at the current bar's close. The first row falls back to ``high - low`` (no
+    previous close), which is a valid, non-null true range; no warm-up nulls.
+    """
+    prev_close = pl.col("close").shift(1)
+    true_range = pl.max_horizontal(
+        pl.col("high") - pl.col("low"),
+        (pl.col("high") - prev_close).abs(),
+        (pl.col("low") - prev_close).abs(),
+    )
+    return df.with_columns(true_range.alias(out_col))
 
 
 def add_true_range_norm(df: pl.DataFrame, *, out_col: str = "range_norm") -> pl.DataFrame:
@@ -192,6 +274,26 @@ def add_cyclical_time(df: pl.DataFrame, unit: str, *, time_col: str = "open_time
         angle.sin().alias(f"{prefix}_sin"),
         angle.cos().alias(f"{prefix}_cos"),
     )
+
+
+def add_taker_buy_ratio(
+    df: pl.DataFrame, *, lag: int = 1, out_col: str = "taker_buy_ratio"
+) -> pl.DataFrame:
+    """Append a **lagged** taker-buy ratio in ``[0, 1]`` (contextual).
+
+    ``ratio = taker_buy_quote / quote_volume`` (share of quote volume that lifted
+    the ask). A non-positive quote volume maps to null (never an infinity). The
+    series is shifted by ``lag`` (>= 1) because it is only known once the bar has
+    closed.
+    """
+    if lag < 1:
+        raise ValueError("taker-buy ratio lag must be >= 1 (contextual feature).")
+    ratio = (
+        pl.when(pl.col("quote_volume") > 0)
+        .then(pl.col("taker_buy_quote") / pl.col("quote_volume"))
+        .otherwise(None)
+    )
+    return df.with_columns(ratio.shift(lag).alias(out_col))
 
 
 def add_taker_buy_imbalance(

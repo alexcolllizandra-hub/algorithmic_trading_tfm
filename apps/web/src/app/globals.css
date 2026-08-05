@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Light theme */
+  --bg: 247 248 250;
+  --surface: 255 255 255;
+  --surface-2: 241 243 247;
+  --border: 224 227 233;
+  --fg: 17 24 39;
+  --muted: 100 110 128;
+  --accent: 37 99 235;
+  --accent-fg: 255 255 255;
+  --positive: 5 150 105;
+  --negative: 220 38 38;
+  --warn: 217 119 6;
+}
+
+.dark {
+  /* Dark theme — calm slate, high contrast */
+  --bg: 8 11 18;
+  --surface: 17 22 33;
+  --surface-2: 24 31 45;
+  --border: 38 47 64;
+  --fg: 226 232 240;
+  --muted: 148 163 184;
+  --accent: 96 165 250;
+  --accent-fg: 8 11 18;
+  --positive: 52 211 153;
+  --negative: 248 113 113;
+  --warn: 251 191 36;
+}
+
+* {
+  border-color: rgb(var(--border));
+}
+
+body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg));
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus-visible ring for keyboard accessibility */
+:where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+
+.skeleton {
+  background-color: rgb(var(--surface-2));
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--border));
+  border-radius: 6px;
+}

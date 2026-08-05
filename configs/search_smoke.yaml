@@ -1,0 +1,44 @@
+# =====================================================================
+# SMOKE search configuration -- SYNTHETIC DATA ONLY.
+# The results of this run are NOT a research finding and must never be
+# reported as thesis performance. It exists to exercise the full
+# Random-Search vs Genetic-Algorithm code path offline and fast.
+# =====================================================================
+
+family: mean_reversion
+algorithm: comparison
+symbol: BTCUSDT
+timeframe: "1h"
+seed: 7
+regime_model: threshold
+
+# Demonstrates the funding-aware path with an explicitly-labelled synthetic
+# funding fixture (never a silent zero substitution).
+require_funding: true
+
+synthetic: true
+synthetic_bars: 1600
+label: smoke_synthetic_NOT_a_research_result
+
+ga:
+  population_size: 6
+  generations: 3
+  crossover_rate: 0.7
+  mutation_rate: 0.3
+  elitism: 1
+  tournament_size: 3
+
+# Small fold geometry so a short synthetic series yields a few folds.
+walk_forward_override:
+  initial_train_days: 30
+  validation_days: 7
+  test_days: 7
+  step_days: 7
+  min_folds: 1
+  max_folds: 3
+
+# Relaxed trade constraints for the tiny synthetic validation slices.
+objective:
+  min_trades_total: 1
+  min_trades_per_fold: 0
+  max_drawdown_limit: 0.95

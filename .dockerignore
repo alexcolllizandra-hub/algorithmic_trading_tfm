@@ -1,0 +1,23 @@
+# Keep the API build context small. Only src + configs + data/manifests are
+# needed to build the image; large data/artifacts arrive at runtime via volumes.
+.git
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+logs
+reports
+notebooks
+htmlcov
+artifacts
+
+# Frontend build artifacts / deps (web has its own build context).
+apps/web/node_modules
+apps/web/.next
+apps/web/playwright-report
+apps/web/test-results
+
+# Data: exclude everything except the small JSON manifests.
+data/*
+!data/manifests

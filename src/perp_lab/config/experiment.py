@@ -101,12 +101,19 @@ class FeatureItem(_Strict):
 
     kind: str
     window: int | None = None
+    window_slow: int | None = None
     lag: int | None = None
     source: str | None = None
 
     @model_validator(mode="after")
     def _valid(self) -> FeatureItem:
-        validate_feature_item(self.kind, window=self.window, lag=self.lag, source=self.source)
+        validate_feature_item(
+            self.kind,
+            window=self.window,
+            window_slow=self.window_slow,
+            lag=self.lag,
+            source=self.source,
+        )
         return self
 
 
@@ -153,7 +160,13 @@ class Features(_Strict):
             raise ValueError("features.feature_set must list at least one feature.")
         seen: set[str] = set()
         for item in self.feature_set:
-            spec = resolve_spec(item.kind, window=item.window, lag=item.lag, source=item.source)
+            spec = resolve_spec(
+                item.kind,
+                window=item.window,
+                window_slow=item.window_slow,
+                lag=item.lag,
+                source=item.source,
+            )
             for col in spec.columns:
                 if col in seen:
                     raise ValueError(f"Duplicate feature column {col!r} in features.feature_set.")

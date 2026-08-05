@@ -36,12 +36,16 @@ regime thresholds; as-of-past joins; deterministic column order.
 
 ```python
 @dataclass(frozen=True)
-class StrategyParams: ...          # one point in the shared search space
+class StrategyParams: ...  # one point in the shared search space
+
+
 class Strategy(Protocol):
     def signals(self, feats: pl.DataFrame) -> pl.DataFrame: ...  # side ∈ {-1,0,1}, at close t
-def decode(chromosome: np.ndarray) -> StrategyParams: ...        # GA <-> params
+
+
+def decode(chromosome: np.ndarray) -> StrategyParams: ...  # GA <-> params
 def encode(params: StrategyParams) -> np.ndarray: ...
-def sample_params(rng) -> StrategyParams: ...                    # RS <-> params
+def sample_params(rng) -> StrategyParams: ...  # RS <-> params
 ```
 
 Families: `Momentum`, `Breakout`, `MeanReversion` (see

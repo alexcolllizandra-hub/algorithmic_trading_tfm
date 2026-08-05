@@ -23,7 +23,7 @@ from typing import Protocol, runtime_checkable
 
 # Bump when the numerical definition of any feature changes so that older run
 # artifacts remain interpretable and comparisons across versions are explicit.
-IMPL_VERSION = "0.2.0"
+IMPL_VERSION = "0.3.0"
 
 # Consumer codes used throughout the methodology docs:
 # BS = baseline strategy, GA = genetic strategy, ML = meta-label model,
@@ -40,7 +40,12 @@ class KindDef:
     consumers: tuple[str, ...]
     leakage_risk: str
     requires_window: bool = False
+    requires_window_slow: bool = False
     requires_lag: bool = False
+    requires_context: bool = False
+    # For context features: which auxiliary input is needed
+    # ("peer", "funding", "mark_index" or "open_interest").
+    context_kind: str = ""
     output_dtype: str = "Float64"
     null_policy: str = "warm-up rows are null"
     inf_policy: str = "guarded: zero denominators map to null (never +/-inf)"
@@ -70,12 +75,49 @@ KIND_REGISTRY: dict[str, KindDef] = {
         requires_window=True,
         allowed_sources=("close",),
     ),
+    "cum_return": KindDef(
+        family="returns",
+        inputs=("close",),
+        availability="close t",
+        consumers=("ML", "RG"),
+        leakage_risk="low (expanding sum of past log returns)",
+        null_policy="no warm-up (first row is 0.0)",
+        allowed_sources=("close",),
+    ),
     "sma": KindDef(
         family="trend",
         inputs=("close",),
         availability="close t",
         consumers=("BS", "GA"),
         leakage_risk="low (trailing mean)",
+        requires_window=True,
+        allowed_sources=("close",),
+    ),
+    "ema": KindDef(
+        family="trend",
+        inputs=("close",),
+        availability="close t",
+        consumers=("BS", "GA"),
+        leakage_risk="low (recursive past-only mean)",
+        requires_window=True,
+        allowed_sources=("close",),
+    ),
+    "ma_distance": KindDef(
+        family="trend",
+        inputs=("close",),
+        availability="close t",
+        consumers=("BS", "GA", "ML"),
+        leakage_risk="low (ratio of two trailing means; scale-free)",
+        requires_window=True,
+        requires_window_slow=True,
+        allowed_sources=("close",),
+    ),
+    "roll_std": KindDef(
+        family="mean_reversion",
+        inputs=("close",),
+        availability="close t",
+        consumers=("BS", "GA", "ML", "RG"),
+        leakage_risk="low (trailing std of the price level)",
         requires_window=True,
         allowed_sources=("close",),
     ),
@@ -113,6 +155,14 @@ KIND_REGISTRY: dict[str, KindDef] = {
         consumers=("BS", "GA", "RK"),
         leakage_risk="low (uses current bar range + previous close)",
         requires_window=True,
+    ),
+    "true_range": KindDef(
+        family="range",
+        inputs=("high", "low", "close"),
+        availability="close t",
+        consumers=("BS", "GA", "RK"),
+        leakage_risk="low (current-bar range + previous close)",
+        null_policy="no warm-up (first row falls back to high-low)",
     ),
     "range_norm": KindDef(
         family="range",
@@ -155,6 +205,14 @@ KIND_REGISTRY: dict[str, KindDef] = {
         leakage_risk="none (calendar clock, known in advance)",
         inf_policy="not applicable (bounded sine/cosine)",
     ),
+    "taker_buy_ratio": KindDef(
+        family="order_flow",
+        inputs=("taker_buy_quote", "quote_volume"),
+        availability="close t (contextual microstructure)",
+        consumers=("ML", "RG"),
+        leakage_risk="high if contemporaneous -> must be lagged >= 1 bar",
+        requires_lag=True,
+    ),
     "taker_buy_imbalance": KindDef(
         family="order_flow",
         inputs=("taker_buy_quote", "quote_volume"),
@@ -162,6 +220,69 @@ KIND_REGISTRY: dict[str, KindDef] = {
         consumers=("ML",),
         leakage_risk="high if contemporaneous -> must be lagged >= 1 bar",
         requires_lag=True,
+    ),
+    # -- Derivatives (need an auxiliary stream; backward as-of aligned) ------ #
+    "funding_rate": KindDef(
+        family="derivatives",
+        inputs=(),
+        availability="as-of past (funding known before it is charged)",
+        consumers=("ML", "RG", "RK"),
+        leakage_risk="low (backward as-of join; never forward)",
+        requires_context=True,
+        context_kind="funding",
+        null_policy="null before the first funding observation",
+    ),
+    "basis": KindDef(
+        family="derivatives",
+        inputs=(),
+        availability="close t (mark/index aligned to bar grid)",
+        consumers=("ML", "RG"),
+        leakage_risk="low (contemporaneous mark vs index; scale-free)",
+        requires_context=True,
+        context_kind="mark_index",
+    ),
+    "oi_change": KindDef(
+        family="derivatives",
+        inputs=(),
+        availability="as-of past (open interest snapshot <= open_time)",
+        consumers=("ML", "RG"),
+        leakage_risk="low (backward as-of join + past-only difference)",
+        requires_window=True,
+        requires_context=True,
+        context_kind="open_interest",
+    ),
+    # -- Cross-asset (need a peer symbol on the same timeframe grid) --------- #
+    "xasset_rel_return": KindDef(
+        family="cross_asset",
+        inputs=("close",),
+        availability="close t (peer bar closes simultaneously)",
+        consumers=("ML", "RG"),
+        leakage_risk="low (exact join; peer bar closes with own bar)",
+        requires_context=True,
+        context_kind="peer",
+        asset_dependency="pair",
+    ),
+    "xasset_rel_momentum": KindDef(
+        family="cross_asset",
+        inputs=("close",),
+        availability="close t (peer bar closes simultaneously)",
+        consumers=("ML", "RG"),
+        leakage_risk="low (exact join; past-only momentum difference)",
+        requires_window=True,
+        requires_context=True,
+        context_kind="peer",
+        asset_dependency="pair",
+    ),
+    "xasset_corr": KindDef(
+        family="cross_asset",
+        inputs=("close",),
+        availability="close t (peer bar closes simultaneously)",
+        consumers=("ML", "RG", "RK"),
+        leakage_risk="low (trailing correlation of past returns)",
+        requires_window=True,
+        requires_context=True,
+        context_kind="peer",
+        asset_dependency="pair",
     ),
 }
 
@@ -175,6 +296,7 @@ def validate_feature_item(
     kind: str,
     *,
     window: int | None = None,
+    window_slow: int | None = None,
     lag: int | None = None,
     source: str | None = None,
 ) -> None:
@@ -193,6 +315,18 @@ def validate_feature_item(
     elif window is not None:
         raise ValueError(f"Feature kind {kind!r} does not take a window (got {window!r}).")
 
+    if kd.requires_window_slow:
+        if window_slow is None or window_slow <= 0:
+            raise ValueError(f"Feature kind {kind!r} requires a strictly positive window_slow.")
+        if window is not None and window >= window_slow:
+            raise ValueError(
+                f"Feature kind {kind!r} requires window ({window}) < window_slow ({window_slow})."
+            )
+    elif window_slow is not None:
+        raise ValueError(
+            f"Feature kind {kind!r} does not take a window_slow (got {window_slow!r})."
+        )
+
     if kd.requires_lag:
         if lag is None or lag < 1:
             raise ValueError(f"Feature kind {kind!r} requires an integer lag >= 1.")
@@ -206,48 +340,77 @@ def validate_feature_item(
         )
 
 
-def _columns_for(kind: str, *, window: int | None) -> tuple[str, ...]:
+def _columns_for(
+    kind: str, *, window: int | None, window_slow: int | None = None
+) -> tuple[str, ...]:
     if kind == "log_return":
         return ("log_return",) if window in (None, 1) else (f"log_return_{window}",)
-    if kind == "range_norm":
-        return ("range_norm",)
+    if kind == "ma_distance":
+        return (f"ma_distance_{window}_{window_slow}",)
+    if kind in {"range_norm", "true_range", "cum_return", "basis", "xasset_rel_return"}:
+        return (kind,)
     if kind == "hour_cyclical":
         return ("hour_sin", "hour_cos")
     if kind == "dow_cyclical":
         return ("dow_sin", "dow_cos")
-    if kind == "taker_buy_imbalance":
-        return ("taker_buy_imbalance",)
+    if kind in {"taker_buy_imbalance", "taker_buy_ratio", "funding_rate"}:
+        return (kind,)
     return (f"{kind}_{window}",)
 
 
-def _warmup_for(kind: str, *, window: int | None, lag: int | None) -> int:
+def _warmup_for(kind: str, *, window: int | None, window_slow: int | None, lag: int | None) -> int:
     """Number of leading rows that are deterministically null for this feature."""
     if kind == "log_return":
         return int(window or 1)
-    if kind == "momentum":
+    if kind in {"momentum", "rvol", "oi_change", "xasset_rel_momentum", "xasset_corr"}:
+        # rolling/diff quantities over ``window`` (the first return is null for
+        # rvol/corr, so warm-up == window rather than window - 1).
         assert window is not None
         return window
-    if kind == "rvol":
-        # rolling std of the (already 1-lagged) log return needs ``window``
-        # non-null returns; the first return is null, so warm-up == window.
-        assert window is not None
-        return window
-    if kind in {"sma", "price_dist_sma", "zscore", "atr", "rel_volume", "volume_zscore"}:
+    if kind in {
+        "sma",
+        "ema",
+        "price_dist_sma",
+        "zscore",
+        "atr",
+        "rel_volume",
+        "volume_zscore",
+        "roll_std",
+    }:
         assert window is not None
         return window - 1
-    if kind == "taker_buy_imbalance":
+    if kind == "ma_distance":
+        assert window_slow is not None
+        return window_slow - 1
+    if kind in {"taker_buy_imbalance", "taker_buy_ratio"}:
         assert lag is not None
         return lag
-    # range_norm and cyclical time encodings are pointwise (no warm-up).
+    if kind == "xasset_rel_return":
+        return 1
+    # cum_return, true_range, range_norm, basis, funding_rate and cyclical time
+    # encodings are pointwise / expanding (no deterministic warm-up nulls).
     return 0
 
 
-def _lookback_for(kind: str, *, window: int | None, lag: int | None) -> int:
+def _lookback_for(
+    kind: str, *, window: int | None, window_slow: int | None, lag: int | None
+) -> int:
     if kind == "log_return":
         return int(window or 1)
-    if kind == "taker_buy_imbalance":
+    if kind in {"taker_buy_imbalance", "taker_buy_ratio"}:
         return int(lag or 1)
-    if kind in {"range_norm", "hour_cyclical", "dow_cyclical"}:
+    if kind == "ma_distance":
+        return int(window_slow or 1)
+    if kind in {
+        "range_norm",
+        "true_range",
+        "cum_return",
+        "basis",
+        "funding_rate",
+        "xasset_rel_return",
+        "hour_cyclical",
+        "dow_cyclical",
+    }:
         return 1
     assert window is not None
     return window
@@ -274,6 +437,8 @@ class FeatureSpec:
     consumers: tuple[str, ...] = ()
     leakage_risk: str = ""
     output_dtype: str = "Float64"
+    requires_context: bool = False
+    context_kind: str = ""
     impl_version: str = IMPL_VERSION
 
     def to_dict(self) -> dict[str, object]:
@@ -296,6 +461,8 @@ class FeatureSpec:
             "consumers": list(self.consumers),
             "leakage_risk": self.leakage_risk,
             "output_dtype": self.output_dtype,
+            "requires_context": self.requires_context,
+            "context_kind": self.context_kind,
             "impl_version": self.impl_version,
         }
 
@@ -304,17 +471,20 @@ def resolve_spec(
     kind: str,
     *,
     window: int | None = None,
+    window_slow: int | None = None,
     lag: int | None = None,
     source: str | None = None,
 ) -> FeatureSpec:
     """Resolve a requested kind + parameters into a full :class:`FeatureSpec`."""
-    validate_feature_item(kind, window=window, lag=lag, source=source)
+    validate_feature_item(kind, window=window, window_slow=window_slow, lag=lag, source=source)
     kd = KIND_REGISTRY[kind]
 
-    columns = _columns_for(kind, window=window)
+    columns = _columns_for(kind, window=window, window_slow=window_slow)
     params: dict[str, int | str] = {}
     if window is not None:
         params["window"] = window
+    if window_slow is not None:
+        params["window_slow"] = window_slow
     if lag is not None:
         params["lag"] = lag
     if source is not None:
@@ -336,15 +506,17 @@ def resolve_spec(
         asset_dependency=kd.asset_dependency,
         timeframe_dependency=kd.timeframe_dependency,
         params=params,
-        lookback=_lookback_for(kind, window=window, lag=lag),
+        lookback=_lookback_for(kind, window=window, window_slow=window_slow, lag=lag),
         availability=kd.availability,
         shift=shift,
-        warmup=_warmup_for(kind, window=window, lag=lag),
+        warmup=_warmup_for(kind, window=window, window_slow=window_slow, lag=lag),
         null_policy=kd.null_policy,
         inf_policy=kd.inf_policy,
         consumers=kd.consumers,
         leakage_risk=kd.leakage_risk,
         output_dtype=kd.output_dtype,
+        requires_context=kd.requires_context,
+        context_kind=kd.context_kind,
     )
 
 
@@ -354,5 +526,6 @@ class FeatureItemLike(Protocol):
 
     kind: str
     window: int | None
+    window_slow: int | None
     lag: int | None
     source: str | None

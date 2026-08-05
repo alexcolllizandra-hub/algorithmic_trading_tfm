@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -29,18 +30,38 @@ from perp_lab.data.manifest import read_manifest
 from perp_lab.data.providers.base import KLINE_SCHEMA
 from perp_lab.data.splits import resolve_holdout_start
 from perp_lab.eda.datasets import DataLake, assert_no_holdout
+from perp_lab.features.manifest import build_feature_manifest
 from perp_lab.features.registry import (
     build_feature_frame,
     feature_columns,
     resolve_feature_set,
     specs_to_metadata,
 )
+from perp_lab.regimes.models import GMMRegime, KMeansRegime, ThresholdRegime
+from perp_lab.regimes.transforms import StandardScaler
 from perp_lab.strategies.base import SIDE_COL
 from perp_lab.strategies.momentum import MomentumCrossover
 from perp_lab.tracking.run import RunTracker, environment_info, git_state
 from perp_lab.utils.logging import add_file_logging, get_logger
 from perp_lab.utils.seeds import set_global_seed
 from perp_lab.utils.timeutils import timeframe_to_timedelta
+from perp_lab.validation.walk_forward import (
+    WalkForwardFold,
+    assert_folds_exclude_holdout,
+    generate_walk_forward,
+    split_fold,
+)
+
+# Regime-input selection: one causal proxy per economic family, in priority
+# order. The first family (volatility) also drives the interpretable threshold
+# regime's ordering, so a volatility proxy is required to fit regimes.
+_VOLATILITY_PREFIXES = ("rvol_", "roll_std_", "atr_")
+_REGIME_INPUT_PRIORITY: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("volatility", _VOLATILITY_PREFIXES),
+    ("trend", ("momentum_", "ma_distance_", "price_dist_sma_")),
+    ("dispersion", ("zscore_",)),
+    ("activity", ("rel_volume_", "volume_zscore_")),
+)
 
 
 @dataclass(frozen=True)
@@ -117,6 +138,81 @@ def _cutoff_datetime(contract: DataContract) -> datetime:
     return datetime(c.year, c.month, c.day, tzinfo=UTC)
 
 
+def _select_regime_inputs(feature_names: Sequence[str]) -> list[str]:
+    """Pick one causal proxy per regime family (volatility/trend/dispersion/activity).
+
+    The volatility proxy is placed first so it can drive the interpretable
+    threshold regime's ordering; families with no matching feature are skipped.
+    """
+    chosen: list[str] = []
+    for _family, prefixes in _REGIME_INPUT_PRIORITY:
+        match = next((n for n in feature_names if n.startswith(prefixes)), None)
+        if match is not None and match not in chosen:
+            chosen.append(match)
+    return chosen
+
+
+def _fit_fold_regimes(
+    feats: pl.DataFrame,
+    folds: Sequence[WalkForwardFold],
+    feature_names: Sequence[str],
+    *,
+    seed: int,
+    log: logging.Logger,
+) -> dict[str, object]:
+    """Fit transforms + regime models on the FIRST fold's TRAINING slice only.
+
+    Returns a JSON-serialisable snapshot (fitted parameters + economic
+    interpretation) for the run artifact. Nothing here touches validation, test
+    or the frozen holdout: it uses ``split_fold(...)['train']`` of fold 0, the
+    earliest expanding-window training block. Cluster models that cannot fit
+    (too few complete rows) are recorded as skipped rather than fabricated.
+    """
+    if not folds:
+        return {"status": "not_fitted", "reason": "no walk-forward folds generated"}
+    inputs = _select_regime_inputs(feature_names)
+    has_volatility = bool(inputs) and inputs[0].startswith(_VOLATILITY_PREFIXES)
+    if not has_volatility:
+        return {
+            "status": "not_fitted",
+            "reason": "no volatility proxy in the resolved feature set",
+            "candidate_inputs": inputs,
+        }
+
+    fold0 = folds[0]
+    train = split_fold(feats, fold0)["train"]
+    input_tuple = tuple(inputs)
+
+    scaler = StandardScaler(input_tuple).fit(train)
+    threshold = ThresholdRegime(inputs=input_tuple).fit(train)
+    regimes: dict[str, object] = {
+        "threshold": {**threshold.params(), "interpretation": threshold.interpretation(train)},
+    }
+    for name, cls in (("kmeans", KMeansRegime), ("gmm", GMMRegime)):
+        try:
+            model = cls(inputs=input_tuple, seed=seed).fit(train)
+            regimes[name] = {**model.params(), "interpretation": model.interpretation(train)}
+        except ValueError as exc:  # insufficient complete training rows
+            regimes[name] = {"status": "skipped", "reason": str(exc)}
+
+    log.info(
+        "Stage 3b regimes | fitted on fold-0 train (train-only) | inputs=%s | rows=%d",
+        inputs,
+        train.height,
+    )
+    return {
+        "status": "fitted",
+        "fitted_on": "walk_forward_fold_0_train",
+        "fold_index": fold0.index,
+        "train_start": fold0.train_start.isoformat(),
+        "train_end": fold0.train_end.isoformat(),
+        "n_train_rows": train.height,
+        "regime_inputs": inputs,
+        "scaler": scaler.params(),
+        "regimes": regimes,
+    }
+
+
 def run_dev_pipeline(
     *,
     contract: DataContract,
@@ -156,12 +252,16 @@ def run_dev_pipeline(
         holdout_start=holdout_start, cutoff=_cutoff_datetime(contract)
     )
     set_global_seed(experiment.random_seed)
+    folds = generate_walk_forward(experiment)
+    assert_folds_exclude_holdout(folds, holdout_start)
     log.info(
-        "Stage 1/6 config | seed=%d | development ends %s | purge=%d embargo=%d bars",
+        "Stage 1/6 config | seed=%d | development ends %s | purge=%d embargo=%d bars | "
+        "walk-forward folds=%d (holdout excluded)",
         experiment.random_seed,
         experiment.periods.development_end_exclusive.date(),
         experiment.purge_bars,
         experiment.embargo_bars,
+        len(folds),
     )
 
     # -- Stage 2: data loading + manifest verification + holdout guard ------ #
@@ -210,6 +310,9 @@ def run_dev_pipeline(
     specs = resolve_feature_set(experiment.features.feature_set, ensure_sma=(fast, slow))
     feats, resolved = build_feature_frame(frame, specs, holdout_start=holdout_start)
     feat_meta = specs_to_metadata(resolved)
+    feature_manifest = build_feature_manifest(
+        resolved, symbol=symbol, timeframe=timeframe, dataset_id=dataset_id
+    )
     feature_names = feature_columns(resolved)
     null_counts = {name: int(feats[name].null_count()) for name in feature_names}
     inf_counts = {
@@ -276,11 +379,18 @@ def run_dev_pipeline(
     # -- Stage 6: artifacts (run contract) ---------------------------------- #
     artifact_paths: list[str] = []
     if tracker is not None:
+        fitted_objects = _fit_fold_regimes(
+            feats, folds, feature_names, seed=experiment.random_seed, log=log
+        )
         artifact_paths = _write_run_contract(
             tracker,
             experiment=experiment,
             result=result,
             feat_meta=feat_meta,
+            feature_manifest=feature_manifest,
+            walk_forward_folds=[f.to_dict() for f in folds],
+            fitted_objects=fitted_objects,
+            strategy_params=strategy.params(),
             null_counts=null_counts,
             dataset_manifests=dataset_manifests,
             symbol=symbol,
@@ -324,6 +434,10 @@ def _write_run_contract(
     experiment: ExperimentConfig,
     result: BacktestResult,
     feat_meta: list[dict[str, object]],
+    feature_manifest: dict[str, object],
+    walk_forward_folds: list[dict[str, object]],
+    fitted_objects: dict[str, object],
+    strategy_params: dict[str, object],
     null_counts: dict[str, int],
     dataset_manifests: dict[str, object],
     symbol: str,
@@ -338,8 +452,13 @@ def _write_run_contract(
     """Write the stable ``artifacts/runs/<run_id>/`` contract and a figure."""
     gs = git_state(repo_root)
     ledger = result.ledger
-    trades = ledger.filter(pl.col("net_return") != 0.0).select(
-        "open_time", "position", "net_return", "cost"
+    trade_records = result.trades()
+    trades = (
+        trade_records
+        if trade_records.height > 0
+        else ledger.filter(pl.col("net_return") != 0.0).select(
+            "open_time", "position", "net_return", "cost"
+        )
     )
 
     metrics_payload = {
@@ -348,6 +467,7 @@ def _write_run_contract(
         "timeframe": timeframe,
         "synthetic": synthetic,
         "strategy": strategy_name,
+        "strategy_params": strategy_params,
         "seed": experiment.random_seed,
         "git_commit": gs["commit"],
         "git_dirty": gs["dirty"],
@@ -355,6 +475,8 @@ def _write_run_contract(
         "execution": experiment.strategies.execution,
         "cost_bps_per_side": result.cost_bps_per_side,
         "costs_provisional": experiment.costs.provisional,
+        "funding_applied": result.funding_applied,
+        "n_walk_forward_folds": len(walk_forward_folds),
         "metrics": result.metrics,
         "elapsed_seconds": round(elapsed_s, 3),
     }
@@ -365,6 +487,18 @@ def _write_run_contract(
         tracker.write_json("environment.json", environment_info()),
         tracker.write_json("git_state.json", gs),
         tracker.write_json("feature_metadata.json", {"features": feat_meta, "nulls": null_counts}),
+        tracker.write_json("feature_manifest.json", feature_manifest),
+        tracker.write_json(
+            "walk_forward.json",
+            {
+                "scheme": experiment.walk_forward.scheme,
+                "purge_bars": experiment.purge_bars,
+                "embargo_bars": experiment.embargo_bars,
+                "n_folds": len(walk_forward_folds),
+                "folds": walk_forward_folds,
+            },
+        ),
+        tracker.write_json("fitted_objects.json", fitted_objects),
         tracker.write_json("metrics.json", metrics_payload),
         tracker.write_parquet("equity.parquet", ledger),
         tracker.write_parquet("trades.parquet", trades),

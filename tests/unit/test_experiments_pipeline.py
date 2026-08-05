@@ -79,6 +79,9 @@ def test_dev_pipeline_writes_run_contract(tmp_path: Path) -> None:
         "git_state.json",
         "metrics.json",
         "feature_metadata.json",
+        "feature_manifest.json",
+        "walk_forward.json",
+        "fitted_objects.json",
         "trades.parquet",
         "equity.parquet",
     ):
@@ -91,3 +94,19 @@ def test_dev_pipeline_writes_run_contract(tmp_path: Path) -> None:
     assert metrics["seed"] == experiment.random_seed
     assert "git_commit" in metrics
     assert metrics["execution"] == "next_bar_open"
+
+    # Fitted transformation + regime objects are produced by a real run and are
+    # fitted only on the first walk-forward fold's TRAINING slice.
+    fitted = json.loads((run_dir / "fitted_objects.json").read_text(encoding="utf-8"))
+    assert fitted["status"] == "fitted"
+    assert fitted["fitted_on"] == "walk_forward_fold_0_train"
+    assert fitted["regime_inputs"], "expected at least one regime input"
+    assert "scaler" in fitted and fitted["scaler"]["fitted"] is True
+    assert "threshold" in fitted["regimes"]
+    assert fitted["regimes"]["threshold"]["fitted"] is True
+
+    # The equity ledger persists raw signals and executed positions per bar.
+    import polars as pl
+
+    ledger = pl.read_parquet(run_dir / "equity.parquet")
+    assert {"raw_signal", "target_position", "position"}.issubset(ledger.columns)

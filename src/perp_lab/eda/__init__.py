@@ -4,6 +4,15 @@ All logic lives here (not in notebooks) so it is testable and reusable by the
 API and later phases. Notebooks narrate results by calling these functions.
 """
 
+from perp_lab.eda.bootstrap import (
+    bootstrap_ci,
+    bootstrap_diff_ci,
+    mean_stat,
+    median_stat,
+    moving_block_bootstrap,
+    sharpe_stat,
+    vol_stat,
+)
 from perp_lab.eda.calendar import monthly_returns, monthly_volatility, to_year_month_matrix
 from perp_lab.eda.correlation import (
     block_bootstrap_corr_ci,
@@ -41,6 +50,12 @@ from perp_lab.eda.funding import (
 from perp_lab.eda.leadlag import cross_correlation, peak_lag, tail_coexceedance
 from perp_lab.eda.liquidity import add_liquidity_proxies, liquidity_summary, zero_return_fraction
 from perp_lab.eda.orderflow import add_order_flow_imbalance, order_flow_summary
+from perp_lab.eda.regime_tests import (
+    dunn_posthoc,
+    kruskal_regime,
+    regime_comparison,
+    regime_medians_ci,
+)
 from perp_lab.eda.regimes import (
     regime_context,
     regime_duration_summary,
@@ -74,6 +89,12 @@ from perp_lab.eda.stationarity import (
     ljung_box,
     stationarity_report,
 )
+from perp_lab.eda.stress_dependence import (
+    coexceedance_summary,
+    conditional_exceedance,
+    normal_vs_stress_correlation,
+    rolling_tail_dependence,
+)
 from perp_lab.eda.tailrisk import historical_var_es, tail_asymmetry, tail_risk_table
 from perp_lab.eda.volatility import (
     annualized_volatility,
@@ -101,12 +122,17 @@ __all__ = [
     "autocorrelation",
     "basis_summary",
     "block_bootstrap_corr_ci",
+    "bootstrap_ci",
+    "bootstrap_diff_ci",
     "coexceedance_rate",
+    "coexceedance_summary",
+    "conditional_exceedance",
     "correlation_by_sign",
     "correlation_by_vol_regime",
     "cross_correlation",
     "dataset_quality_row",
     "drawdown_episodes",
+    "dunn_posthoc",
     "funding_autocorr",
     "funding_dynamics",
     "funding_future_return_relation",
@@ -115,6 +141,7 @@ __all__ = [
     "garman_klass_volatility",
     "historical_var_es",
     "kpss_test",
+    "kruskal_regime",
     "liquidity_summary",
     "ljung_box",
     "ljung_box_pvalue",
@@ -123,30 +150,38 @@ __all__ = [
     "market_events_frame",
     "market_stress_index",
     "max_drawdown",
+    "mean_stat",
+    "median_stat",
     "monthly_coverage",
     "monthly_returns",
     "monthly_volatility",
+    "moving_block_bootstrap",
+    "normal_vs_stress_correlation",
     "order_flow_summary",
     "parkinson_volatility",
     "peak_lag",
     "rank_extreme_events",
     "realized_volatility",
+    "regime_comparison",
     "regime_context",
     "regime_duration_summary",
     "regime_duration_table",
     "regime_frequencies",
     "regime_intervals",
+    "regime_medians_ci",
     "regime_runs",
     "regime_transition_matrix",
     "regime_transition_matrix_full",
     "return_stats",
     "rolling_correlation",
     "rolling_moments",
+    "rolling_tail_dependence",
     "rolling_volatility",
     "seasonality_by_hour",
     "seasonality_by_weekday",
     "seasonality_kruskal",
     "seasonality_stats",
+    "sharpe_stat",
     "spearman_correlation",
     "static_correlation",
     "stationarity_report",
@@ -159,5 +194,6 @@ __all__ = [
     "top_drawdowns",
     "underwater_fraction",
     "utc",
+    "vol_stat",
     "zero_return_fraction",
 ]

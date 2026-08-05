@@ -47,12 +47,15 @@ def test_every_kind_resolves_and_serialises() -> None:
         "consumers",
         "leakage_risk",
         "output_dtype",
+        "requires_context",
+        "context_kind",
         "impl_version",
     }
     for kind, kd in KIND_REGISTRY.items():
         window = 12 if kd.requires_window else None
+        window_slow = 96 if kd.requires_window_slow else None
         lag = 1 if kd.requires_lag else None
-        spec = resolve_spec(kind, window=window, lag=lag)
+        spec = resolve_spec(kind, window=window, window_slow=window_slow, lag=lag)
         payload = spec.to_dict()
         assert required_keys.issubset(payload.keys())
         json.dumps(payload)  # must be JSON-serialisable
@@ -70,6 +73,9 @@ def test_known_kinds_cover_all_families() -> None:
         "volume",
         "time",
         "order_flow",
+        "mean_reversion",
+        "derivatives",
+        "cross_asset",
     } <= (families)
 
 

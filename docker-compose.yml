@@ -1,0 +1,55 @@
+# Local orchestration for the perp-lab research platform.
+#
+# Services actually implemented in this phase:
+#   - api : FastAPI read-only quantitative API (port 8000)
+#   - web : Next.js research platform            (port 3000)
+#
+# Reserved / documented but intentionally NOT deployed here (see docs and the
+# System Status page): MLflow 5000, PostgreSQL 5432, Redis 6379, Grafana 3001,
+# Prometheus 9090. The run-artifact directory remains the single source of truth.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: perp-lab-api:latest
+    container_name: perp-lab-api
+    # Host port is overridable (API_PORT) to avoid clashes with other local
+    # stacks; the canonical port for this platform is 8000.
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      PERP_LAB_ARTIFACT_ROOT: /app/artifacts
+      PERP_LAB_RUNS_DIR: /app/artifacts/runs
+      PERP_LAB_MANIFESTS_DIR: /app/data/manifests
+      PERP_LAB_DATA_CONTRACT: /app/configs/data_contract.yaml
+      PERP_LAB_EDA_FIGURES_DIR: /app/reports/figures/eda
+      PERP_LAB_EDA_METADATA_DIR: /app/reports/metadata/eda
+      PERP_LAB_CORS_ORIGINS: ${PERP_LAB_CORS_ORIGINS:-http://localhost:3000}
+      PERP_LAB_ENV: docker
+    volumes:
+      # Read-only: the API never writes and never sees the frozen holdout logic
+      # beyond what the code already guards.
+      - ./artifacts:/app/artifacts:ro
+      - ./data:/app/data:ro
+      - ./configs:/app/configs:ro
+      - ./reports:/app/reports:ro
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000/api/v1}
+    image: perp-lab-web:latest
+    container_name: perp-lab-web
+    # Host port is overridable (WEB_PORT) to avoid clashes with other local
+    # stacks; the canonical port for this platform is 3000.
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

@@ -419,3 +419,233 @@ Implement the interpretable **baseline strategy family set** on the shared
 parameter space (breakout + mean-reversion alongside momentum), reusing the
 config-driven feature engine, then wire the **expanding walk-forward** harness
 with purge/embargo — before any Random Search / GA.
+
+---
+
+## Chapter 5 — Experimental foundation (this stage)
+
+_Last updated: 2026-08-04. See ADR 0008. Status legend: **[impl]** implemented,
+**[test]** tested, **[cfg]** configured, **[plan]** planned._
+
+### Extended causal features [impl][test]
+- `features/causal.py`: added `ema`, `cum_return`, `roll_std`, `ma_distance`
+  (fast/slow), `true_range`, lagged `taker_buy_ratio` — all trailing-only,
+  guarded denominators (no infinities).
+- `features/context.py` (new): `FeatureContext` + context-dependent builders
+  `xasset_rel_return`, `xasset_rel_momentum`, `xasset_corr` (backward-aligned
+  BTC–ETH), `funding_rate` (backward as-of), `basis` (mark−index) and
+  `oi_change` (log Δ open interest). Missing input frame → feature reported
+  **unavailable** (not fabricated).
+- `features/spec.py`: `KIND_REGISTRY` extended with the new single-asset and
+  context kinds; `KindDef` gains `requires_window_slow` / `requires_context` /
+  `context_kind`; `IMPL_VERSION` = `0.3.0`. Config `FeatureItem` supports
+  `window_slow` (validated `window < window_slow`).
+- `features/manifest.py` (new): machine-readable JSON manifest (name, family,
+  inputs, formula, params/lookback, warm-up, availability, missing-data rule),
+  `MANIFEST_SCHEMA_VERSION` = `1.0`.
+- `features/predictors.py` (new): `build_predictor_rows` with four separated
+  timestamp roles — feature / signal / execution / (future) label time; label
+  left null this phase.
+
+### Fold-fit transforms + market regimes [impl][test]
+- `regimes/transforms.py` (new): `StandardScaler`, `QuantileClipper` — `fit` on
+  train only, `transform` unchanged on val/test; constant columns handled (no
+  infinities).
+- `regimes/models.py` (new): `ThresholdRegime` (interpretable vol-quantile
+  baseline), `KMeansRegime`, `GMMRegime` — fitted on train only, canonically
+  ordered low→high volatility, missing inputs → `UNKNOWN_LABEL`. Reproducible
+  under fixed seeds.
+- `scikit-learn>=1.5` added as a runtime dependency (K-means / GMM).
+
+### Common strategy interface + family [impl][test]
+- `strategies/base.py`: `Strategy` protocol now requires `params()` +
+  `required_features()`; new O(n) `evolve_positions` state machine (entries,
+  exits, direct reversals).
+- `strategies/filters.py` (new): shared causal `regime_gate` / `trend_gate`.
+- `strategies/momentum.py`: `MomentumCrossover` adapted (optional trend + regime
+  gates), behaviour otherwise unchanged (fast < slow enforced).
+- `strategies/breakout.py` (new): `Breakout` — channels from **previous** bars
+  only (`shift(1)`), configurable channel window + confirmation bars.
+- `strategies/mean_reversion.py` (new): `MeanReversion` — price z-score entry/
+  exit, `exit_z < entry_z` enforced.
+- All families read window/threshold options from `configs/experiment.yaml`
+  (`strategies.families.*`); no duplicated constants.
+
+### Funding-aware backtester [impl][test][prov costs]
+- `backtesting/engine.py`: next-bar execution retained; rich per-bar ledger now
+  records raw signal, target/executed position, execution price, gross return,
+  separate fee + slippage, funding, net return, equity, drawdown, `trade_id`,
+  `exit_reason`. Turnover = `|Δposition|` (reversal = 2 units). Funding aligned
+  by backward search on its own timestamps and signed by the active position.
+  `funding_applied` flag recorded; `require_funding=True` raises rather than
+  substituting zero. `BacktestResult.trades()` extracts trade records.
+
+### Expanding walk-forward [impl][test]
+- `validation/walk_forward.py` (new): anchored/expanding folds; purge/embargo
+  **derived from config** (`purge_bars = max(label_horizon, max_holding)`;
+  `embargo_bars = purge_bars + ceil(fraction_of_test·test_bars)`), converted to
+  durations by the primary-timeframe step. `split_fold` yields disjoint
+  train/val/test; `assert_folds_exclude_holdout` guards the frozen holdout.
+  `generate_walk_forward(..., strict=True)` enforces `min_folds`.
+
+### Pipeline + artifacts [impl]
+- `experiments/pipeline.py`: generates walk-forward folds (asserting holdout
+  exclusion) and a feature manifest, and writes both — plus resolved strategy
+  parameters — into the run contract alongside the existing artifacts.
+
+### Tests added [test]
+- Unit: `test_features_extended.py`, `test_features_context.py`,
+  `test_regimes.py`, `test_strategies_extended.py`,
+  `test_backtesting_extended.py`, `test_walk_forward.py`.
+- Integration: `test_experimental_foundation.py` (validated bars → features +
+  manifest → regimes → multi-strategy signals → funding-aware backtest →
+  predictor rows), asserting no infinities and timestamp-role separation.
+
+### Verification (this stage) — exact results
+- `uv run ruff check .` → All checks passed!
+- `uv run ruff format --check .` → 170 files already formatted.
+- `uv run pyright` → 0 errors, 0 warnings, 0 informations.
+- `uv run pytest -m "not network"` → 278 passed, 1 deselected (pre-existing
+  pandera/`spearmanr` warnings only; none from this stage).
+
+### Still provisional / deferred (not assumed)
+- Transaction costs remain provisional (ADR 0005). Funding is supported and
+  tested but only applied when a funding frame is supplied; real
+  development-data funding wiring is deferred. Cross-asset/derivatives features
+  are validated on fixtures — production aux-data alignment on the real lake is
+  not yet exercised end to end.
+- **[plan]** Random Search, Genetic Algorithm, triple-barrier labeling,
+  meta-labeling models, robustness battery, dashboard and paper trading. The
+  frozen holdout is never accessed during development.
+
+### Recommended next task (updated)
+Implement **Random Search** over the shared strategy parameter space, evaluated
+through the expanding walk-forward folds and the funding-aware backtester, with
+per-candidate run artifacts — the fair-budget baseline the Genetic Algorithm
+will later be compared against.
+
+---
+
+## Chapter 5 — Strategy search: Random Search vs Genetic Algorithm (this stage)
+
+_Last updated: 2026-08-04. See ADR 0009 and
+`docs/methodology/strategy_search.md`. Status legend: **[impl]** implemented,
+**[test]** tested, **[smoke]** end-to-end on synthetic data, **[cfg]** configured,
+**[future]** not implemented._
+
+### Typed parameter spaces + registry [impl][test]
+- `search/space.py`: `IntParam` / `FloatParam` (optional log) / `CategoricalParam`
+  / `BoolParam`, conditional parameters, `SearchSpace` (deterministic sampling,
+  per-parameter + family repair, validation, canonical serialization, stable
+  `candidate_hash`, duplicate detection), plus `param_distance` /
+  `population_diversity`.
+- `search/registry.py`: one `SearchSpace` per family (`momentum`, `breakout`,
+  `mean_reversion`) built **from validated `ExperimentConfig`** — no duplicated
+  constants. Repairs enforce `fast < slow` and `exit_z < entry_z`. Adding a
+  family = one builder; neither search algorithm changes.
+
+### Candidate + leakage-safe evaluator [impl][test]
+- `search/candidate.py`: reproducible `Candidate` (id/family/params/active/seed/
+  step/parents/status/failure/components/fitness/fold-metrics/duration).
+- `search/evaluator.py`: features built **once**; `build_folds_data` pre-splits
+  folds and fits the regime model on **train only** (attached causally to
+  val/test); `CandidateEvaluator` scores candidates on **validation** for
+  selection and **once** on **test** for the fold winner. Reuses the existing
+  funding-aware backtester (no second backtester); per-run cache only.
+
+### Objective + constraints [impl][test]
+- `search/objective.py`: Sharpe reward minus drawdown / turnover / fold-
+  instability / complexity penalties (config weights, every component stored).
+  Hard constraints (finite metrics, min trades total/per-fold, max drawdown,
+  required funding) ⇒ explicit failure with deterministic `FAILURE_PENALTY`.
+
+### Random Search + Genetic Algorithm [impl][test]
+- `search/random_search.py`: deterministic sample→repair→validate→dedupe→evaluate
+  to a unique-evaluation budget; exact counters + monotone convergence.
+- `search/genetic_algorithm.py`: tournament selection, uniform crossover, typed
+  mutation, family repair, elitism, duplicate handling, budget-capped early
+  termination, per-generation diversity and full parent→offspring lineage.
+- **Fair budget**: the budget caps **unique objective evaluations**; invalid /
+  duplicate / cached proposals do not consume it; a backtested-but-infeasible
+  candidate does. Identical for both algorithms, so the GA never buys extra
+  evaluations. Verdict uses aggregated walk-forward **test** metrics of fold
+  winners (never in-sample/validation).
+
+### Comparison runner + config + CLI [impl][test][smoke]
+- `search/runner.py`: matched RS/GA comparison; per-fold validation winners
+  scored once on test; artifact directory (candidate + failed ledgers, fold
+  winners, convergence, GA lineage/diversity, fold-winner test equity/trades,
+  `comparison_summary.json`, `comparison_report.md`, `warnings.json`, logs).
+- `search/config.py`: strict `SearchRunConfig` (algorithm/family/data/geometry/
+  objective overrides) reusing experiment budget parity, costs, walk-forward and
+  fitness. `configs/search_smoke.yaml` (synthetic, clearly labelled) and
+  `configs/search.yaml` (research).
+- CLI: `perp-lab search` (+ `--algorithm` / `--family` overrides) and
+  `perp-lab search-summary <run_dir>`.
+
+### Tests added [test]
+- Unit: `test_search_space.py`, `test_search_objective.py`,
+  `test_search_random.py`, `test_search_ga.py`, `test_search_temporal_safety.py`
+  (+ `tests/unit/search_helpers.py`).
+- Integration: `test_search_pipeline.py` — synthetic bars → features → regimes →
+  strategy → walk-forward search → backtester → ranking → fold winner → test →
+  artifacts; RS/GA fair-budget; reproducible repeated run; CLI smoke.
+
+### Smoke run (synthetic — NOT a research result) [smoke]
+`uv run perp-lab search --config configs/search_smoke.yaml` — 3 folds, budget 18,
+family `mean_reversion`, synthetic funding fixture (labelled). RS evaluated 18 /
+GA evaluated ≤ 18 unique candidates; 30 artifacts written and reloaded; explicit
+exploratory warning emitted.
+
+### Still provisional / deferred (not assumed)
+- Real development-data search is **[cfg]** (verified offline on synthetic data;
+  needs a populated local lake). No partial-resume of interrupted runs yet.
+- **[future]** Triple-barrier labeling, meta-labeling, robustness battery,
+  distributed execution, Docker, dashboard and paper trading. The frozen holdout
+  is never accessed during development.
+
+### Recommended next task (updated)
+With RS and the GA compared fairly on the shared substrate, the next phase is
+**triple-barrier labeling** and **meta-labeling** on the primary signals
+(predictor rows already separate feature/signal/execution/label timestamps),
+followed by the robustness battery — before the single frozen-holdout evaluation.
+
+## Real development-data pilot + Research Dashboard v0 (this stage)
+
+### Real development-data pilot [smoke][real-data]
+- Local lake validated: BTCUSDT & ETHUSDT `1h` **development** partition =
+  52,608 bars each, `2020-01-01 00:00` → `2025-12-31 23:00` UTC, no OHLC nulls;
+  funding = 6,576 rows each, no nulls. All strictly before the frozen holdout
+  (`2026-01-01`); the holdout is never read.
+- `configs/search_pilot.yaml`: real experiment geometry (730/90/90 days) capped
+  to **3 folds** via the new `max_folds` field, momentum family, budget **12**
+  (GA pop 4 × 3 gen), seed 42, `require_funding: true` (real funding applied —
+  never a silent zero), threshold regimes.
+- Command: `uv run perp-lab search --config configs/search_pilot.yaml`. Runtime
+  ≈ 11 s. RS evaluated 12/12; GA evaluated 10 unique (≤ budget). Artifacts
+  written (32 files) and reloaded/validated. **Exploratory** development metrics,
+  not final holdout performance.
+
+### Research Dashboard v0 [impl][test][smoke]
+- New Streamlit-free `dashboard/loader.py` (artifact loading + transforms) and
+  `dashboard/app.py` (UI, imports only `loader`, never the search engine).
+- Screens: run browser + filters (kind/family/run/algorithm); Overview
+  (RS vs GA comparison, fair-budget verification, report); Configuration;
+  Data & Features (dataset/feature manifests, folds); Convergence & Diversity;
+  Candidates (ranking, parameter inspection, failed ledger); Folds & Test
+  (fold winners, val/test metrics, equity/drawdown, trades). Prominent
+  exploratory warning on all non-holdout runs; runs tagged synthetic-smoke /
+  development / final-holdout.
+- CLI: `perp-lab dashboard` (port 8501; `--port` / `--runs-dir` / `--headless`).
+- Streamlit is an **optional** dependency (`dashboard` extra; also in `dev`).
+- Tests: `tests/unit/test_dashboard_loader.py` (artifact loading, kind
+  classification, comparison table, fair-budget check incl. violation,
+  convergence/diversity, fold winners, folds, candidate ranking, equity/trades,
+  manifests, missing-artifact tolerance).
+- Docs: `docs/research_dashboard.md` (screens, launch, future service
+  architecture + proposed ports — documented only, not implemented).
+
+### Still out of scope (unchanged)
+- **[future]** FastAPI/PostgreSQL/MinIO/Grafana/Prometheus, distributed workers,
+  paper trading, triple-barrier labeling, meta-labeling, robustness battery and
+  the single frozen-holdout evaluation.

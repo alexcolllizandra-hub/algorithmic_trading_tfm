@@ -1,0 +1,38 @@
+# =====================================================================
+# DEVELOPMENT-DATA PILOT search configuration.
+# Runs a deliberately SMALL matched Random Search vs Genetic Algorithm
+# comparison on the REAL validated development partition (never the
+# frozen holdout). Uses the real experiment walk-forward geometry
+# (730/90/90 days) but capped to a few folds and a tiny budget so it is
+# a fast pilot.
+#
+# EXPLORATORY: results are development walk-forward metrics, NOT final
+# holdout performance.
+# =====================================================================
+
+experiment_config: configs/experiment.yaml
+data_contract: configs/data_contract.yaml
+
+family: momentum
+algorithm: comparison
+symbol: BTCUSDT
+timeframe: "1h"
+seed: 42
+regime_model: threshold
+
+# Real funding is available in the local lake; require it (never a silent zero).
+require_funding: true
+synthetic: false
+label: development_pilot_EXPLORATORY_not_holdout
+
+# Real config geometry, capped to 3 folds for a bounded pilot.
+max_folds: 3
+
+# Small budget: population_size * generations = 12 unique evaluations.
+ga:
+  population_size: 4
+  generations: 3
+  crossover_rate: 0.7
+  mutation_rate: 0.3
+  elitism: 1
+  tournament_size: 3
