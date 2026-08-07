@@ -41,9 +41,12 @@ label: development_full_walkforward_ETHUSDT_EXPLORATORY_not_holdout
 
 # Unique evaluations = population + (generations - 1) * (population - elitism)
 # = 30 + 10 * 27 = 300, spent identically by Random Search and the GA.
+# Unique, valid, non-cached objective evaluations EVERY engine must spend.
+effective_budget: 300
+
 ga:
   population_size: 30
-  generations: 11
+  max_generations: 40
   crossover_rate: 0.7
   mutation_rate: 0.2
   elitism: 3

@@ -46,30 +46,40 @@ def test_holdout_before_cutoff_enforced() -> None:
         ExperimentConfig.model_validate({"periods": bad})
 
 
-def test_search_budget_parity_enforced() -> None:
-    with pytest.raises(ValidationError, match="budget parity"):
-        _config(search={"evaluation_budget": 999})
-
-
-def test_search_budget_parity_ok_when_matched() -> None:
-    # Elitism (default 5) means only generation 0 evaluates a full population:
-    # 20 + 12 * (20 - 5) = 200 unique evaluations.
+def test_search_budget_is_accepted_when_the_ga_can_reach_it() -> None:
+    """The budget is a target both engines must hit, not a derived quantity."""
     cfg = _config(
         search={
             "evaluation_budget": 200,
-            "genetic_algorithm": {"population_size": 20, "generations": 13},
+            "genetic_algorithm": {"population_size": 20, "max_generations": 13},
         }
     )
     assert cfg.search.evaluation_budget == 200
 
 
-def test_search_budget_parity_rejects_naive_population_times_generations() -> None:
-    """population * generations overstates the GA's evaluations when elitism > 0."""
-    with pytest.raises(ValidationError, match="budget parity"):
+def test_search_budget_is_rejected_when_the_generation_cap_cannot_reach_it() -> None:
+    """Elitism (default 5) means later generations add at most 15 new genotypes.
+
+    20 + (10 - 1) * (20 - 5) = 155 < 200, so the GA would stop short and the two
+    engines would never be compared at equal budget. That must fail at config time.
+    """
+    with pytest.raises(ValidationError, match="unreachable"):
         _config(
             search={
                 "evaluation_budget": 200,
-                "genetic_algorithm": {"population_size": 20, "generations": 10},
+                "genetic_algorithm": {"population_size": 20, "max_generations": 10},
+            }
+        )
+
+
+def test_search_budget_bound_accounts_for_elitism_not_population_times_generations() -> None:
+    """population * generations overstates the reachable count whenever elitism > 0."""
+    naive = 20 * 11
+    with pytest.raises(ValidationError, match="unreachable"):
+        _config(
+            search={
+                "evaluation_budget": naive,
+                "genetic_algorithm": {"population_size": 20, "max_generations": 11},
             }
         )
 

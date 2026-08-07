@@ -307,6 +307,7 @@ def cmd_multi_seed(args: argparse.Namespace) -> int:
 
 def cmd_study_robustness(args: argparse.Namespace) -> int:
     """Baselines, temporal bootstrap and cost stress for every unit of a study."""
+    from perp_lab.config import load_experiment_config
     from perp_lab.evaluation.study_robustness import analyse_study_robustness
     from perp_lab.tracking.journal import Checkpoint, atomic_write_json
 
@@ -317,8 +318,17 @@ def cmd_study_robustness(args: argparse.Namespace) -> int:
         _log.error("No completed units under %s", study_dir)
         return 1
 
+    # Baselines are priced at the CONTRACT cost rate, never at whatever rate a
+    # particular strategy happened to realise, so they stay a fixed reference.
+    exp = load_experiment_config(args.experiment_config)
     _log.info("Analysing %d units (this re-prices every OOS ledger)", len(units))
-    payload = analyse_study_robustness(units, timeframe=args.timeframe, resamples=args.resamples)
+    payload = analyse_study_robustness(
+        units,
+        timeframe=args.timeframe,
+        fee_bps_per_side=exp.costs.fee_bps_per_side,
+        slippage_bps_per_side=exp.costs.slippage.baseline_bps,
+        resamples=args.resamples,
+    )
     atomic_write_json(study_dir / "study_robustness.json", payload)
 
     print(f"\nRobustness across seeds ({len(payload['per_run'])} run/engine combinations)")
@@ -508,12 +518,21 @@ def cmd_robustness(args: argparse.Namespace) -> int:
         times[-1],
     )
 
+    from perp_lab.config import load_experiment_config
     from perp_lab.evaluation.baselines import strategy_versus_baselines
     from perp_lab.evaluation.robustness import block_bootstrap_ci
 
+    # Baselines are priced at the contract rate so they stay a fixed reference,
+    # identical for every strategy compared over the same bars.
+    exp = load_experiment_config(args.experiment_config)
     battery = RobustnessBattery(ledger=ledger, timeframe=args.timeframe)
     reports = battery.run()
-    comparison = strategy_versus_baselines(ledger, timeframe=args.timeframe)
+    comparison = strategy_versus_baselines(
+        ledger,
+        timeframe=args.timeframe,
+        fee_bps_per_side=exp.costs.fee_bps_per_side,
+        slippage_bps_per_side=exp.costs.slippage.baseline_bps,
+    )
 
     net = ledger["net_return"].cast(pl.Float64).to_numpy()
     bootstrap = {
@@ -706,6 +725,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_sr.add_argument("study_dir", type=Path)
     p_sr.add_argument("--timeframe", default="1h")
+    p_sr.add_argument("--experiment-config", default="configs/experiment.yaml", type=Path)
     p_sr.add_argument("--resamples", default=500, type=int)
     p_sr.set_defaults(func=cmd_study_robustness)
 
@@ -745,6 +765,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run the cost/slippage/execution-delay battery over a run's OOS ledgers.",
     )
     p_rob.add_argument("run_dir", type=Path, help="artifacts/runs/<run_id> directory.")
+    p_rob.add_argument("--experiment-config", default="configs/experiment.yaml", type=Path)
     p_rob.add_argument(
         "--method",
         choices=["random_search", "genetic_algorithm"],

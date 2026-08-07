@@ -35,7 +35,8 @@ def _smoke_cfg(**over: object) -> SearchRunConfig:
         "synthetic": True,
         "synthetic_bars": 1000,
         "label": "test_smoke",
-        "ga": GASettings(population_size=5, generations=2, elitism=1, tournament_size=3),
+        "effective_budget": 9,
+        "ga": GASettings(population_size=5, max_generations=20, elitism=1, tournament_size=3),
         "walk_forward_override": WalkForwardOverride(
             initial_train_days=25, validation_days=7, test_days=7, step_days=7, max_folds=2
         ),
@@ -53,9 +54,9 @@ def test_run_search_comparison_end_to_end(tmp_path) -> None:
     res = run_search(cfg, paths=paths, write_artifacts=True)
 
     assert set(res.outcomes) == {"random_search", "genetic_algorithm"}
-    # Fair budget: both capped at the same number of unique evaluations.
+    # Fair budget: both must land exactly on the configured target.
     for outcome in res.outcomes.values():
-        assert outcome.counters.evaluated <= cfg.budget
+        assert outcome.counters.evaluated == cfg.budget
     # Artifacts exist and reload.
     assert res.run_dir is not None
     summary = json.loads((res.run_dir / "comparison_summary.json").read_text())
@@ -69,20 +70,45 @@ def test_run_search_comparison_end_to_end(tmp_path) -> None:
     assert isinstance(fw, list) and len(fw) == summary["n_folds"]
 
 
-def test_both_methods_spend_exactly_the_same_evaluation_budget(tmp_path) -> None:
-    """RS must not silently receive more evaluations than the GA can perform.
+def test_both_methods_spend_exactly_the_configured_budget(tmp_path) -> None:
+    """Each engine must land on the configured target, not on the other's spend.
 
-    The GA's reachable count is population + (generations-1)*(population-elitism);
-    the shared budget is defined as that number, so both must land on it exactly.
+    Capping Random Search at whatever the GA happened to consume would make the
+    shared budget an accident of the GA's convergence, and it would then drift
+    from seed to seed across a multi-seed study.
     """
     cfg = _smoke_cfg()
     res = run_search(cfg, write_artifacts=False)
     evaluated = {name: o.counters.evaluated for name, o in res.outcomes.items()}
-    assert evaluated["random_search"] == evaluated["genetic_algorithm"]
-    assert evaluated["random_search"] <= cfg.budget
+    assert evaluated["random_search"] == evaluated["genetic_algorithm"] == cfg.budget
+
     parity = res.summary["budget_parity"]
+    assert parity["effective_budget"] == cfg.budget
     assert parity["equal_effective_budget"] is True
-    assert parity["evaluated_per_method"] == evaluated
+    assert parity["all_engines_reached_target"] is True
+    assert parity["consumed_per_engine"] == evaluated
+
+
+def test_budget_accounting_is_persisted_for_every_engine(tmp_path) -> None:
+    """Duplicates, invalids and cache hits must be visible, not just the total."""
+    res = run_search(_smoke_cfg(), write_artifacts=False)
+    for engine, payload in res.summary["budget_parity"]["per_engine"].items():
+        for key in ("target", "consumed", "proposed", "invalid", "duplicate", "cached"):
+            assert key in payload, f"{engine} is missing {key}"
+        assert payload["termination_reason"] == "budget_reached"
+        assert payload["budget_reached"] is True
+        # Nothing but a genuine evaluation may consume budget.
+        assert payload["consumed"] == payload["target"]
+        assert payload["proposed"] >= payload["consumed"]
+
+
+def test_a_budget_the_ga_cannot_reach_is_rejected_at_config_time() -> None:
+    """Better to fail before the run than to discover unequal budgets after it."""
+    with pytest.raises(ValueError, match="unreachable"):
+        _smoke_cfg(
+            effective_budget=500,
+            ga=GASettings(population_size=5, max_generations=2, elitism=1, tournament_size=3),
+        )
 
 
 def test_out_of_sample_artifacts_are_written_for_every_method(tmp_path) -> None:
@@ -166,9 +192,10 @@ def test_cli_search_and_summary(tmp_path, monkeypatch) -> None:
                 "synthetic: true",
                 "synthetic_bars: 900",
                 "label: cli_smoke",
+                "effective_budget: 7",
                 "ga:",
                 "  population_size: 4",
-                "  generations: 2",
+                "  max_generations: 20",
                 "  elitism: 1",
                 "  tournament_size: 3",
                 "walk_forward_override:",

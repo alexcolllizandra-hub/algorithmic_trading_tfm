@@ -366,20 +366,18 @@ def run_search(
     evaluators: dict[str, CandidateEvaluator] = {}
     fold_winners: dict[str, list[dict[str, Any]]] = {}
 
-    # The GA runs first in a comparison. Its population converges onto genotypes
-    # it has already scored, so those proposals hit the evaluator cache and the GA
-    # spends FEWER unique objective evaluations than the nominal budget. Random
-    # Search never repeats itself and would otherwise receive strictly more
-    # evaluations. Capping Random Search at the count the GA actually consumed
-    # makes the budgets exactly equal without altering either algorithm: Random
-    # Search is a deterministic prefix of its own sequence for a given seed.
+    # Both engines target the SAME fixed budget declared in configuration, and each
+    # keeps generating until it has spent exactly that many unique, valid,
+    # non-cached objective evaluations. Neither is capped at what the other
+    # happened to consume: that would make the shared budget an accident of one
+    # engine's convergence and let it drift from seed to seed.
     if run_ga:
         ev = make_evaluator()
         outcomes["genetic_algorithm"] = run_genetic_algorithm(
             ev,
             space,
             population_size=cfg.ga.population_size,
-            generations=cfg.ga.generations,
+            max_generations=cfg.ga.max_generations,
             crossover_rate=cfg.ga.crossover_rate,
             mutation_rate=cfg.ga.mutation_rate,
             elitism=cfg.ga.elitism,
@@ -390,23 +388,14 @@ def run_search(
         evaluators["genetic_algorithm"] = ev
         log.info("genetic_algorithm | %s", outcomes["genetic_algorithm"].summary())
     if run_rs:
-        rs_budget = cfg.budget
-        if run_ga:
-            rs_budget = outcomes["genetic_algorithm"].counters.evaluated
-            if rs_budget != cfg.budget:
-                log.info(
-                    "matched budget | GA spent %d of the nominal %d unique evaluations; "
-                    "Random Search capped at %d for exact parity",
-                    rs_budget,
-                    cfg.budget,
-                    rs_budget,
-                )
         ev = make_evaluator()
         outcomes["random_search"] = run_random_search(
-            ev, space, budget=rs_budget, seed=engine_seeds["random_search"]
+            ev, space, budget=cfg.budget, seed=engine_seeds["random_search"]
         )
         evaluators["random_search"] = ev
         log.info("random_search | %s", outcomes["random_search"].summary())
+
+    _assert_budget_parity(outcomes, target=cfg.budget)
 
     # Canonical reporting order, independent of execution order.
     order = [n for n in ("random_search", "genetic_algorithm") if n in outcomes]
@@ -463,6 +452,71 @@ def run_search(
         fold_winners=fold_winners,
         artifact_paths=artifact_paths,
     )
+
+
+class BudgetParityError(RuntimeError):
+    """An engine did not spend exactly the configured effective budget."""
+
+
+def _assert_budget_parity(outcomes: dict[str, SearchOutcome], *, target: int) -> None:
+    """Fail the unit unless every engine spent exactly the configured budget.
+
+    A unit that quietly finished short is worse than a unit that failed: it enters
+    the aggregate looking complete while having searched less than its peers.
+    """
+    short = {
+        name: {
+            "target": target,
+            "consumed": o.counters.evaluated,
+            "proposed": o.counters.proposed,
+            "invalid": o.counters.invalid,
+            "duplicate": o.counters.duplicate,
+            "cached": o.counters.cached,
+            "termination_reason": o.extra.get("termination_reason"),
+        }
+        for name, o in outcomes.items()
+        if o.counters.evaluated != target
+    }
+    if short:
+        raise BudgetParityError(
+            f"Engines must each spend exactly {target} unique objective evaluations. "
+            f"These did not: {short}. Raise ga.max_generations, widen the search "
+            "space, or lower effective_budget."
+        )
+
+
+def _budget_report(outcomes: dict[str, SearchOutcome], *, target: int) -> dict[str, Any]:
+    """Everything needed to audit that the comparison was run at equal budget."""
+    per_engine = {
+        name: {
+            "target": target,
+            "consumed": o.counters.evaluated,
+            "proposed": o.counters.proposed,
+            "invalid": o.counters.invalid,
+            "duplicate": o.counters.duplicate,
+            "cached": o.counters.cached,
+            "attempts": o.extra.get("attempts"),
+            "generations_run": o.extra.get("generations_run"),
+            "termination_reason": o.extra.get("termination_reason"),
+            "budget_reached": o.extra.get("budget_reached"),
+        }
+        for name, o in outcomes.items()
+    }
+    consumed = {name: payload["consumed"] for name, payload in per_engine.items()}
+    return {
+        "effective_budget": target,
+        "per_engine": per_engine,
+        "consumed_per_engine": consumed,
+        "equal_effective_budget": len(set(consumed.values())) <= 1,
+        "all_engines_reached_target": all(v == target for v in consumed.values()),
+        "definition": (
+            "budget counts UNIQUE, VALID, NON-CACHED objective evaluations. Invalid "
+            "proposals, duplicates and cache hits do not consume it. Each engine "
+            "generates until it reaches the configured target or hits its explicit "
+            "attempt cap, in which case the unit fails rather than reporting a "
+            "short run as complete."
+        ),
+    }
 
 
 def _coverage(
@@ -535,17 +589,7 @@ def _build_summary(
             "aggregate_test": _aggregate_test(fold_winners[name]),
             "diversity": outcome.extra.get("diversity"),
         }
-    evaluated = {n: o.counters.evaluated for n, o in outcomes.items()}
-    budget_parity = {
-        "nominal_budget": cfg.budget,
-        "evaluated_per_method": evaluated,
-        "equal_effective_budget": len(set(evaluated.values())) <= 1,
-        "definition": (
-            "unique objective evaluations actually consumed; the GA's cache hits on "
-            "already-scored genotypes do not count, and Random Search is capped at the "
-            "GA's consumed count so both methods spend an identical budget"
-        ),
-    }
+    budget_parity = _budget_report(outcomes, target=cfg.budget)
     verdict = None
     if "random_search" in methods and "genetic_algorithm" in methods:
         rs_oos = methods["random_search"]["aggregate_test"].get("mean_test_sharpe")

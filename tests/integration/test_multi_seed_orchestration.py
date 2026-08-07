@@ -170,7 +170,7 @@ def test_resume_refuses_a_changed_configuration(tmp_path: Path, smoke_config) ->
         paths=paths,
     )
     changed = smoke_config.model_copy(
-        update={"ga": smoke_config.ga.model_copy(update={"generations": 4})}
+        update={"ga": smoke_config.ga.model_copy(update={"max_generations": 40})}
     )
     assert config_fingerprint(changed) != config_fingerprint(smoke_config)
     with pytest.raises(ValueError, match="different"):

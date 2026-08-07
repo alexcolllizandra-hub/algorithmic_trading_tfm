@@ -19,7 +19,12 @@ from perp_lab.search.outcome import Counters, SearchOutcome
 from perp_lab.search.space import ParamValue, SearchSpace, population_diversity
 
 ALGORITHM = "genetic_algorithm"
-VERSION = "1.0.0"
+VERSION = "2.0.0"
+
+# Generations in a row that buy no new unique evaluation before the search is
+# declared converged. One barren generation is normal drift; several in a row mean
+# crossover and mutation are only regenerating genotypes already scored.
+_MAX_STALLED_GENERATIONS = 5
 
 
 def _fitness(candidate: Candidate) -> float:
@@ -67,7 +72,7 @@ def run_genetic_algorithm(
     space: SearchSpace,
     *,
     population_size: int,
-    generations: int,
+    max_generations: int,
     crossover_rate: float,
     mutation_rate: float,
     elitism: int,
@@ -76,6 +81,18 @@ def run_genetic_algorithm(
     budget: int,
     max_attempts_factor: int = 200,
 ) -> SearchOutcome:
+    """Evolve until exactly ``budget`` unique objective evaluations are spent.
+
+    The loop is driven by the budget, not by a generation count. A generational
+    GA carries elites forward with cached fitness and re-proposes genotypes it has
+    already scored, so a fixed number of generations consumes an amount of budget
+    that varies with the seed and the search space -- which would give each unit of
+    a multi-seed study a slightly different budget and make the units incomparable.
+
+    ``max_generations`` is a safety cap, not the target. If the budget is not met
+    within it, the outcome records why and the caller decides whether that is
+    acceptable; it is never silently reported as a completed run.
+    """
     rng = np.random.default_rng(seed)
     counters = Counters()
     convergence: list[float] = []
@@ -142,10 +159,12 @@ def run_genetic_algorithm(
 
     record_generation(0, population)
 
-    # -- Evolution loop ----------------------------------------------------- #
-    for gen in range(1, generations):
-        if counters.evaluated >= budget:
-            break
+    # -- Evolution loop (budget-driven) ------------------------------------- #
+    gen = 0
+    stalled_generations = 0
+    while counters.evaluated < budget and gen + 1 < max_generations:
+        gen += 1
+        spent_before = counters.evaluated
         ranked = sorted(population, key=_fitness, reverse=True)
         next_pop: list[Candidate] = list(ranked[: min(elitism, len(ranked))])
         next_hashes: set[str] = {c.candidate_id for c in next_pop}
@@ -184,6 +203,20 @@ def run_genetic_algorithm(
         population = next_pop
         record_generation(gen, population)
 
+        # A generation that buys no new evaluation means the population has
+        # collapsed onto genotypes already scored. Continuing forever would spin;
+        # stopping immediately would abandon a budget a mutation might still reach.
+        stalled_generations = 0 if counters.evaluated > spent_before else stalled_generations + 1
+        if stalled_generations >= _MAX_STALLED_GENERATIONS:
+            break
+
+    if counters.evaluated >= budget:
+        termination = "budget_reached"
+    elif stalled_generations >= _MAX_STALLED_GENERATIONS:
+        termination = "population_converged"
+    else:
+        termination = "max_generations"
+
     candidates = list(unique.values())
     best = max(
         (c for c in candidates if c.status == CandidateStatus.EVALUATED),
@@ -201,7 +234,10 @@ def run_genetic_algorithm(
         best=best,
         extra={
             "population_size": population_size,
-            "generations": generations,
+            "max_generations": max_generations,
+            "generations_run": gen + 1,
+            "termination_reason": termination,
+            "budget_reached": counters.evaluated == budget,
             "crossover_rate": crossover_rate,
             "mutation_rate": mutation_rate,
             "elitism": elitism,

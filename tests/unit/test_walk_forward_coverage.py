@@ -117,12 +117,10 @@ def test_ga_unique_evaluation_formula_accounts_for_elitism() -> None:
     assert ga_unique_evaluations(population_size=10, generations=4, elitism=0) == 40
 
 
-def test_experiment_budget_equals_ga_unique_evaluations(cfg) -> None:
+def test_experiment_budget_is_reachable_within_the_generation_cap(cfg) -> None:
     ga = cfg.search.genetic_algorithm
-    assert (
-        ga_unique_evaluations(ga.population_size, ga.generations, ga.elitism)
-        == cfg.search.evaluation_budget
-    )
+    reachable = ga_unique_evaluations(ga.population_size, ga.max_generations, ga.elitism)
+    assert reachable >= cfg.search.evaluation_budget
 
 
 @pytest.mark.parametrize(
@@ -132,14 +130,14 @@ def test_experiment_budget_equals_ga_unique_evaluations(cfg) -> None:
         "configs/search_pilot.yaml",
         "configs/search_pilot_eth.yaml",
         "configs/search_development_eth.yaml",
+        "configs/search_development_btc.yaml",
     ],
 )
-def test_shipped_search_configs_give_both_methods_the_same_budget(path: str) -> None:
-    """The shared budget must be reachable by the GA, so RS cannot get more."""
+def test_shipped_search_configs_declare_a_reachable_shared_budget(path: str) -> None:
+    """Both engines target this number exactly, so the GA must be able to reach it."""
     sc = load_search_config(path)
-    assert sc.budget == ga_unique_evaluations(
-        sc.ga.population_size, sc.ga.generations, sc.ga.elitism
-    )
+    assert sc.budget == sc.effective_budget
+    assert sc.ga.reachable_evaluations() >= sc.effective_budget
 
 
 def test_full_development_config_does_not_cap_folds() -> None:
