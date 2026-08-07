@@ -1,0 +1,48 @@
+# =====================================================================
+# FULL DEVELOPMENT walk-forward search (BTCUSDT) — real validated data.
+#
+# Companion to configs/search_development_eth.yaml. Identical geometry,
+# budget, costs, fitness, search space and seed; only the symbol differs, so
+# the two assets are directly comparable and a per-asset breakdown of the
+# concatenated out-of-sample evidence is meaningful.
+#
+#   development = [2020-01-01, 2026-01-01)   (2192 days)
+#   geometry    = 730d train / 90d validation / 90d test / 90d step
+#               -> 15 folds, contiguous non-overlapping OOS test windows
+#                  spanning 2022-03-31 .. 2025-12-10 (1350 OOS days)
+#
+# Window durations come from configs/experiment.yaml (`walk_forward`) and are
+# justified in docs/methodology/validation_protocol.md. `max_folds` is
+# deliberately absent so the run must satisfy walk_forward.min_folds.
+#
+# The frozen holdout [2026-01-01, 2026-07-01) is NEVER loaded: only the
+# development partition is read and every fold's test_end <= holdout_start.
+#
+# EXPLORATORY: development walk-forward evidence, NOT final holdout performance.
+# =====================================================================
+
+experiment_config: configs/experiment.yaml
+data_contract: configs/data_contract.yaml
+
+family: momentum
+algorithm: comparison
+symbol: BTCUSDT
+timeframe: "1h"
+seed: 42
+regime_model: threshold
+
+require_funding: true
+synthetic: false
+label: development_full_walkforward_BTCUSDT_EXPLORATORY_not_holdout
+
+# No max_folds: cover the whole development period (min_folds is enforced).
+
+# Unique evaluations = population + (generations - 1) * (population - elitism)
+# = 30 + 10 * 27 = 300, spent identically by Random Search and the GA.
+ga:
+  population_size: 30
+  generations: 11
+  crossover_rate: 0.7
+  mutation_rate: 0.2
+  elitism: 3
+  tournament_size: 3
