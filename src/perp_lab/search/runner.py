@@ -29,6 +29,7 @@ from perp_lab.config.models import DataContract
 from perp_lab.data.splits import resolve_holdout_start
 from perp_lab.eda.datasets import DataLake, HoldoutLeakageError
 from perp_lab.experiments.pipeline import synthetic_klines
+from perp_lab.regimes.models import REGIME_COL, REGIME_NAME_COL
 from perp_lab.search.candidate import Candidate, CandidateStatus
 from perp_lab.search.config import SearchRunConfig
 from perp_lab.search.evaluator import CandidateEvaluator, FoldsBundle, build_folds_data
@@ -39,7 +40,7 @@ from perp_lab.search.random_search import run_random_search
 from perp_lab.search.registry import SPACE_VERSION, build_search_space
 from perp_lab.tracking.run import RunTracker, environment_info, git_state
 from perp_lab.utils.logging import add_file_logging, get_logger
-from perp_lab.utils.seeds import set_global_seed
+from perp_lab.utils.seeds import SeedScheduler, set_global_seed
 from perp_lab.utils.timeutils import timeframe_to_timedelta
 from perp_lab.validation.walk_forward import (
     WalkForwardFold,
@@ -199,7 +200,10 @@ def _build_folds(
             embargo_bars=exp.embargo_bars,
             max_folds=ov.max_folds,
         )
-    folds = generate_walk_forward(exp)
+    # Without an explicit fold cap the run must cover the whole development
+    # period, so the config's min_folds sanity guard is enforced. A capped run is
+    # a deliberately bounded pilot and is allowed to emit fewer folds.
+    folds = generate_walk_forward(exp, strict=cfg.max_folds is None)
     if cfg.max_folds is not None:
         folds = folds[: cfg.max_folds]
     return folds
@@ -290,6 +294,15 @@ def run_search(
     contract = load_data_contract(cfg.data_contract)
     seed = cfg.seed if cfg.seed is not None else exp.random_seed
     set_global_seed(seed)
+    # Independent streams per asset / fold / engine, all reconstructible from the
+    # single recorded base seed. Giving both engines the same RNG state would not
+    # make them comparable; it would only couple them to an arbitrary sequence.
+    seeds = SeedScheduler(seed)
+    regime_stream = seeds.stream("regime_base", symbol=cfg.symbol, timeframe=cfg.timeframe)
+    engine_seeds = {
+        name: seeds.stream("engine", symbol=cfg.symbol, timeframe=cfg.timeframe, engine=name)
+        for name in ("random_search", "genetic_algorithm")
+    }
 
     tracker: RunTracker | None = None
     if write_artifacts:
@@ -321,9 +334,10 @@ def run_search(
         symbol=cfg.symbol,
         timeframe=cfg.timeframe,
         regime_model=cfg.regime_model,
-        seed=seed,
+        seed=regime_stream,
         funding=funding,
         holdout_start=holdout_start,
+        seeds=seeds,
     )
     space = build_search_space(exp, cfg.family)
     overrides = cfg.objective.as_overrides() if cfg.objective else None
@@ -352,11 +366,13 @@ def run_search(
     evaluators: dict[str, CandidateEvaluator] = {}
     fold_winners: dict[str, list[dict[str, Any]]] = {}
 
-    if run_rs:
-        ev = make_evaluator()
-        outcomes["random_search"] = run_random_search(ev, space, budget=cfg.budget, seed=seed)
-        evaluators["random_search"] = ev
-        log.info("random_search | %s", outcomes["random_search"].summary())
+    # The GA runs first in a comparison. Its population converges onto genotypes
+    # it has already scored, so those proposals hit the evaluator cache and the GA
+    # spends FEWER unique objective evaluations than the nominal budget. Random
+    # Search never repeats itself and would otherwise receive strictly more
+    # evaluations. Capping Random Search at the count the GA actually consumed
+    # makes the budgets exactly equal without altering either algorithm: Random
+    # Search is a deterministic prefix of its own sequence for a given seed.
     if run_ga:
         ev = make_evaluator()
         outcomes["genetic_algorithm"] = run_genetic_algorithm(
@@ -368,18 +384,57 @@ def run_search(
             mutation_rate=cfg.ga.mutation_rate,
             elitism=cfg.ga.elitism,
             tournament_size=cfg.ga.tournament_size,
-            seed=seed,
+            seed=engine_seeds["genetic_algorithm"],
             budget=cfg.budget,
         )
         evaluators["genetic_algorithm"] = ev
         log.info("genetic_algorithm | %s", outcomes["genetic_algorithm"].summary())
+    if run_rs:
+        rs_budget = cfg.budget
+        if run_ga:
+            rs_budget = outcomes["genetic_algorithm"].counters.evaluated
+            if rs_budget != cfg.budget:
+                log.info(
+                    "matched budget | GA spent %d of the nominal %d unique evaluations; "
+                    "Random Search capped at %d for exact parity",
+                    rs_budget,
+                    cfg.budget,
+                    rs_budget,
+                )
+        ev = make_evaluator()
+        outcomes["random_search"] = run_random_search(
+            ev, space, budget=rs_budget, seed=engine_seeds["random_search"]
+        )
+        evaluators["random_search"] = ev
+        log.info("random_search | %s", outcomes["random_search"].summary())
+
+    # Canonical reporting order, independent of execution order.
+    order = [n for n in ("random_search", "genetic_algorithm") if n in outcomes]
+    outcomes = {n: outcomes[n] for n in order}
 
     for name, outcome in outcomes.items():
         fold_winners[name] = _fold_winners(
             outcome, evaluators[name], bundle, min_trades_per_fold=objective_cfg.min_trades_per_fold
         )
 
-    summary = _build_summary(cfg, exp, seed, folds, bundle, outcomes, fold_winners)
+    seed_schedule = {
+        "base_seed": seed,
+        "derivation": (
+            "numpy SeedSequence, entropy=base_seed, spawn_key=blake2b(stream label); "
+            "reconstructible from base_seed alone"
+        ),
+        "regime_base": regime_stream,
+        "engines": engine_seeds,
+        "per_fold_regime": {
+            str(f.index): seeds.stream(
+                "regime", symbol=cfg.symbol, timeframe=cfg.timeframe, fold=f.index
+            )
+            for f in folds
+        },
+    }
+    summary = _build_summary(
+        cfg, exp, seed, folds, bundle, outcomes, fold_winners, seed_schedule=seed_schedule
+    )
 
     artifact_paths: list[str] = []
     if tracker is not None:
@@ -410,6 +465,59 @@ def run_search(
     )
 
 
+def _coverage(
+    cfg: SearchRunConfig, exp: ExperimentConfig, folds: list[WalkForwardFold]
+) -> dict[str, Any]:
+    """Explicit walk-forward coverage so a run can never be read as a single window.
+
+    Records the concatenated out-of-sample test span and how much of the permitted
+    development period it actually covers.
+    """
+    ov = cfg.walk_forward_override
+    geometry = ov if ov is not None else exp.walk_forward
+    if ov is not None:
+        # A smoke override runs over the loaded frame, not the contract period.
+        span_start = folds[0].train_start if folds else exp.periods.development_start
+        span_end = folds[-1].test_end if folds else exp.periods.development_end_exclusive
+    else:
+        span_start = exp.periods.development_start
+        span_end = exp.periods.development_end_exclusive
+    span_days = (span_end - span_start).days
+    oos_days = sum((f.test_end - f.test_start).days for f in folds)
+    return {
+        "geometry_source": "walk_forward_override" if ov is not None else "experiment_config",
+        "scheme": exp.walk_forward.scheme,
+        "initial_train_days": geometry.initial_train_days,
+        "validation_days": geometry.validation_days,
+        "test_days": geometry.test_days,
+        "step_days": geometry.step_days,
+        "max_folds_cap": cfg.max_folds if ov is None else ov.max_folds,
+        "development_start": span_start.isoformat(),
+        "development_end_exclusive": span_end.isoformat(),
+        "development_days": span_days,
+        "n_folds": len(folds),
+        "oos_test_start": folds[0].test_start.isoformat() if folds else None,
+        "oos_test_end": folds[-1].test_end.isoformat() if folds else None,
+        "oos_test_days": oos_days,
+        "oos_fraction_of_development": round(oos_days / span_days, 6) if span_days else None,
+        "purge_bars": exp.purge_bars,
+        "embargo_bars": exp.embargo_bars,
+    }
+
+
+def _with_regime(ledger: pl.DataFrame, test_frame: pl.DataFrame) -> pl.DataFrame:
+    """Attach the fold's train-fitted regime label to a persisted OOS ledger.
+
+    The label is produced by a model fitted on that fold's TRAIN slice only, so
+    carrying it into the test ledger stays causal. It is needed to report
+    out-of-sample performance conditional on market state.
+    """
+    if REGIME_NAME_COL not in test_frame.columns or "open_time" not in ledger.columns:
+        return ledger
+    cols = [c for c in (REGIME_COL, REGIME_NAME_COL) if c in test_frame.columns]
+    return ledger.join(test_frame.select("open_time", *cols), on="open_time", how="left")
+
+
 def _build_summary(
     cfg: SearchRunConfig,
     exp: ExperimentConfig,
@@ -418,6 +526,7 @@ def _build_summary(
     bundle: FoldsBundle,
     outcomes: dict[str, SearchOutcome],
     fold_winners: dict[str, list[dict[str, Any]]],
+    seed_schedule: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     methods: dict[str, Any] = {}
     for name, outcome in outcomes.items():
@@ -426,6 +535,17 @@ def _build_summary(
             "aggregate_test": _aggregate_test(fold_winners[name]),
             "diversity": outcome.extra.get("diversity"),
         }
+    evaluated = {n: o.counters.evaluated for n, o in outcomes.items()}
+    budget_parity = {
+        "nominal_budget": cfg.budget,
+        "evaluated_per_method": evaluated,
+        "equal_effective_budget": len(set(evaluated.values())) <= 1,
+        "definition": (
+            "unique objective evaluations actually consumed; the GA's cache hits on "
+            "already-scored genotypes do not count, and Random Search is capped at the "
+            "GA's consumed count so both methods spend an identical budget"
+        ),
+    }
     verdict = None
     if "random_search" in methods and "genetic_algorithm" in methods:
         rs_oos = methods["random_search"]["aggregate_test"].get("mean_test_sharpe")
@@ -445,9 +565,12 @@ def _build_summary(
         "symbol": cfg.symbol,
         "timeframe": cfg.timeframe,
         "seed": seed,
+        "seed_schedule": seed_schedule or {"base_seed": seed},
         "budget": cfg.budget,
         "space_version": SPACE_VERSION,
         "n_folds": len(folds),
+        "walk_forward_coverage": _coverage(cfg, exp, folds),
+        "budget_parity": budget_parity,
         "fair_budget": "budget caps UNIQUE objective evaluations; invalid/duplicate/cached excluded",
         "comparison_metric": "aggregate out-of-sample TEST sharpe of per-fold winners",
         "methods": methods,
@@ -497,6 +620,7 @@ def _write_artifacts(
                 ],
             },
         ),
+        tracker.write_json("seed_schedule.json", summary["seed_schedule"]),
         tracker.write_json("environment.json", environment_info()),
         tracker.write_json("git_state.json", gs),
         tracker.write_json("warnings.json", {"exploratory": EXPLORATORY_WARNING}),
@@ -535,18 +659,22 @@ def _write_artifacts(
                 )
             )
 
-    # Fold-winner TEST outputs (signals/positions/trades/equity) for the best method.
-    best_method = summary.get("best_out_of_sample_method") or next(iter(outcomes), None)
-    if best_method is not None:
-        ev = evaluators[best_method]
-        by_id = {c.candidate_id: c for c in outcomes[best_method].candidates}
-        for w in fold_winners[best_method]:
+    # Fold-winner TEST outputs (positions/trades/equity) for EVERY method. Both
+    # methods must persist their out-of-sample series, otherwise the concatenated
+    # walk-forward OOS evidence can only be rebuilt for one of them and the
+    # RS-vs-GA comparison is not auditable at the series level.
+    for method, outcome in outcomes.items():
+        ev = evaluators[method]
+        by_id = {c.candidate_id: c for c in outcome.candidates}
+        for w in fold_winners[method]:
             if w.get("winner") is None:
                 continue
             cand = by_id[w["winner"]]
-            result = ev.evaluate_on_test(cand, int(w["fold"]))
-            tag = f"{best_method}_fold{int(w['fold'])}"
-            written.append(tracker.write_parquet(f"{tag}_test_equity.parquet", result.ledger))
+            fold_index = int(w["fold"])
+            result = ev.evaluate_on_test(cand, fold_index)
+            tag = f"{method}_fold{fold_index}"
+            ledger = _with_regime(result.ledger, bundle.folds[fold_index].test)
+            written.append(tracker.write_parquet(f"{tag}_test_equity.parquet", ledger))
             trades = result.trades()
             if trades.height:
                 written.append(tracker.write_parquet(f"{tag}_test_trades.parquet", trades))

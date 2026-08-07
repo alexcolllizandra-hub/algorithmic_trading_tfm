@@ -69,6 +69,49 @@ def test_run_search_comparison_end_to_end(tmp_path) -> None:
     assert isinstance(fw, list) and len(fw) == summary["n_folds"]
 
 
+def test_both_methods_spend_exactly_the_same_evaluation_budget(tmp_path) -> None:
+    """RS must not silently receive more evaluations than the GA can perform.
+
+    The GA's reachable count is population + (generations-1)*(population-elitism);
+    the shared budget is defined as that number, so both must land on it exactly.
+    """
+    cfg = _smoke_cfg()
+    res = run_search(cfg, write_artifacts=False)
+    evaluated = {name: o.counters.evaluated for name, o in res.outcomes.items()}
+    assert evaluated["random_search"] == evaluated["genetic_algorithm"]
+    assert evaluated["random_search"] <= cfg.budget
+    parity = res.summary["budget_parity"]
+    assert parity["equal_effective_budget"] is True
+    assert parity["evaluated_per_method"] == evaluated
+
+
+def test_out_of_sample_artifacts_are_written_for_every_method(tmp_path) -> None:
+    """Both methods persist per-fold OOS test series, not only the winning one.
+
+    Without this the concatenated walk-forward OOS evidence can be rebuilt for a
+    single method and the RS-vs-GA comparison stops being auditable.
+    """
+    cfg = _smoke_cfg()
+    paths = Paths(artifacts_root=tmp_path / "artifacts")
+    res = run_search(cfg, paths=paths, write_artifacts=True)
+    assert res.run_dir is not None
+    for method in ("random_search", "genetic_algorithm"):
+        scored = [w for w in res.fold_winners[method] if w.get("winner") is not None]
+        equities = sorted(res.run_dir.glob(f"{method}_fold*_test_equity.parquet"))
+        assert len(equities) == len(scored), f"{method} is missing per-fold OOS equity"
+
+
+def test_summary_records_walk_forward_coverage(tmp_path) -> None:
+    """The summary must state the OOS span, so one window cannot look complete."""
+    cfg = _smoke_cfg()
+    res = run_search(cfg, write_artifacts=False)
+    cov = res.summary["walk_forward_coverage"]
+    assert cov["n_folds"] == res.summary["n_folds"]
+    assert cov["oos_test_days"] == cov["n_folds"] * cov["test_days"]
+    assert cov["max_folds_cap"] == 2
+    assert cov["oos_test_start"] < cov["oos_test_end"]
+
+
 def test_run_search_is_reproducible(tmp_path) -> None:
     cfg = _smoke_cfg()
     r1 = run_search(cfg, write_artifacts=False)
