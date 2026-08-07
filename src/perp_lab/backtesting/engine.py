@@ -46,6 +46,10 @@ _LEDGER_COLUMNS = (
     "target_position",
     "position",
     "execution_price",
+    # Market return of the bar's holding interval, kept so downstream robustness
+    # analysis can re-price positions exactly instead of inferring it from prices
+    # (which is impossible on the last bar of every fold).
+    "oo_return",
     "gross_return",
     "fee",
     "slippage",
@@ -187,6 +191,7 @@ def run_backtest(
             pl.col(SIDE_COL).cast(pl.Float64).alias("target_position"),
             pl.lit(0.0).alias("position"),
             pl.col("open").alias("execution_price"),
+            pl.lit(0.0).alias("oo_return"),
             pl.lit(0.0).alias("gross_return"),
             pl.lit(0.0).alias("fee"),
             pl.lit(0.0).alias("slippage"),
