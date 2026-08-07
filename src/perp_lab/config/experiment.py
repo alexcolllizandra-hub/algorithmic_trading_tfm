@@ -405,13 +405,26 @@ class Costs(_Strict):
         return self.taker_fee_bps if self.fee_model == "taker" else self.maker_fee_bps
 
 
+def ga_unique_evaluations(population_size: int, generations: int, elitism: int) -> int:
+    """Unique objective evaluations a generational GA with elitism actually performs.
+
+    Generation 0 evaluates a full population. Every later generation carries the
+    ``elitism`` best individuals over with cached fitness, so it only evaluates
+    ``population_size - elitism`` new offspring. ``population_size * generations``
+    therefore *overstates* the GA's evaluation count whenever ``elitism > 0``, and
+    using it as the shared budget silently gives Random Search more evaluations.
+    """
+    return population_size + (generations - 1) * (population_size - elitism)
+
+
 class RandomSearch(_Strict):
     sampler: str = "uniform_over_space"
 
 
 class GeneticAlgorithm(_Strict):
     population_size: int = Field(default=100, ge=2)
-    generations: int = Field(default=20, ge=1)
+    # 100 + (21 - 1) * (100 - 5) = 2000 unique evaluations == evaluation_budget.
+    generations: int = Field(default=21, ge=1)
     crossover_rate: float = Field(default=0.7, ge=0, le=1)
     mutation_rate: float = Field(default=0.2, ge=0, le=1)
     elitism: int = Field(default=5, ge=0)
@@ -429,16 +442,17 @@ class Search(_Strict):
     @model_validator(mode="after")
     def _budget_parity(self) -> Search:
         ga = self.genetic_algorithm
-        ga_evals = ga.population_size * ga.generations
+        if ga.elitism >= ga.population_size:
+            raise ValueError("genetic_algorithm.elitism must be smaller than population_size.")
+        ga_evals = ga_unique_evaluations(ga.population_size, ga.generations, ga.elitism)
         if ga_evals != self.evaluation_budget:
             raise ValueError(
-                "Search-budget parity violated: genetic_algorithm.population_size * "
-                f"generations = {ga_evals} must equal evaluation_budget = "
+                "Search-budget parity violated: the genetic algorithm performs "
+                f"population_size + (generations - 1) * (population_size - elitism) = "
+                f"{ga_evals} unique evaluations, which must equal evaluation_budget = "
                 f"{self.evaluation_budget} so Random Search and the GA are compared "
                 "at an identical number of candidate evaluations."
             )
-        if ga.elitism >= ga.population_size:
-            raise ValueError("genetic_algorithm.elitism must be smaller than population_size.")
         return self
 
 

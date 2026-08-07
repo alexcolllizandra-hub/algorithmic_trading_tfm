@@ -52,13 +52,26 @@ def test_search_budget_parity_enforced() -> None:
 
 
 def test_search_budget_parity_ok_when_matched() -> None:
+    # Elitism (default 5) means only generation 0 evaluates a full population:
+    # 20 + 12 * (20 - 5) = 200 unique evaluations.
     cfg = _config(
         search={
             "evaluation_budget": 200,
-            "genetic_algorithm": {"population_size": 20, "generations": 10},
+            "genetic_algorithm": {"population_size": 20, "generations": 13},
         }
     )
     assert cfg.search.evaluation_budget == 200
+
+
+def test_search_budget_parity_rejects_naive_population_times_generations() -> None:
+    """population * generations overstates the GA's evaluations when elitism > 0."""
+    with pytest.raises(ValidationError, match="budget parity"):
+        _config(
+            search={
+                "evaluation_budget": 200,
+                "genetic_algorithm": {"population_size": 20, "generations": 10},
+            }
+        )
 
 
 def test_feature_windows_must_be_positive() -> None:

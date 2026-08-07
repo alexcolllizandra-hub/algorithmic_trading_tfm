@@ -15,6 +15,8 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from perp_lab.config.experiment import ga_unique_evaluations
+
 
 class _Strict(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -36,7 +38,12 @@ class GASettings(_Strict):
 
     @property
     def budget(self) -> int:
-        return self.population_size * self.generations
+        """Shared evaluation budget = the unique evaluations this GA can perform.
+
+        Random Search is given the same number, so both methods spend exactly the
+        same objective-evaluation budget (see :func:`ga_unique_evaluations`).
+        """
+        return ga_unique_evaluations(self.population_size, self.generations, self.elitism)
 
 
 class WalkForwardOverride(_Strict):

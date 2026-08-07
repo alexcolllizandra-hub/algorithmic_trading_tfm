@@ -178,7 +178,11 @@ search:
     sampler: "uniform_over_space"
   genetic_algorithm:
     population_size: 100
-    generations: 20 # population * generations = 2000 = budget
+    # Elitism carries `elitism` individuals over with cached fitness, so only
+    # generation 0 evaluates a full population: unique evaluations =
+    # population_size + (generations - 1) * (population_size - elitism)
+    #                 = 100 + 20 * 95 = 2000 = evaluation_budget.
+    generations: 21
     crossover_rate: 0.7
     mutation_rate: 0.2
     elitism: 5
