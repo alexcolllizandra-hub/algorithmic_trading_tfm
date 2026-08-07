@@ -172,13 +172,58 @@ def variance_decomposition(table: pl.DataFrame, metric: str = "test_sharpe") -> 
     return out
 
 
+def _paired_inference(values: np.ndarray) -> dict[str, Any]:
+    """Mean, interval, effect size and dispersion for one set of paired differences."""
+    n = int(values.size)
+    out: dict[str, Any] = {
+        "n_units": n,
+        "mean_difference": float(values.mean()) if n else None,
+        "median_difference": float(np.median(values)) if n else None,
+        "n_units_favouring_ga": int((values > 0).sum()),
+        "n_units_favouring_rs": int((values < 0).sum()),
+    }
+    if n <= 1:
+        out["verdict"] = "insufficient units for inference"
+        return out
+    mean = float(values.mean())
+    sd = float(values.std(ddof=1))
+    se = sd / math.sqrt(n)
+    crit = _t_critical(n - 1)
+    out.update(
+        {
+            "sd_of_differences": sd,
+            "standard_error": se,
+            "ci_low": mean - crit * se,
+            "ci_high": mean + crit * se,
+            "ci_level": 0.95,
+            # Cohen's dz for a paired design: mean difference in units of its own
+            # standard deviation.
+            "effect_size_cohens_dz": (mean / sd) if sd > 0 else None,
+            "ci_excludes_zero": bool((mean - crit * se) * (mean + crit * se) > 0),
+        }
+    )
+    out["verdict"] = _verdict(out)
+    return out
+
+
 def paired_rs_ga(table: pl.DataFrame, metric: str = "test_sharpe") -> dict[str, Any]:
     """Paired Random Search vs Genetic Algorithm comparison, correctly nested.
 
-    Pairing is exact: both engines are compared on the same (symbol, seed, fold)
-    cell, so market conditions and the fold's difficulty cancel out. Seeds are then
-    averaged within each (symbol, fold), and inference is done across folds, whose
-    count is the honest sample size.
+    Three levels of collapsing, each removing a source of dependence:
+
+    1. Pairing is exact within a (symbol, seed, fold) cell, so the fold's market
+       conditions and difficulty cancel out of the difference.
+    2. Seeds are averaged within each (symbol, fold). The ten seeds run over one
+       price history, so they are repeated measurements, not new evidence; their
+       spread is reported separately as search instability.
+    3. For the COMBINED result, assets are averaged within each calendar fold.
+       BTC fold 7 and ETH fold 7 are the same three-month window on two assets
+       whose returns are strongly correlated; counting them as two independent
+       periods would give an effective sample of 30 when the study contains 15
+       distinct market windows.
+
+    Per-asset results are reported separately, each with its own 15 folds, because
+    an asset-specific effect is a legitimate finding that the combined average hides.
     """
     if table.height == 0:
         return {}
@@ -193,75 +238,56 @@ def paired_rs_ga(table: pl.DataFrame, metric: str = "test_sharpe") -> dict[str, 
     wide = wide.with_columns(
         (pl.col("genetic_algorithm") - pl.col("random_search")).alias("difference")
     )
-
     cell_diffs = _finite(wide["difference"].to_list())
 
-    # Collapse seeds inside each (symbol, fold), then treat folds as the units.
-    by_fold = wide.group_by("symbol", "fold").agg(
+    # Level 2: collapse seeds inside each (symbol, fold).
+    by_symbol_fold = wide.group_by("symbol", "fold").agg(
         pl.col("difference").mean().alias("mean_difference"),
         pl.col("difference").std().alias("sd_across_seeds"),
         pl.col("difference").count().alias("n_seeds"),
     )
-    fold_diffs = _finite(by_fold["mean_difference"].to_list())
-    n_folds = int(fold_diffs.size)
 
+    # Level 3: collapse assets inside each calendar fold.
+    by_calendar_fold = by_symbol_fold.group_by("fold").agg(
+        pl.col("mean_difference").mean().alias("mean_difference"),
+        pl.col("mean_difference").count().alias("n_symbols"),
+    )
+    calendar_diffs = _finite(by_calendar_fold.sort("fold")["mean_difference"].to_list())
+
+    symbols = sorted(set(by_symbol_fold["symbol"].to_list()))
     result: dict[str, Any] = {
         "metric": metric,
         "n_cells_symbol_seed_fold": int(cell_diffs.size),
-        "n_independent_units_used": n_folds,
-        "unit_of_inference": "symbol x fold (seeds averaged within each cell)",
+        "unit_of_inference": "calendar fold (seeds averaged, then assets averaged)",
+        "n_independent_units_used": int(calendar_diffs.size),
         "why": (
-            "the seeds share one price history, so counting them as independent "
-            "observations would shrink the interval by ~sqrt(n_seeds) and invent "
-            "significance that the data do not contain"
+            "seeds share one price history and the assets share one calendar, so the "
+            "study contains as many independent market windows as it has folds. "
+            f"Counting {len(symbols)} assets x {int(calendar_diffs.size)} folds as "
+            f"{len(symbols) * int(calendar_diffs.size)} independent observations would "
+            "narrow every interval by about sqrt(n_assets * n_seeds) and manufacture "
+            "significance the data do not contain."
         ),
-        "mean_difference_ga_minus_rs": float(fold_diffs.mean()) if n_folds else None,
-        "median_difference_ga_minus_rs": float(np.median(fold_diffs)) if n_folds else None,
-        "n_folds_favouring_ga": int((fold_diffs > 0).sum()),
-        "n_folds_favouring_rs": int((fold_diffs < 0).sum()),
+        "combined": _paired_inference(calendar_diffs),
     }
-
-    if n_folds > 1:
-        sd = float(fold_diffs.std(ddof=1))
-        mean = float(fold_diffs.mean())
-        se = sd / math.sqrt(n_folds)
-        crit = _t_critical(n_folds - 1)
-        result.update(
-            {
-                "sd_of_fold_differences": sd,
-                "standard_error": se,
-                "ci_low": mean - crit * se,
-                "ci_high": mean + crit * se,
-                "ci_level": 0.95,
-                # Cohen's dz for a paired design: mean difference in units of its
-                # own standard deviation.
-                "effect_size_cohens_dz": (mean / sd) if sd > 0 else None,
-                "ci_excludes_zero": bool((mean - crit * se) * (mean + crit * se) > 0),
-            }
-        )
-        result["verdict"] = _verdict(result)
-    else:
-        result["verdict"] = "insufficient folds for inference"
+    # Headline numbers mirror the combined calendar-fold result.
+    result["mean_difference_ga_minus_rs"] = result["combined"]["mean_difference"]
+    result["verdict"] = result["combined"]["verdict"]
+    result["ci_excludes_zero"] = result["combined"].get("ci_excludes_zero", False)
 
     result["per_symbol"] = {}
-    for symbol in sorted(set(by_fold["symbol"].to_list())):
-        vals = _finite(by_fold.filter(pl.col("symbol") == symbol)["mean_difference"].to_list())
-        if vals.size == 0:
-            continue
-        entry: dict[str, Any] = {
-            "n_folds": int(vals.size),
-            "mean_difference": float(vals.mean()),
-            "n_folds_favouring_ga": int((vals > 0).sum()),
-        }
-        if vals.size > 1:
-            sd = float(vals.std(ddof=1))
-            se = sd / math.sqrt(vals.size)
-            crit = _t_critical(vals.size - 1)
-            entry["ci_low"] = float(vals.mean()) - crit * se
-            entry["ci_high"] = float(vals.mean()) + crit * se
-        result["per_symbol"][symbol] = entry
+    for symbol in symbols:
+        vals = _finite(
+            by_symbol_fold.filter(pl.col("symbol") == symbol)
+            .sort("fold")["mean_difference"]
+            .to_list()
+        )
+        if vals.size:
+            result["per_symbol"][symbol] = _paired_inference(vals)
 
-    seed_sd = _finite(by_fold["sd_across_seeds"].to_list())
+    result["cross_asset_dependence"] = _cross_asset_dependence(by_symbol_fold, symbols)
+
+    seed_sd = _finite(by_symbol_fold["sd_across_seeds"].to_list())
     result["seed_dispersion_of_the_difference"] = {
         "mean_sd_across_seeds_within_fold": float(seed_sd.mean()) if seed_sd.size else None,
         "interpretation": (
@@ -272,6 +298,47 @@ def paired_rs_ga(table: pl.DataFrame, metric: str = "test_sharpe") -> dict[str, 
     return result
 
 
+def _cross_asset_dependence(by_symbol_fold: pl.DataFrame, symbols: list[str]) -> dict[str, Any]:
+    """Measure, rather than assume, how dependent the assets' fold results are.
+
+    A high correlation is the evidence for pooling assets within a calendar fold
+    instead of counting them as separate periods.
+    """
+    if len(symbols) != 2:
+        return {
+            "n_symbols": len(symbols),
+            "note": "correlation is reported only for a two-asset study",
+        }
+    a, b = symbols
+    joined = (
+        by_symbol_fold.filter(pl.col("symbol") == a)
+        .select("fold", pl.col("mean_difference").alias("a"))
+        .join(
+            by_symbol_fold.filter(pl.col("symbol") == b).select(
+                "fold", pl.col("mean_difference").alias("b")
+            ),
+            on="fold",
+            how="inner",
+        )
+        .sort("fold")
+    )
+    x = _finite(joined["a"].to_list())
+    y = _finite(joined["b"].to_list())
+    if x.size != y.size or x.size < 3:
+        return {"n_shared_folds": int(min(x.size, y.size)), "correlation": None}
+    corr = float(np.corrcoef(x, y)[0, 1])
+    return {
+        "symbols": [a, b],
+        "n_shared_folds": int(x.size),
+        "correlation_of_fold_differences": corr,
+        "interpretation": (
+            "the two assets are measured over the same calendar folds, so their "
+            "results are not independent replications of the market; they are "
+            "averaged within each fold before inference"
+        ),
+    }
+
+
 def _verdict(result: dict[str, Any]) -> str:
     """State only what the paired comparison actually supports."""
     if not result.get("ci_excludes_zero"):
@@ -280,9 +347,7 @@ def _verdict(result: dict[str, Any]) -> str:
             "Algorithm: the 95% confidence interval for the paired difference "
             "includes zero"
         )
-    direction = (
-        "genetic_algorithm" if result["mean_difference_ga_minus_rs"] > 0 else "random_search"
-    )
+    direction = "genetic_algorithm" if result["mean_difference"] > 0 else "random_search"
     return (
         f"{direction} is ahead on the paired fold-level comparison (interval excludes "
         "zero); this is development out-of-sample evidence only and does not "

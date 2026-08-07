@@ -101,17 +101,84 @@ def test_interval_is_far_wider_than_treating_every_cell_as_independent() -> None
     """The naive analysis would divide the standard error by sqrt(n_seeds)."""
     units = _units(n_seeds=10, n_folds=12, fold_ga_spread=0.6, seed_noise=0.3)
     table = long_table(units)
-    result = paired_rs_ga(table)
+    combined = paired_rs_ga(table)["combined"]
 
     wide = table.pivot(values="test_sharpe", index=["symbol", "seed", "fold"], on="engine")
     cell_diff = (wide["genetic_algorithm"] - wide["random_search"]).to_numpy()
     naive_se = float(np.std(cell_diff, ddof=1)) / np.sqrt(cell_diff.size)
     naive_width = 2 * 1.96 * naive_se
 
-    actual_width = result["ci_high"] - result["ci_low"]
+    actual_width = combined["ci_high"] - combined["ci_low"]
     assert actual_width > 2 * naive_width, (
         "the interval is close to the naive one, so seeds are leaking into the sample size"
     )
+
+
+# --------------------------------------------------------------------------- #
+# Two assets share one calendar, so they are not two independent period sets
+# --------------------------------------------------------------------------- #
+
+
+def test_two_assets_do_not_double_the_number_of_independent_periods() -> None:
+    """BTC fold 7 and ETH fold 7 are the same three months, not two periods."""
+    units = _units(symbols=("BTCUSDT", "ETHUSDT"), n_seeds=10, n_folds=15)
+    result = paired_rs_ga(long_table(units))
+
+    assert result["n_cells_symbol_seed_fold"] == 2 * 10 * 15
+    assert result["n_independent_units_used"] == 15, (
+        "assets were counted as separate periods; the effective sample must stay at "
+        "the number of calendar folds"
+    )
+    assert result["combined"]["n_units"] == 15
+
+
+def test_each_asset_is_reported_separately_with_its_own_folds() -> None:
+    """A combined average hides an asset-specific effect, so both must be shown."""
+    units = _units(symbols=("BTCUSDT", "ETHUSDT"), n_seeds=4, n_folds=15)
+    result = paired_rs_ga(long_table(units))
+    assert set(result["per_symbol"]) == {"BTCUSDT", "ETHUSDT"}
+    for entry in result["per_symbol"].values():
+        assert entry["n_units"] == 15
+        assert "ci_low" in entry and "effect_size_cohens_dz" in entry
+
+
+def test_standard_error_is_built_from_calendar_folds_not_from_cells() -> None:
+    """Check the construction directly, not just that the interval looks wide.
+
+    A width assertion can pass for the wrong reason; this pins the denominator.
+    """
+    units = _units(
+        symbols=("BTCUSDT", "ETHUSDT"), n_seeds=10, n_folds=15, fold_ga_spread=0.7, seed_noise=0.4
+    )
+    combined = paired_rs_ga(long_table(units))["combined"]
+    expected_se = combined["sd_of_differences"] / np.sqrt(15)
+    assert combined["standard_error"] == pytest.approx(expected_se, rel=1e-12)
+    # The naive denominators the analysis must NOT be using.
+    for wrong_n in (2 * 15, 10 * 15, 2 * 10 * 15):
+        wrong_se = combined["sd_of_differences"] / np.sqrt(wrong_n)
+        assert combined["standard_error"] != pytest.approx(wrong_se, rel=1e-6)
+
+
+def test_adding_a_correlated_asset_does_not_shrink_the_interval_by_sqrt_two() -> None:
+    """The give-away symptom of treating correlated assets as independent."""
+    kwargs = {"n_seeds": 5, "n_folds": 15, "fold_ga_spread": 0.7, "seed_noise": 0.4}
+    one = paired_rs_ga(long_table(_units(symbols=("BTCUSDT",), **kwargs)))
+    two = paired_rs_ga(long_table(_units(symbols=("BTCUSDT", "ETHUSDT"), **kwargs)))
+    width_one = one["combined"]["ci_high"] - one["combined"]["ci_low"]
+    width_two = two["combined"]["ci_high"] - two["combined"]["ci_low"]
+    assert width_one > 0
+    assert width_two > width_one / np.sqrt(2) * 1.2, (
+        "adding a correlated asset behaved like adding independent observations"
+    )
+
+
+def test_cross_asset_dependence_is_measured_not_assumed() -> None:
+    units = _units(symbols=("BTCUSDT", "ETHUSDT"), n_seeds=6, n_folds=15, fold_ga_spread=0.8)
+    dependence = paired_rs_ga(long_table(units))["cross_asset_dependence"]
+    assert dependence["n_shared_folds"] == 15
+    # The fixture gives both assets the same per-fold GA advantage, so the fold
+    # differences must come out strongly correlated.
+    assert dependence["correlation_of_fold_differences"] > 0.5
 
 
 def test_no_difference_yields_a_no_evidence_verdict() -> None:
@@ -125,7 +192,7 @@ def test_a_large_consistent_advantage_is_detected() -> None:
     assert result["mean_difference_ga_minus_rs"] == pytest.approx(1.0, abs=0.1)
     assert result["ci_excludes_zero"]
     assert "genetic_algorithm" in result["verdict"]
-    assert result["effect_size_cohens_dz"] > 0
+    assert result["combined"]["effect_size_cohens_dz"] > 0
 
 
 def test_paired_comparison_requires_both_engines() -> None:
