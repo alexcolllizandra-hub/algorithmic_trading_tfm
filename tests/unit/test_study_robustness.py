@@ -21,15 +21,19 @@ from perp_lab.evaluation.study_robustness import (
     load_oos_ledger,
 )
 
+FEE_BPS = 2.0
+SLIP_BPS = 1.0
+
 
 def _ledger(n: int, *, start: datetime, drift: float, seed: int) -> pl.DataFrame:
     rng = np.random.default_rng(seed)
     oo = rng.normal(drift, 0.01, n)
     position = np.sign(rng.normal(0.2, 1.0, n))
     turnover = np.abs(np.diff(position, prepend=0.0))
-    fee = turnover * 0.0002
-    slippage = turnover * 0.0001
-    funding = np.zeros(n)
+    fee = turnover * FEE_BPS / 1e4
+    slippage = turnover * SLIP_BPS / 1e4
+    funding_rate = np.zeros(n)
+    funding = position * funding_rate
     gross = position * oo
     net = gross - fee - slippage - funding
     return pl.DataFrame(
@@ -42,6 +46,7 @@ def _ledger(n: int, *, start: datetime, drift: float, seed: int) -> pl.DataFrame
             "fee": fee,
             "slippage": slippage,
             "cost": fee + slippage,
+            "funding_rate_in_bar": funding_rate,
             "funding": funding,
             "turnover": turnover,
             "equity": np.cumprod(1.0 + net),
@@ -86,7 +91,13 @@ def test_missing_ledgers_raise_instead_of_returning_an_empty_result(tmp_path: Pa
 
 def test_analyse_run_reports_every_required_test(tmp_path: Path) -> None:
     _write_run(tmp_path / "run", "random_search", drift=0.0005, seed=3)
-    report = analyse_run(tmp_path / "run", "random_search", resamples=80)
+    report = analyse_run(
+        tmp_path / "run",
+        "random_search",
+        resamples=80,
+        fee_bps_per_side=FEE_BPS,
+        slippage_bps_per_side=SLIP_BPS,
+    )
     assert set(report["tests"]) == {
         "positive_total_return",
         "beats_buy_and_hold",
@@ -99,7 +110,13 @@ def test_analyse_run_reports_every_required_test(tmp_path: Path) -> None:
 
 def test_doubling_costs_never_improves_the_result(tmp_path: Path) -> None:
     _write_run(tmp_path / "run", "random_search", drift=0.0005, seed=4)
-    report = analyse_run(tmp_path / "run", "random_search", resamples=50)
+    report = analyse_run(
+        tmp_path / "run",
+        "random_search",
+        resamples=50,
+        fee_bps_per_side=FEE_BPS,
+        slippage_bps_per_side=SLIP_BPS,
+    )
     stressed = report["cost_stress_2x"]["metrics"]["total_return"]
     assert stressed <= report["strategy"]["total_return"]
 
@@ -116,7 +133,9 @@ def test_bootstrap_uses_only_one_runs_own_series(tmp_path: Path) -> None:
             "seed": seed,
             "run_dir": str(run),
         }
-    payload = analyse_study_robustness(units, resamples=80)
+    payload = analyse_study_robustness(
+        units, resamples=80, fee_bps_per_side=FEE_BPS, slippage_bps_per_side=SLIP_BPS
+    )
 
     n_bars = {entry["n_bars"] for entry in payload["per_run"].values()}
     assert n_bars == {12 * 200}, "a run's series grew, so seeds were pooled into one history"
@@ -132,7 +151,9 @@ def test_tally_counts_seeds_for_each_symbol_and_engine(tmp_path: Path) -> None:
             _write_run(run, method, drift=0.001, seed=seed + 1)
         units[f"ETHUSDT|seed={seed}"] = {"symbol": "ETHUSDT", "seed": seed, "run_dir": str(run)}
 
-    tally = analyse_study_robustness(units, resamples=60)["by_symbol_and_engine"]
+    tally = analyse_study_robustness(
+        units, resamples=60, fee_bps_per_side=FEE_BPS, slippage_bps_per_side=SLIP_BPS
+    )["by_symbol_and_engine"]
     for group in ("ETHUSDT|random_search", "ETHUSDT|genetic_algorithm"):
         row = tally[group]
         assert row["n_seeds"] == 5
@@ -145,6 +166,8 @@ def test_units_without_artifacts_are_skipped_not_counted(tmp_path: Path) -> None
     units = {
         "BTCUSDT|seed=0": {"symbol": "BTCUSDT", "seed": 0, "run_dir": str(tmp_path / "missing")},
     }
-    payload = analyse_study_robustness(units, resamples=40)
+    payload = analyse_study_robustness(
+        units, resamples=40, fee_bps_per_side=FEE_BPS, slippage_bps_per_side=SLIP_BPS
+    )
     assert payload["per_run"] == {}
     assert payload["by_symbol_and_engine"] == {}

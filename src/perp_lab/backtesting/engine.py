@@ -54,6 +54,12 @@ _LEDGER_COLUMNS = (
     "fee",
     "slippage",
     "cost",
+    # The funding RATE settling in this bar, independent of the position held.
+    # A baseline evaluated over this ledger must pay funding on every bar it is
+    # exposed, including bars where the searched strategy happened to sit flat;
+    # back-deriving the rate as funding/position silently gives the baseline free
+    # funding exactly there.
+    "funding_rate_in_bar",
     "funding",
     "net_return",
     "turnover",
@@ -196,6 +202,7 @@ def run_backtest(
             pl.lit(0.0).alias("fee"),
             pl.lit(0.0).alias("slippage"),
             pl.lit(0.0).alias("cost"),
+            pl.lit(0.0).alias("funding_rate_in_bar"),
             pl.lit(0.0).alias("funding"),
             pl.lit(0.0).alias("net_return"),
             pl.lit(0.0).alias("turnover"),

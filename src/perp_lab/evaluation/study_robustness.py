@@ -58,6 +58,30 @@ def load_oos_ledger(run_dir: str | Path, method: str) -> pl.DataFrame:
     return ledger
 
 
+def _assert_engines_share_coverage(per_run: dict[str, dict[str, Any]]) -> None:
+    """Both engines of a unit must have been scored on exactly the same bars.
+
+    If they were not, every paired difference mixes an algorithmic effect with a
+    different market window, and the baselines are not the same baselines. This
+    has to abort rather than warn: an unnoticed mismatch invalidates the whole
+    comparison.
+    """
+    by_unit: dict[str, dict[str, str]] = {}
+    for full_key, entry in per_run.items():
+        unit, _, method = full_key.rpartition("|")
+        by_unit.setdefault(unit, {})[method] = entry["coverage_id"]
+
+    mismatched = {
+        unit: methods for unit, methods in by_unit.items() if len(set(methods.values())) > 1
+    }
+    if mismatched:
+        detail = "; ".join(f"{unit}: {methods}" for unit, methods in sorted(mismatched.items())[:5])
+        raise ValueError(
+            "Engines were scored on different out-of-sample bars, so their results "
+            f"are not comparable ({len(mismatched)} unit(s)). First few: {detail}"
+        )
+
+
 def _sharpe(x: np.ndarray) -> float:
     sd = float(x.std(ddof=1)) if x.size > 1 else 0.0
     return float(x.mean() / sd) if sd > 0 else 0.0
@@ -68,6 +92,8 @@ def analyse_run(
     method: str,
     *,
     timeframe: str = "1h",
+    fee_bps_per_side: float,
+    slippage_bps_per_side: float,
     seed: int = 42,
     resamples: int = 500,
     days_per_year: int = 365,
@@ -77,7 +103,12 @@ def analyse_run(
     net = ledger["net_return"].cast(pl.Float64).to_numpy().astype(float)
 
     comparison = strategy_versus_baselines(
-        ledger, timeframe=timeframe, seed=seed, days_per_year=days_per_year
+        ledger,
+        timeframe=timeframe,
+        fee_bps_per_side=fee_bps_per_side,
+        slippage_bps_per_side=slippage_bps_per_side,
+        seed=seed,
+        days_per_year=days_per_year,
     )
     strategy = comparison["strategy"]
     # Buy-and-hold is the always-long baseline, charged the run's own cost rate
@@ -107,6 +138,7 @@ def analyse_run(
     return {
         "run_dir": str(run_dir),
         "method": method,
+        "coverage_id": comparison["coverage_id"],
         "n_bars": int(ledger.height),
         "oos_start": str(ledger["open_time"].min()),
         "oos_end": str(ledger["open_time"].max()),
@@ -132,6 +164,8 @@ def analyse_study_robustness(
     units: dict[str, dict[str, Any]],
     *,
     timeframe: str = "1h",
+    fee_bps_per_side: float,
+    slippage_bps_per_side: float,
     resamples: int = 500,
     days_per_year: int = 365,
 ) -> dict[str, Any]:
@@ -152,6 +186,8 @@ def analyse_study_robustness(
                     run_dir,
                     method,
                     timeframe=timeframe,
+                    fee_bps_per_side=fee_bps_per_side,
+                    slippage_bps_per_side=slippage_bps_per_side,
                     seed=int(unit["seed"]),
                     resamples=resamples,
                     days_per_year=days_per_year,
@@ -159,6 +195,8 @@ def analyse_study_robustness(
                 per_run[f"{key}|{method}"].update({"symbol": unit["symbol"], "seed": unit["seed"]})
             except (FileNotFoundError, ValueError):
                 continue
+
+    _assert_engines_share_coverage(per_run)
 
     tally: dict[str, dict[str, Any]] = {}
     for entry in per_run.values():
