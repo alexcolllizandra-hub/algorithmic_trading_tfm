@@ -144,6 +144,56 @@ def _load_data(
     return frame, funding, holdout_start, manifests
 
 
+def _load_reference_bars(
+    cfg: SearchRunConfig,
+    exp: ExperimentConfig,
+    contract: DataContract,
+    paths: Paths,
+    *,
+    seed: int,
+    log: logging.Logger,
+) -> pl.DataFrame | None:
+    """Load the second asset for a cross-asset family, from development only.
+
+    Returns ``None`` for every other family, so no run pays for data it does not
+    use. The holdout guard is applied to the reference exactly as it is to the
+    traded asset: a cross-asset strategy could otherwise read the frozen partition
+    through the back door of its reference symbol.
+    """
+    reference_map = exp.strategies.families.cross_asset.reference_symbol
+    reference_symbol = reference_map.get(cfg.symbol)
+    if cfg.family != "BTC_ETH_confirmation" or reference_symbol is None:
+        return None
+
+    if cfg.synthetic:
+        # A second synthetic series, correlated with neither the first nor the
+        # market. Smoke data only; it proves the wiring, never a result.
+        return synthetic_klines(cfg.synthetic_bars, seed=seed + 1, timeframe=cfg.timeframe)
+
+    lake = DataLake(contract, paths)
+    key = f"{reference_symbol}:{cfg.timeframe}_development"
+    if not lake.available().get(key, False):
+        raise FileNotFoundError(
+            f"Family {cfg.family!r} trades {cfg.symbol} confirmed by {reference_symbol}, but no "
+            f"processed development data exists for {key}; run 'perp-lab download'."
+        )
+    _assert_partition_before_holdout(
+        paths,
+        f"{contract.exchange}_{contract.market_type}_{reference_symbol}"
+        f"_klines_{cfg.timeframe}_development",
+        holdout_start=resolve_holdout_start(contract),
+        log=log,
+    )
+    loaded = lake.load_klines(reference_symbol, cfg.timeframe, partition="development")
+    log.info(
+        "cross-asset reference | %s confirmed by %s | %d bars",
+        cfg.symbol,
+        reference_symbol,
+        loaded.frame.height,
+    )
+    return loaded.frame
+
+
 def _assert_partition_before_holdout(
     paths: Paths,
     dataset_id: str,
@@ -326,6 +376,7 @@ def run_search(
         cfg.budget,
     )
 
+    reference_bars = _load_reference_bars(cfg, exp, contract, paths, seed=seed, log=log)
     bundle = build_folds_data(
         frame,
         folds,
@@ -338,8 +389,10 @@ def run_search(
         funding=funding,
         holdout_start=holdout_start,
         seeds=seeds,
+        reference_bars=reference_bars,
+        reference_symbol=exp.strategies.families.cross_asset.reference_symbol.get(cfg.symbol),
     )
-    space = build_search_space(exp, cfg.family)
+    space = build_search_space(exp, cfg.family, cfg.symbol)
     overrides = cfg.objective.as_overrides() if cfg.objective else None
     objective_cfg = ObjectiveConfig.from_experiment(
         exp, require_funding=cfg.require_funding, overrides=overrides
@@ -357,6 +410,7 @@ def run_search(
             days_per_year=exp.annualization_days,
             require_funding=cfg.require_funding,
             objective_cfg=objective_cfg,
+            reference_bars=reference_bars,
         )
 
     run_rs = cfg.algorithm in ("random_search", "comparison")

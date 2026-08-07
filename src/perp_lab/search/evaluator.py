@@ -31,6 +31,7 @@ import polars as pl
 
 from perp_lab.backtesting.engine import BacktestResult, run_backtest
 from perp_lab.config.experiment import ExperimentConfig
+from perp_lab.features.context import FeatureContext
 from perp_lab.features.manifest import build_feature_manifest
 from perp_lab.features.registry import build_feature_frame, feature_columns, resolve_feature_set
 from perp_lab.features.spec import FeatureItemLike, FeatureSpec
@@ -125,6 +126,8 @@ def build_folds_data(
     funding: pl.DataFrame | None,
     holdout_start: datetime,
     seeds: SeedScheduler | None = None,
+    reference_bars: pl.DataFrame | None = None,
+    reference_symbol: str | None = None,
 ) -> FoldsBundle:
     """Build the causal feature frame once and pre-split leakage-safe folds.
 
@@ -141,7 +144,13 @@ def build_folds_data(
     space = build_search_space(exp, family, symbol)
     requested: list[FeatureItemLike] = [*space.feature_items, *_regime_feature_items(exp)]
     specs = resolve_feature_set(requested)
-    feats, resolved = build_feature_frame(dev_frame, specs, holdout_start=holdout_start)
+    # A family that declares a feature must actually receive it. Building the
+    # frame without the auxiliary inputs would leave the funding family, for
+    # instance, signalling on a column that was never attached.
+    context = FeatureContext(funding=funding, peer=reference_bars, peer_symbol=reference_symbol)
+    feats, resolved = build_feature_frame(
+        dev_frame, specs, holdout_start=holdout_start, context=context
+    )
     names = feature_columns(resolved)
     manifest = build_feature_manifest(
         resolved, symbol=symbol, timeframe=timeframe, dataset_id=symbol
