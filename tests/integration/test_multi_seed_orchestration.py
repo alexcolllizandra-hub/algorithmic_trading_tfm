@@ -183,6 +183,97 @@ def test_resume_refuses_a_changed_configuration(tmp_path: Path, smoke_config) ->
         )
 
 
+def test_resume_refuses_a_changed_methodological_contract(tmp_path: Path, smoke_config) -> None:
+    """The configuration can be untouched while the contract underneath it moved."""
+    study = tmp_path / "study"
+    paths = _paths(tmp_path)
+    common = {
+        "symbols": ("BTCUSDT",),
+        "seeds": resolve_seeds(1, 1),
+        "study_dir": study,
+        "paths": paths,
+    }
+    run_multi_seed(smoke_config, contract_payload={"holdout_start": "2026-01-01"}, **common)
+    with pytest.raises(ValueError, match="different"):
+        run_multi_seed(smoke_config, contract_payload={"holdout_start": "2026-04-01"}, **common)
+
+
+def test_resume_refuses_changed_development_data(tmp_path: Path, smoke_config) -> None:
+    """Same code, same config, different bars underneath: not the same experiment."""
+    study = tmp_path / "study"
+    paths = _paths(tmp_path)
+    common = {
+        "symbols": ("BTCUSDT",),
+        "seeds": resolve_seeds(1, 1),
+        "study_dir": study,
+        "paths": paths,
+    }
+    run_multi_seed(smoke_config, dataset_hashes={"BTCUSDT_1h": "aaa"}, **common)
+    with pytest.raises(ValueError, match="different"):
+        run_multi_seed(smoke_config, dataset_hashes={"BTCUSDT_1h": "bbb"}, **common)
+
+
+def test_resume_refuses_uncommitted_code_changes(tmp_path: Path, smoke_config, monkeypatch) -> None:
+    """A dirty worktree that changed between the two halves of a study.
+
+    The commit is identical, so a commit-only identity would happily pool units
+    produced by two different versions of the code.
+    """
+    from perp_lab.tracking import identity as identity_module
+
+    study = tmp_path / "study"
+    common = {
+        "symbols": ("BTCUSDT",),
+        "seeds": resolve_seeds(1, 1),
+        "study_dir": study,
+        "paths": _paths(tmp_path),
+    }
+
+    def _state(diff: str) -> dict:
+        return {
+            "commit": "same-commit-both-times",
+            "branch": "work",
+            "dirty": True,
+            "diff_sha256": diff,
+            "untracked_sha256": None,
+            "untracked_files": [],
+            "reproducible_from_commit_alone": False,
+        }
+
+    monkeypatch.setattr(identity_module, "worktree_state", lambda _root=".": _state("edit-one"))
+    run_multi_seed(smoke_config, **common)
+
+    monkeypatch.setattr(identity_module, "worktree_state", lambda _root=".": _state("edit-two"))
+    with pytest.raises(ValueError, match="different"):
+        run_multi_seed(smoke_config, **common)
+
+
+def test_a_dirty_run_is_recorded_as_provisional(tmp_path: Path, smoke_config) -> None:
+    """Identity is persisted so a reader can tell a citable run from a scratch one."""
+    import json
+
+    study = tmp_path / "study"
+    run_multi_seed(
+        smoke_config,
+        symbols=("BTCUSDT",),
+        seeds=resolve_seeds(1, 1),
+        study_dir=study,
+        paths=_paths(tmp_path),
+    )
+    record = json.loads((study / "run_identity.json").read_text(encoding="utf-8"))
+    assert set(record["components"]) >= {
+        "config_sha256",
+        "contract_sha256",
+        "dataset_sha256",
+        "commit",
+        "diff_sha256",
+        "untracked_sha256",
+    }
+    assert isinstance(record["provisional"], bool)
+    if record["provisional"]:
+        assert record["provisional_reason"]
+
+
 def test_fingerprint_ignores_only_the_dimensions_the_study_varies(smoke_config) -> None:
     base = config_fingerprint(smoke_config)
     assert config_fingerprint(smoke_config.model_copy(update={"seed": 999})) == base

@@ -16,6 +16,7 @@ import os
 import re
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import polars as pl
 
@@ -213,6 +214,44 @@ def cmd_search_summary(args: argparse.Namespace) -> int:
     return 0
 
 
+def _contract_payload(cfg: Any) -> dict[str, Any]:
+    """The methodological contract a study is bound to.
+
+    Kept separate from the search configuration in the run's identity so a
+    refusal to resume can say *which* of the two moved.
+    """
+    exp = load_experiment_config(cfg.experiment_config)
+    contract = load_data_contract(cfg.data_contract)
+    return {
+        "experiment": exp.model_dump(mode="json"),
+        "data_contract": contract.model_dump(mode="json"),
+    }
+
+
+def _development_dataset_hashes(cfg: Any, symbols: tuple[str, ...]) -> dict[str, str]:
+    """SHA-256 of the development partitions the study is allowed to read.
+
+    Only development manifests are consulted. Reaching for a holdout manifest to
+    "complete" the record would be exactly the access this project forbids.
+    """
+    from perp_lab.config import Paths
+
+    manifests_dir = Path(Paths().data_root) / "manifests"
+    out: dict[str, str] = {}
+    if not manifests_dir.exists():
+        return out
+    for symbol in symbols:
+        for path in sorted(manifests_dir.glob(f"*{symbol}*development*.json")):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            digest = payload.get("sha256") or payload.get("content_sha256")
+            if digest:
+                out[path.stem] = str(digest)
+    return out
+
+
 def cmd_multi_seed(args: argparse.Namespace) -> int:
     """Run the frozen experiment across many seeds and assets, with resume."""
     from perp_lab.evaluation.multi_seed import analyse_study
@@ -237,6 +276,8 @@ def cmd_multi_seed(args: argparse.Namespace) -> int:
         seeds=seeds,
         study_dir=args.study_dir,
         resume=not args.no_resume,
+        contract_payload=_contract_payload(cfg),
+        dataset_hashes=_development_dataset_hashes(cfg, symbols),
         logger=_log,
     )
 

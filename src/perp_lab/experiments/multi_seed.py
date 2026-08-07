@@ -31,6 +31,7 @@ from typing import Any
 from perp_lab.config import Paths
 from perp_lab.search.config import SearchRunConfig
 from perp_lab.search.runner import SearchRunResult, run_search
+from perp_lab.tracking.identity import build_identity, identity_record
 from perp_lab.tracking.journal import Checkpoint, Journal, atomic_write_json
 from perp_lab.tracking.run import generate_run_id, git_state
 from perp_lab.utils.logging import get_logger
@@ -44,6 +45,14 @@ def unit_key(symbol: str, seed: int) -> str:
     return f"{symbol}|seed={seed}"
 
 
+def _poolable_payload(cfg: SearchRunConfig) -> dict[str, Any]:
+    """The configuration minus the dimensions the study deliberately varies."""
+    payload = cfg.model_dump(mode="json")
+    for varying in ("seed", "symbol", "label"):
+        payload.pop(varying, None)
+    return payload
+
+
 def config_fingerprint(cfg: SearchRunConfig) -> str:
     """Hash of everything that must be identical for results to be poolable.
 
@@ -52,10 +61,7 @@ def config_fingerprint(cfg: SearchRunConfig) -> str:
     costs, objective, data contract -- must match, otherwise the units are not
     measuring the same thing and must not be aggregated.
     """
-    payload = cfg.model_dump(mode="json")
-    for varying in ("seed", "symbol", "label"):
-        payload.pop(varying, None)
-    text = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    text = json.dumps(_poolable_payload(cfg), sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
@@ -149,6 +155,8 @@ def run_multi_seed(
     paths: Paths | None = None,
     resume: bool = True,
     repo_root: str | Path = ".",
+    contract_payload: Any | None = None,
+    dataset_hashes: dict[str, str] | None = None,
     logger: logging.Logger | None = None,
 ) -> MultiSeedResult:
     """Execute the grid of (asset, seed) runs with checkpointing and resume."""
@@ -169,12 +177,38 @@ def run_multi_seed(
     gs = git_state(repo_root)
     fingerprint = config_fingerprint(base_config)
 
-    # Resuming into a checkpoint built under a different configuration or code
-    # version would silently pool incomparable results.
-    checkpoint.assert_compatible(config_fingerprint=fingerprint, git_commit=gs["commit"])
+    # A commit hash does not identify a run made on a dirty worktree, and almost
+    # every development run is. The identity therefore also covers uncommitted
+    # changes and untracked source files, so resuming can refuse a study whose
+    # code changed even though nothing was committed.
+    identity = build_identity(
+        config_payload=_poolable_payload(base_config),
+        contract_payload=contract_payload,
+        dataset_hashes=dataset_hashes,
+        repo_root=repo_root,
+    )
+    record = identity_record(identity, repo_root=repo_root)
+    if record["provisional"]:
+        log.warning(
+            "PROVISIONAL RUN | executing uncommitted code (diff=%s untracked=%s); "
+            "results are identified exactly but reproducible only from this working tree",
+            identity.components["diff_sha256"],
+            identity.components["untracked_sha256"],
+        )
+
+    # Resuming into a checkpoint built under a different configuration, contract,
+    # dataset or code state would silently pool incomparable results.
+    checkpoint.assert_compatible(
+        config_fingerprint=fingerprint,
+        git_commit=gs["commit"],
+        run_identity=identity.fingerprint,
+    )
     checkpoint.set_meta(
         study_id=study_id,
         config_fingerprint=fingerprint,
+        run_identity=identity.fingerprint,
+        identity_components=identity.components,
+        provisional=record["provisional"],
         git_commit=gs["commit"],
         git_dirty=gs["dirty"],
         symbols=list(symbols),
@@ -182,6 +216,7 @@ def run_multi_seed(
         family=base_config.family,
         budget=base_config.budget,
     )
+    atomic_write_json(study_path / "run_identity.json", record)
 
     units = plan.units()
     total = len(units)
