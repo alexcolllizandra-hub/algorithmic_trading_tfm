@@ -138,7 +138,7 @@ def build_folds_data(
         raise ValueError("build_folds_data received no walk-forward folds.")
     assert_folds_exclude_holdout(folds, holdout_start)
 
-    space = build_search_space(exp, family)
+    space = build_search_space(exp, family, symbol)
     requested: list[FeatureItemLike] = [*space.feature_items, *_regime_feature_items(exp)]
     specs = resolve_feature_set(requested)
     feats, resolved = build_feature_frame(dev_frame, specs, holdout_start=holdout_start)
@@ -212,6 +212,7 @@ class CandidateEvaluator:
         days_per_year: int,
         require_funding: bool,
         objective_cfg: ObjectiveConfig,
+        reference_bars: pl.DataFrame | None = None,
     ) -> None:
         self.bundle = bundle
         self.space = space
@@ -221,6 +222,10 @@ class CandidateEvaluator:
         self.days_per_year = days_per_year
         self.require_funding = require_funding
         self.objective_cfg = objective_cfg
+        # Only the cross-asset family consumes this. It is passed explicitly rather
+        # than merged into the feature frame so the dependency stays visible in the
+        # specification instead of becoming an anonymous column.
+        self.reference_bars = reference_bars
         self._cache: dict[
             str, tuple[list[dict[str, float]], dict[str, float], float, str | None, bool]
         ] = {}
@@ -229,8 +234,31 @@ class CandidateEvaluator:
         strat = self.space.build(candidate.params)
         return strat  # type: ignore[return-value]
 
+    def _signals(self, strategy: Strategy, frame: pl.DataFrame) -> pl.DataFrame:
+        """Generate signals, supplying the reference asset when one is declared.
+
+        A strategy that names a ``reference_symbol`` must receive that asset's bars.
+        Falling back to a single-asset call would turn a cross-asset strategy into a
+        different, unlabelled strategy that still reports the cross-asset family.
+        """
+        reference_symbol = getattr(strategy, "reference_symbol", None)
+        if reference_symbol is None:
+            return strategy.signals(frame)
+        if self.reference_bars is None:
+            raise ValueError(
+                f"{type(strategy).__name__} declares reference_symbol={reference_symbol!r} "
+                "but the evaluator was built without reference bars. Load the reference "
+                "asset for this fold; this family cannot be evaluated without it."
+            )
+        # Slice the reference to the fold's own window. Handing over the whole
+        # history would let a fold read reference bars from beyond its own end.
+        window = self.reference_bars.filter(
+            pl.col("open_time") <= frame["open_time"].max()  # type: ignore[operator]
+        )
+        return strategy.signals(frame, reference=window)  # type: ignore[call-arg]
+
     def _backtest(self, strategy: Strategy, frame: pl.DataFrame) -> BacktestResult:
-        signals = strategy.signals(frame)
+        signals = self._signals(strategy, frame)
         return run_backtest(
             signals,
             frame,

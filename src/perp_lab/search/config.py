@@ -79,7 +79,14 @@ class SearchRunConfig(_Strict):
 
     experiment_config: Path = Path("configs/experiment.yaml")
     data_contract: Path = Path("configs/data_contract.yaml")
-    family: Literal["momentum", "breakout", "mean_reversion"]
+    family: Literal[
+        "momentum",
+        "breakout",
+        "mean_reversion",
+        "volatility_breakout",
+        "funding",
+        "BTC_ETH_confirmation",
+    ]
     algorithm: Literal["random_search", "genetic_algorithm", "comparison"] = "comparison"
     symbol: str = "BTCUSDT"
     timeframe: str = "1h"

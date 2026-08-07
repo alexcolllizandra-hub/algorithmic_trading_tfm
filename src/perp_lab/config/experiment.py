@@ -248,10 +248,137 @@ class MeanReversionFamily(_Strict):
         return self
 
 
+class VolatilityBreakoutFamily(_Strict):
+    """Breakout thresholds scaled by recent true-range volatility."""
+
+    level_window: _PosIntTuple = (24, 48, 96)
+    atr_window: _PosIntTuple = (14, 24, 48)
+    entry_atr: tuple[float, ...] = (0.25, 0.5, 1.0)
+    exit_atr: tuple[float, ...] = (0.1, 0.25, 0.5)
+    exit_mode: tuple[str, ...] = ("reenter_level", "opposite_break", "volatility_stop")
+    min_atr_pct: tuple[float, ...] = (0.25, 0.5)
+
+    @field_validator("level_window", "atr_window")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "volatility-breakout windows")
+
+    @field_validator("entry_atr", "exit_atr")
+    @classmethod
+    def _multiples_positive(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(x <= 0 for x in v):
+            raise ValueError("volatility-breakout ATR multiples must be strictly positive.")
+        return v
+
+    @field_validator("min_atr_pct")
+    @classmethod
+    def _quantiles(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not 0.0 <= x < 1.0 for x in v):
+            raise ValueError("min_atr_pct entries are quantiles and must lie in [0, 1).")
+        return v
+
+    @model_validator(mode="after")
+    def _an_exit_below_an_entry_must_exist(self) -> VolatilityBreakoutFamily:
+        # A volatility stop at or beyond the entry threshold closes the position on
+        # the bar that opened it, so at least one admissible pair must exist.
+        if min(self.exit_atr) >= max(self.entry_atr):
+            raise ValueError(
+                "No admissible (entry_atr, exit_atr) pair: every exit multiple is at or "
+                "beyond every entry multiple, so the volatility stop can never be valid."
+            )
+        return self
+
+
+class FundingFamily(_Strict):
+    """Trades the published funding rate as a signal, never as a cashflow."""
+
+    signal_window: _PosIntTuple = (24, 48, 168)
+    entry_z: tuple[float, ...] = (1.0, 1.5, 2.0)
+    exit_z: tuple[float, ...] = (0.0, 0.25, 0.5)
+    stance: tuple[str, ...] = ("fade", "follow")
+    min_abs_rate: tuple[float, ...] = (0.0, 0.00005)
+
+    @field_validator("signal_window")
+    @classmethod
+    def _windows(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        if any(w <= 1 for w in v):
+            raise ValueError("funding signal_window must exceed 1 bar for a deviation to exist.")
+        return v
+
+    @field_validator("entry_z")
+    @classmethod
+    def _entry_positive(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(x <= 0 for x in v):
+            raise ValueError("funding entry_z must be strictly positive.")
+        return v
+
+    @model_validator(mode="after")
+    def _an_exit_inside_an_entry_must_exist(self) -> FundingFamily:
+        if min(self.exit_z) >= max(self.entry_z):
+            raise ValueError(
+                "No admissible (entry_z, exit_z) pair: every exit band is at or outside "
+                "every entry band, so a position would close on the bar that opened it."
+            )
+        return self
+
+
+class CrossAssetFamily(_Strict):
+    """One asset traded only when the other confirms, with a causal alignment lag."""
+
+    lookback: _PosIntTuple = (6, 12, 24, 48)
+    entry_threshold: tuple[float, ...] = (0.003, 0.005, 0.01)
+    reference_threshold: tuple[float, ...] = (0.0, 0.002, 0.005)
+    exit_threshold: tuple[float, ...] = (0.0, 0.001)
+    reference_lag: _PosIntTuple = (1, 2, 4)
+    mode: tuple[str, ...] = ("agree", "lead_lag", "divergence")
+    reference_symbol: dict[str, str] = {"BTCUSDT": "ETHUSDT", "ETHUSDT": "BTCUSDT"}
+
+    @field_validator("lookback")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "cross-asset lookback")
+
+    @field_validator("reference_lag")
+    @classmethod
+    def _lag_at_least_one_bar(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        # Bars are labelled by open time and left-closed, so the reference bar
+        # sharing the decision bar's timestamp is still being formed.
+        if any(lag < 1 for lag in v):
+            raise ValueError(
+                "cross-asset reference_lag must be >= 1 bar; a zero lag lets an "
+                "incomplete reference bar confirm a decision taken at the same time."
+            )
+        return v
+
+    @field_validator("entry_threshold")
+    @classmethod
+    def _entry_positive(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(x <= 0 for x in v):
+            raise ValueError("cross-asset entry_threshold must be strictly positive.")
+        return v
+
+    @model_validator(mode="after")
+    def _reference_is_never_the_target(self) -> CrossAssetFamily:
+        for target, reference in self.reference_symbol.items():
+            if target == reference:
+                raise ValueError(
+                    f"{target} cannot be its own reference; that is a single-asset "
+                    "strategy wearing a cross-asset label."
+                )
+        if min(self.exit_threshold) >= max(self.entry_threshold):
+            raise ValueError(
+                "No admissible (entry_threshold, exit_threshold) pair for the cross-asset family."
+            )
+        return self
+
+
 class Families(_Strict):
     momentum: MomentumFamily = MomentumFamily()
     breakout: BreakoutFamily = BreakoutFamily()
     mean_reversion: MeanReversionFamily = MeanReversionFamily()
+    volatility_breakout: VolatilityBreakoutFamily = VolatilityBreakoutFamily()
+    funding: FundingFamily = FundingFamily()
+    cross_asset: CrossAssetFamily = CrossAssetFamily()
 
 
 class VolatilityFilter(_Strict):
