@@ -40,6 +40,7 @@ from perp_lab.search.objective import ObjectiveConfig, aggregate_objective
 from perp_lab.search.registry import _FeatureItem, build_search_space
 from perp_lab.search.space import SearchSpace
 from perp_lab.strategies.base import Strategy
+from perp_lab.utils.seeds import SeedScheduler
 from perp_lab.validation.walk_forward import (
     WalkForwardFold,
     assert_folds_exclude_holdout,
@@ -123,8 +124,16 @@ def build_folds_data(
     seed: int,
     funding: pl.DataFrame | None,
     holdout_start: datetime,
+    seeds: SeedScheduler | None = None,
 ) -> FoldsBundle:
-    """Build the causal feature frame once and pre-split leakage-safe folds."""
+    """Build the causal feature frame once and pre-split leakage-safe folds.
+
+    When ``seeds`` is given, each fold's regime model is fitted from its own
+    stream keyed by symbol and fold index, so a stochastic regime model (k-means,
+    GMM) cannot make one fold's initialisation depend on another's. Without it the
+    single ``seed`` is reused for every fold, which is only adequate for the
+    deterministic threshold model.
+    """
     if not folds:
         raise ValueError("build_folds_data received no walk-forward folds.")
     assert_folds_exclude_holdout(folds, holdout_start)
@@ -147,7 +156,12 @@ def build_folds_data(
     for fold in folds:
         parts = split_fold(feats, fold)
         train = parts["train"]
-        model = _make_regime_model(regime_model, input_tuple, seed)
+        fold_seed = (
+            seeds.stream("regime", symbol=symbol, timeframe=timeframe, fold=fold.index)
+            if seeds is not None
+            else seed
+        )
+        model = _make_regime_model(regime_model, input_tuple, fold_seed)
         model.fit(train)
         fold_data.append(
             FoldData(
