@@ -80,34 +80,61 @@ Base path `/api/v1`. Interactive docs at `/api/v1/docs`; schema at
 | GET | `/runs/{run_id}/equity` | Equity/drawdown series for a fold/method. |
 | GET | `/runs/{run_id}/trades` | Paginated trades (CSV export in UI). |
 | GET | `/runs/{run_id}/artifacts` | Manifests, search space, env, warnings. |
+| GET | `/runs/{run_id}/validity` | Budget parity and methodological-validity checks. |
 | GET | `/market/coverage` | Dataset coverage + authenticity (dev only). |
 | GET | `/market/ohlcv` | Development-only OHLCV bars for charts. |
+| GET | `/research/summary` | Research-phase summary and holdout status. |
+| GET | `/research/timeline` | Development coverage, folds, purge, embargo and holdout boundary. |
+| GET | `/eda/summary` | EDA catalogue summary and available themes. |
+| GET | `/eda/figures` | Paginated EDA figure catalogue. |
+| GET | `/eda/figures/{figure_id}` | A catalogue figure, constrained to the EDA root. |
+| GET | `/methodology/features` | Registered causal feature definitions. |
+| GET | `/methodology/strategies` | Interpretable strategy definitions. |
 
 **Security:** run ids are validated and resolved strictly beneath the configured
 runs root (path-traversal rejected); the API is read-only; CORS is a narrow
 allow-list; every response carries an `X-Request-ID`; the frozen holdout is
 never served (development partitions only).
 
-## Web modules
+## Canonical web platform: six research sections
 
-1. Executive Overview — runs, run-type counts, data authenticity/health, best
-   OOS metric, prominent exploratory warning.
-2. Market Overview — symbol/timeframe selector, candlesticks, coverage &
-   missing-data indicators (development data only).
-3. Strategy Lab — strategy families + parameter-space definitions, read-only
-   config viewer (no execution buttons).
-4. Experiments — run browser (filter/sort), RS vs GA comparison, fair-budget
-   verification, candidate ranking, fold winners, validation vs test, runtime/
-   failure analysis.
-5. Search Analytics — convergence curves, GA diversity by generation, lineage,
-   fitness-component decomposition.
-6. Performance — equity & drawdown with fold boundaries, risk metrics, paginated
-   trades with CSV export, cost/slippage/funding contribution.
-7. Artifact Inspector — dataset & feature manifests, partitions, search space,
-   objective, environment/git state, warnings, failed candidates, missing/
-   corrupt diagnostics.
-8. Architecture / System Status — implemented components, data flow, service
-   health, implemented vs planned vs unavailable.
+The Next.js platform is the canonical presentation layer. The legacy Streamlit
+dashboard remains an internal/legacy inspection tool; it is not the public
+research narrative.
+
+1. **Visión general** — research phases, artifact evidence and methodological
+   warnings.
+2. **Datos y EDA** — development-data coverage, fold timeline and the catalogue
+   of descriptive figures.
+3. **Metodología** — causal features, interpretable strategy families, execution
+   timing and walk-forward validation.
+4. **Experimentos** — run browser, candidates, convergence and the RS-vs-GA
+   validity/fairness panel.
+5. **Resultados** — selected-fold equity, drawdown and trades. The contextual
+   bar synchronises run, method, fold and candidate through the URL.
+6. **Diagnóstico** — manifests, artifacts, environment, warnings and API/system
+   state.
+
+Legacy URLs redirect to the corresponding section (`/market` → `/datos-eda`,
+`/strategy-lab` → `/metodologia`, `/performance` → `/resultados`, etc.).
+
+### Equity pagination correction
+
+`GET /runs/{run_id}/equity` returns a paginated `points` window **and** an
+`EquitySeriesSummary` calculated from the complete on-disk equity series. Cards
+and fold-level performance must use `summary`, never the final point in the
+current page.
+
+This is tested against
+`search_momentum_20260804T190438Z_1a68e0`, Random Search, fold 0:
+
+- `final_equity = 0.9040595814842268`
+- `n_points_total = 2159`
+- period `2022-03-31` to `2022-06-28`
+
+With `limit=500`, the API deliberately returns 500 display points but retains
+the same full-series summary. This prevents a chart viewport from changing a
+reported financial metric.
 
 ## Commands
 
@@ -191,3 +218,20 @@ MLflow, PostgreSQL, Redis, Grafana, Prometheus, distributed workers,
 authentication, asynchronous job execution, paper trading, live execution,
 triple-barrier labeling, meta-labeling and final-holdout evaluation are **not**
 implemented in this phase. They are reserved/documented only.
+
+## Current scientific limits
+
+- The frozen final holdout `[2026-01-01, 2026-07-01)` has not been opened by
+  this platform. It is not served by the API.
+- The dashboard's pilot artifacts are development evidence only; they do not
+  establish robustness or final performance.
+- The displayed historical pilot uses one seed and a deliberately limited
+  search budget. Its effective counts are unequal: Random Search = 12 and
+  Genetic Algorithm = 10. The validity panel exposes this mismatch, therefore
+  no conclusion of RS or GA superiority is permitted from that run.
+- LightGBM and every ML meta-filter remain unimplemented in this dashboard
+  phase.
+- The leakage-safe outer-fold search repetition and the definitive multi-seed
+  experiment are subsequent experimental phases. Until they complete, numerical
+  results must remain labelled exploratory/replaced-pending-repetition where
+  applicable.

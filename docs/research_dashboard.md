@@ -90,16 +90,21 @@ the comparison table, fair-budget verification (including a violation case),
 convergence/diversity frames, fold winners, folds, candidate ranking, equity/
 trade frames, dataset manifests, and graceful handling of missing artifacts.
 
-## Future service architecture (documented, NOT implemented)
+## Legacy status and service architecture
 
-The current dashboard is intentionally a single read-only Streamlit process. A
+> **Legacy/internal tool.** The canonical research presentation is now the
+> Next.js platform documented in [`platform/README.md`](platform/README.md),
+> backed by the implemented read-only FastAPI service. This Streamlit view is
+> retained for internal artifact inspection only.
+
+The legacy dashboard is intentionally a single read-only Streamlit process. The
 later phase may split it into services. The proposed target topology and ports
 are recorded here **for design only** — none of it is implemented now:
 
 | Service                     | Proposed port | Status          |
 | --------------------------- | ------------- | --------------- |
 | Streamlit research UI       | 8501          | **implemented** |
-| FastAPI results/API gateway | 8000          | future          |
+| FastAPI results/API gateway | 8000          | **implemented** — see `docs/platform/README.md` |
 | PostgreSQL (run/metrics DB) | 5432          | future          |
 | MinIO (artifact object store, S3 API) | 9000 (API) / 9001 (console) | future |
 | Prometheus (metrics scrape) | 9090          | future          |
@@ -107,6 +112,6 @@ are recorded here **for design only** — none of it is implemented now:
 | Distributed workers / queue | n/a           | future          |
 | Paper-trading engine        | n/a           | future          |
 
-Explicitly **out of scope** for this phase: FastAPI, PostgreSQL, MinIO, Grafana,
+Explicitly **out of scope** for this legacy Streamlit tool: PostgreSQL, MinIO, Grafana,
 Prometheus, distributed workers, paper trading, triple-barrier labeling,
 meta-labeling, robustness experiments and final-holdout evaluation.
