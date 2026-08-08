@@ -1,9 +1,23 @@
 # ADR 0011 -- Multi-seed baseline for the momentum family
 
-- **Status:** accepted
+- **Status:** accepted, **qualified by ADR 0012**
 - **Date:** 2026-08-05
 - **Supersedes:** nothing. Extends ADR 0009 (fair RS/GA comparison) and ADR 0010
   (OOS evaluation, baselines and robustness).
+
+> **Qualification (added 2026-08-08).** The study below was produced under a
+> search protocol that ranked candidates on a fitness pooled across *all*
+> walk-forward folds, including folds later than the one being scored. See
+> [ADR 0012](0012-outer-fold-contamination-in-candidate-search.md). The bias runs
+> in the genetic algorithm's favour, so the negative conclusions here are
+> conservative -- but the RS-vs-GA point estimate is partly bias and must not be
+> read as a real, merely-underpowered effect. The study is scheduled for re-run
+> under the corrected protocol.
+>
+> The single-seed interval `[0.011, 1.044]` cited in the Context section is
+> **documentary only**: no artifact in `artifacts/` reproduces those bounds, and
+> this ADR itself states that pre-scheduler runs are not poolable with this study.
+> It must not be cited as a result.
 
 ## Context
 
