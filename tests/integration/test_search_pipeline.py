@@ -53,9 +53,12 @@ def test_run_search_comparison_end_to_end(tmp_path) -> None:
     res = run_search(cfg, paths=paths, write_artifacts=True)
 
     assert set(res.outcomes) == {"random_search", "genetic_algorithm"}
-    # Fair budget: both capped at the same number of unique evaluations.
+    summary = res.summary
+    total_budget = summary["total_budget_per_method"]
+    # Fair budget: each outer fold gets the same evaluation cap.
     for outcome in res.outcomes.values():
-        assert outcome.counters.evaluated <= cfg.budget
+        assert outcome.counters.evaluated <= total_budget
+    assert summary["search_protocol"] == "independent_per_outer_fold"
     # Artifacts exist and reload.
     assert res.run_dir is not None
     summary = json.loads((res.run_dir / "comparison_summary.json").read_text())
@@ -74,9 +77,16 @@ def test_run_search_is_reproducible(tmp_path) -> None:
     r1 = run_search(cfg, write_artifacts=False)
     r2 = run_search(cfg, write_artifacts=False)
     for name in r1.outcomes:
-        o1, o2 = r1.outcomes[name], r2.outcomes[name]
-        assert [c.candidate_id for c in o1.candidates] == [c.candidate_id for c in o2.candidates]
-        assert o1.convergence == o2.convergence
+        w1 = r1.fold_winners[name]
+        w2 = r2.fold_winners[name]
+        assert [w.get("winner") for w in w1] == [w.get("winner") for w in w2]
+        for fold_outcome_a, fold_outcome_b in zip(
+            r1.fold_outcomes[name], r2.fold_outcomes[name], strict=True
+        ):
+            assert [c.candidate_id for c in fold_outcome_a.candidates] == [
+                c.candidate_id for c in fold_outcome_b.candidates
+            ]
+            assert fold_outcome_a.convergence == fold_outcome_b.convergence
     assert r1.summary["methods"].keys() == r2.summary["methods"].keys()
 
 

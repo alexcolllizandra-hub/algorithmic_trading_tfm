@@ -2,13 +2,10 @@
 
 Executes one or both algorithms under matched conditions (identical folds,
 family, parameter-space version, budget, seeds, objective, costs and funding
-requirement), selects each fold's winner on **validation** only, scores those
-winners once on **test**, and writes a machine-readable + human-readable
-comparison to a run-specific artifact directory.
-
-The comparison metric is the aggregated **out-of-sample test** performance of the
-fold winners -- never the in-sample or validation score, and never the frozen
-holdout.
+requirement). Search runs **independently on each outer fold** so validation
+metrics from fold *B* never influence candidate selection on fold *A*. Each fold
+winner is frozen and scored once on that fold's **test** slice; the comparison
+metric is the aggregated out-of-sample test performance of those winners.
 """
 
 from __future__ import annotations
@@ -23,6 +20,7 @@ from typing import Any
 import numpy as np
 import polars as pl
 
+from perp_lab.backtesting.engine import BacktestResult
 from perp_lab.config import Paths, load_data_contract, load_experiment_config
 from perp_lab.config.experiment import ExperimentConfig
 from perp_lab.config.models import DataContract
@@ -31,10 +29,15 @@ from perp_lab.eda.datasets import DataLake, HoldoutLeakageError
 from perp_lab.experiments.pipeline import synthetic_klines
 from perp_lab.search.candidate import Candidate, CandidateStatus
 from perp_lab.search.config import SearchRunConfig
-from perp_lab.search.evaluator import CandidateEvaluator, FoldsBundle, build_folds_data
+from perp_lab.search.evaluator import (
+    CandidateEvaluator,
+    FoldsBundle,
+    build_folds_data,
+    single_fold_bundle,
+)
 from perp_lab.search.genetic_algorithm import run_genetic_algorithm
 from perp_lab.search.objective import ObjectiveConfig
-from perp_lab.search.outcome import SearchOutcome
+from perp_lab.search.outcome import Counters, SearchOutcome
 from perp_lab.search.random_search import run_random_search
 from perp_lab.search.registry import SPACE_VERSION, build_search_space
 from perp_lab.tracking.run import RunTracker, environment_info, git_state
@@ -86,6 +89,7 @@ class SearchRunResult:
     summary: dict[str, Any]
     outcomes: dict[str, SearchOutcome]
     fold_winners: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    fold_outcomes: dict[str, list[SearchOutcome]] = field(default_factory=dict)
     artifact_paths: list[str] = field(default_factory=list)
 
 
@@ -205,44 +209,71 @@ def _build_folds(
     return folds
 
 
-def _fold_winners(
+def _fold_seed(base_seed: int, fold_index: int) -> int:
+    """Deterministic, fold-specific RNG stream without colliding with other folds."""
+    return int(base_seed + fold_index * 10_007)
+
+
+def _select_fold_winner(
+    fold_index: int,
     outcome: SearchOutcome,
     evaluator: CandidateEvaluator,
-    bundle: FoldsBundle,
-    *,
-    min_trades_per_fold: int,
-) -> list[dict[str, Any]]:
-    """Per fold: best VALIDATION sharpe among feasible candidates, then TEST once."""
-    winners: list[dict[str, Any]] = []
-    feasible = outcome.feasible_candidates()
-    for i, fold in enumerate(bundle.folds):
-        best: Candidate | None = None
-        best_val = float("-inf")
-        for cand in feasible:
-            if i >= len(cand.fold_metrics):
-                continue
-            m = cand.fold_metrics[i]
-            if float(m.get("n_trades", 0.0)) < min_trades_per_fold:
-                continue
-            val_sharpe = float(m.get("sharpe", float("-inf")))
-            if val_sharpe > best_val:
-                best_val, best = val_sharpe, cand
-        if best is None:
-            winners.append({"fold": fold.index, "winner": None, "reason": "no feasible candidate"})
-            continue
-        test = evaluator.evaluate_on_test(best, i)
-        winners.append(
-            {
-                "fold": fold.index,
-                "winner": best.candidate_id,
-                "val_sharpe": best_val,
-                "test_metrics": {
-                    k: float(test.metrics.get(k, float("nan"))) for k in _TEST_METRIC_KEYS
-                },
-                "params": {k: _js(v) for k, v in best.active_params.items()},
-            }
-        )
-    return winners
+) -> dict[str, Any]:
+    """Freeze the search winner for one outer fold and score it once on test."""
+    best = outcome.best
+    if best is None or best.status != CandidateStatus.EVALUATED:
+        return {"fold": fold_index, "winner": None, "reason": "no feasible candidate"}
+    val_metrics = best.fold_metrics[0] if best.fold_metrics else {}
+    test = evaluator.evaluate_on_test(best, 0)
+    return {
+        "fold": fold_index,
+        "winner": best.candidate_id,
+        "val_sharpe": float(val_metrics.get("sharpe", float("nan"))),
+        "test_metrics": {k: float(test.metrics.get(k, float("nan"))) for k in _TEST_METRIC_KEYS},
+        "params": {k: _js(v) for k, v in best.active_params.items()},
+        "_test_backtest": test,
+    }
+
+
+def _merge_fold_outcomes(per_fold: list[SearchOutcome]) -> SearchOutcome:
+    """Aggregate per-fold search outcomes for summary reporting only."""
+    if not per_fold:
+        raise ValueError("per_fold outcomes must not be empty")
+    head = per_fold[0]
+    counters = Counters()
+    candidates: list[Candidate] = []
+    for outcome in per_fold:
+        candidates.extend(outcome.candidates)
+        counters.proposed += outcome.counters.proposed
+        counters.invalid += outcome.counters.invalid
+        counters.duplicate += outcome.counters.duplicate
+        counters.cached += outcome.counters.cached
+        counters.evaluated += outcome.counters.evaluated
+    feasible = [c for c in candidates if c.status == CandidateStatus.EVALUATED]
+    best_vals = [
+        o.best.fitness
+        for o in per_fold
+        if o.best is not None
+        and o.best.fitness is not None
+        and o.best.status == CandidateStatus.EVALUATED
+    ]
+    return SearchOutcome(
+        algorithm=head.algorithm,
+        version=head.version,
+        seed=head.seed,
+        budget=head.budget,
+        candidates=candidates,
+        counters=counters,
+        convergence=[],
+        best=max(feasible, key=lambda c: c.fitness if c.fitness is not None else float("-inf"))
+        if feasible
+        else None,
+        extra={
+            "per_fold_search": True,
+            "n_outer_folds": len(per_fold),
+            "mean_fold_best_fitness": float(np.mean(best_vals)) if best_vals else None,
+        },
+    )
 
 
 def _js(value: object) -> object:
@@ -333,9 +364,9 @@ def run_search(
     fee = exp.costs.fee_bps_per_side
     slip = exp.costs.slippage.baseline_bps
 
-    def make_evaluator() -> CandidateEvaluator:
+    def make_evaluator(fold_bundle: FoldsBundle) -> CandidateEvaluator:
         return CandidateEvaluator(
-            bundle,
+            fold_bundle,
             space,
             timeframe=cfg.timeframe,
             fee_bps_per_side=fee,
@@ -347,37 +378,47 @@ def run_search(
 
     run_rs = cfg.algorithm in ("random_search", "comparison")
     run_ga = cfg.algorithm in ("genetic_algorithm", "comparison")
-
-    outcomes: dict[str, SearchOutcome] = {}
-    evaluators: dict[str, CandidateEvaluator] = {}
-    fold_winners: dict[str, list[dict[str, Any]]] = {}
-
+    methods: list[str] = []
     if run_rs:
-        ev = make_evaluator()
-        outcomes["random_search"] = run_random_search(ev, space, budget=cfg.budget, seed=seed)
-        evaluators["random_search"] = ev
-        log.info("random_search | %s", outcomes["random_search"].summary())
+        methods.append("random_search")
     if run_ga:
-        ev = make_evaluator()
-        outcomes["genetic_algorithm"] = run_genetic_algorithm(
-            ev,
-            space,
-            population_size=cfg.ga.population_size,
-            generations=cfg.ga.generations,
-            crossover_rate=cfg.ga.crossover_rate,
-            mutation_rate=cfg.ga.mutation_rate,
-            elitism=cfg.ga.elitism,
-            tournament_size=cfg.ga.tournament_size,
-            seed=seed,
-            budget=cfg.budget,
-        )
-        evaluators["genetic_algorithm"] = ev
-        log.info("genetic_algorithm | %s", outcomes["genetic_algorithm"].summary())
+        methods.append("genetic_algorithm")
 
-    for name, outcome in outcomes.items():
-        fold_winners[name] = _fold_winners(
-            outcome, evaluators[name], bundle, min_trades_per_fold=objective_cfg.min_trades_per_fold
-        )
+    fold_outcomes: dict[str, list[SearchOutcome]] = {m: [] for m in methods}
+    fold_winners: dict[str, list[dict[str, Any]]] = {m: [] for m in methods}
+
+    for fold_idx in range(len(bundle.folds)):
+        fold_bundle = single_fold_bundle(bundle, fold_idx)
+        fold_seed = _fold_seed(seed, fold_idx)
+        for method in methods:
+            ev = make_evaluator(fold_bundle)
+            if method == "random_search":
+                outcome = run_random_search(ev, space, budget=cfg.budget, seed=fold_seed)
+            else:
+                outcome = run_genetic_algorithm(
+                    ev,
+                    space,
+                    population_size=cfg.ga.population_size,
+                    generations=cfg.ga.generations,
+                    crossover_rate=cfg.ga.crossover_rate,
+                    mutation_rate=cfg.ga.mutation_rate,
+                    elitism=cfg.ga.elitism,
+                    tournament_size=cfg.ga.tournament_size,
+                    seed=fold_seed,
+                    budget=cfg.budget,
+                )
+            fold_outcomes[method].append(outcome)
+            winner = _select_fold_winner(fold_idx, outcome, ev)
+            fold_winners[method].append(winner)
+            log.info(
+                "%s | fold=%d | evaluated=%d | winner=%s",
+                method,
+                fold_idx,
+                outcome.counters.evaluated,
+                winner.get("winner"),
+            )
+
+    outcomes = {m: _merge_fold_outcomes(fold_outcomes[m]) for m in methods}
 
     summary = _build_summary(cfg, exp, seed, folds, bundle, outcomes, fold_winners)
 
@@ -393,7 +434,7 @@ def run_search(
             space=space,
             objective_cfg=objective_cfg,
             outcomes=outcomes,
-            evaluators=evaluators,
+            fold_outcomes=fold_outcomes,
             fold_winners=fold_winners,
             summary=summary,
             repo_root=repo_root,
@@ -406,6 +447,7 @@ def run_search(
         summary=summary,
         outcomes=outcomes,
         fold_winners=fold_winners,
+        fold_outcomes=fold_outcomes,
         artifact_paths=artifact_paths,
     )
 
@@ -425,6 +467,7 @@ def _build_summary(
             **outcome.summary(),
             "aggregate_test": _aggregate_test(fold_winners[name]),
             "diversity": outcome.extra.get("diversity"),
+            "mean_fold_best_fitness": outcome.extra.get("mean_fold_best_fitness"),
         }
     verdict = None
     if "random_search" in methods and "genetic_algorithm" in methods:
@@ -437,6 +480,8 @@ def _build_summary(
             and np.isfinite(ga_oos)
         ):
             verdict = "genetic_algorithm" if ga_oos > rs_oos else "random_search"
+    n_folds = len(folds)
+    budget_per_fold = cfg.budget
     return {
         "run_kind": "search_comparison",
         "label": cfg.label,
@@ -445,15 +490,30 @@ def _build_summary(
         "symbol": cfg.symbol,
         "timeframe": cfg.timeframe,
         "seed": seed,
-        "budget": cfg.budget,
+        "budget": budget_per_fold,
+        "budget_per_fold": budget_per_fold,
+        "total_budget_per_method": budget_per_fold * n_folds,
         "space_version": SPACE_VERSION,
-        "n_folds": len(folds),
-        "fair_budget": "budget caps UNIQUE objective evaluations; invalid/duplicate/cached excluded",
+        "n_folds": n_folds,
+        "search_protocol": "independent_per_outer_fold",
+        "fair_budget": (
+            "budget caps UNIQUE objective evaluations per outer fold; "
+            "invalid/duplicate/cached excluded"
+        ),
         "comparison_metric": "aggregate out-of-sample TEST sharpe of per-fold winners",
         "methods": methods,
         "best_out_of_sample_method": verdict,
         "warning": EXPLORATORY_WARNING,
     }
+
+
+def _fold_winners_json(fold_winners: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Strip non-serialisable backtest handles before writing JSON."""
+    rows: list[dict[str, Any]] = []
+    for w in fold_winners:
+        row = {k: v for k, v in w.items() if k != "_test_backtest"}
+        rows.append(row)
+    return rows
 
 
 def _write_artifacts(
@@ -467,7 +527,7 @@ def _write_artifacts(
     space: Any,
     objective_cfg: ObjectiveConfig,
     outcomes: dict[str, SearchOutcome],
-    evaluators: dict[str, CandidateEvaluator],
+    fold_outcomes: dict[str, list[SearchOutcome]],
     fold_winners: dict[str, list[dict[str, Any]]],
     summary: dict[str, Any],
     repo_root: str | Path,
@@ -507,6 +567,35 @@ def _write_artifacts(
         written.append(
             tracker.write_parquet(f"{name}_candidates.parquet", _ledger_frame(outcome.candidates))
         )
+        per_fold = fold_outcomes[name]
+        for fold_idx, fold_outcome in enumerate(per_fold):
+            tag = f"{name}_fold{fold_idx}"
+            written.append(
+                tracker.write_parquet(
+                    f"{tag}_candidates.parquet", _ledger_frame(fold_outcome.candidates)
+                )
+            )
+            written.append(
+                tracker.write_json(
+                    f"{tag}_convergence.json",
+                    {"best_fitness_after_each_eval": fold_outcome.convergence},
+                )
+            )
+            if fold_outcome.algorithm == "genetic_algorithm":
+                written.append(
+                    tracker.write_json(
+                        f"{tag}_ga_lineage.json", fold_outcome.extra.get("lineage", [])
+                    )
+                )
+                written.append(
+                    tracker.write_json(
+                        f"{tag}_ga_diversity.json",
+                        {
+                            "generation_best": fold_outcome.extra.get("generation_best"),
+                            "diversity": fold_outcome.extra.get("diversity"),
+                        },
+                    )
+                )
         failed = [
             {"candidate_id": c.candidate_id, "status": c.status.value, "reason": c.failure_reason}
             for c in outcome.candidates
@@ -517,20 +606,45 @@ def _write_artifacts(
                 f"{name}_failed_candidates.json", {"count": len(failed), "candidates": failed}
             )
         )
-        written.append(tracker.write_json(f"{name}_fold_winners.json", fold_winners[name]))
+        written.append(
+            tracker.write_json(f"{name}_fold_winners.json", _fold_winners_json(fold_winners[name]))
+        )
         written.append(
             tracker.write_json(
-                f"{name}_convergence.json", {"best_fitness_after_each_eval": outcome.convergence}
+                f"{name}_convergence.json",
+                {
+                    "per_fold": [
+                        {
+                            "fold": i,
+                            "best_fitness_after_each_eval": fo.convergence,
+                        }
+                        for i, fo in enumerate(per_fold)
+                    ]
+                },
             )
         )
         if outcome.algorithm == "genetic_algorithm":
-            written.append(tracker.write_json("ga_lineage.json", outcome.extra.get("lineage", [])))
+            written.append(
+                tracker.write_json(
+                    "ga_lineage.json",
+                    [
+                        {"fold": i, "lineage": fo.extra.get("lineage", [])}
+                        for i, fo in enumerate(per_fold)
+                    ],
+                )
+            )
             written.append(
                 tracker.write_json(
                     "ga_diversity.json",
                     {
-                        "generation_best": outcome.extra.get("generation_best"),
-                        "diversity": outcome.extra.get("diversity"),
+                        "per_fold": [
+                            {
+                                "fold": i,
+                                "generation_best": fo.extra.get("generation_best"),
+                                "diversity": fo.extra.get("diversity"),
+                            }
+                            for i, fo in enumerate(per_fold)
+                        ]
                     },
                 )
             )
@@ -538,13 +652,12 @@ def _write_artifacts(
     # Fold-winner TEST outputs (signals/positions/trades/equity) for the best method.
     best_method = summary.get("best_out_of_sample_method") or next(iter(outcomes), None)
     if best_method is not None:
-        ev = evaluators[best_method]
-        by_id = {c.candidate_id: c for c in outcomes[best_method].candidates}
         for w in fold_winners[best_method]:
             if w.get("winner") is None:
                 continue
-            cand = by_id[w["winner"]]
-            result = ev.evaluate_on_test(cand, int(w["fold"]))
+            result = w.get("_test_backtest")
+            if not isinstance(result, BacktestResult):
+                continue
             tag = f"{best_method}_fold{int(w['fold'])}"
             written.append(tracker.write_parquet(f"{tag}_test_equity.parquet", result.ledger))
             trades = result.trades()
@@ -576,7 +689,9 @@ def _human_report(summary: dict[str, Any]) -> str:
         f"- Label: **{summary['label']}**",
         f"- Family: `{summary['family']}`  |  Algorithm: `{summary['algorithm']}`",
         f"- Symbol/timeframe: {summary['symbol']} {summary['timeframe']}  |  Seed: {summary['seed']}",
-        f"- Budget (unique evaluations): {summary['budget']}  |  Folds: {summary['n_folds']}",
+        f"- Budget (unique evaluations per outer fold): {summary['budget']}  |  Folds: {summary['n_folds']}",
+        f"- Total budget per method: {summary.get('total_budget_per_method', summary['budget'])}",
+        f"- Search protocol: {summary.get('search_protocol', 'n/a')}",
         f"- Comparison metric: {summary['comparison_metric']}",
         f"- Fair budget: {summary['fair_budget']}",
         "",

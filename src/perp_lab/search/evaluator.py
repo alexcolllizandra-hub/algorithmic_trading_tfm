@@ -13,7 +13,9 @@ Temporal protocol (per walk-forward fold, all built in
 3. A regime model + scaler are fitted **only on train** and applied causally to
    validation and test.
 4. Candidate *selection* uses **validation** metrics only
-   (:meth:`CandidateEvaluator.evaluate`).
+   (:meth:`CandidateEvaluator.evaluate`), scoped to **one outer fold at a time**
+   via :func:`single_fold_bundle` so validation on fold *B* never influences
+   search on fold *A*.
 5. The chosen fold winner is scored **once** on that fold's ``test`` slice
    (:meth:`CandidateEvaluator.evaluate_on_test`) -- never used to guide search.
 
@@ -167,6 +169,21 @@ def build_folds_data(
         funding=funding,
         symbol=symbol,
         timeframe=timeframe,
+    )
+
+
+def single_fold_bundle(bundle: FoldsBundle, fold_index: int) -> FoldsBundle:
+    """Return a one-fold view so search ranks candidates on that fold's val only."""
+    if fold_index < 0 or fold_index >= len(bundle.folds):
+        raise IndexError(f"fold_index {fold_index} out of range for {len(bundle.folds)} folds")
+    return FoldsBundle(
+        folds=[bundle.folds[fold_index]],
+        feature_specs=bundle.feature_specs,
+        feature_manifest=bundle.feature_manifest,
+        regime_inputs=bundle.regime_inputs,
+        funding=bundle.funding,
+        symbol=bundle.symbol,
+        timeframe=bundle.timeframe,
     )
 
 

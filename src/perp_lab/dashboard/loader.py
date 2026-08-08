@@ -234,18 +234,21 @@ def fair_budget_report(summary: Mapping[str, Any] | None) -> dict[str, Any]:
     it. This is the fair-budget verification surfaced in the UI.
     """
     budget = summary.get("budget") if summary else None
+    total_budget = summary.get("total_budget_per_method") if summary else None
+    budget_cap = total_budget if total_budget is not None else budget
     methods = _method_summaries(summary)
     rows: list[dict[str, Any]] = []
     ok = True
     for name, m in methods.items():
         counters = m.get("counters", {}) if isinstance(m, dict) else {}
         evaluated = counters.get("evaluated")
-        within = evaluated is not None and budget is not None and evaluated <= budget
+        within = evaluated is not None and budget_cap is not None and evaluated <= budget_cap
         ok = ok and within
         rows.append(
             {
                 "method": name,
-                "budget": budget,
+                "budget": budget_cap,
+                "budget_per_fold": budget,
                 "proposed": counters.get("proposed"),
                 "invalid": counters.get("invalid"),
                 "duplicate": counters.get("duplicate"),
@@ -256,7 +259,8 @@ def fair_budget_report(summary: Mapping[str, Any] | None) -> dict[str, Any]:
             }
         )
     return {
-        "budget": budget,
+        "budget": budget_cap,
+        "budget_per_fold": budget,
         "definition": summary.get("fair_budget") if summary else None,
         "rows": pl.DataFrame(rows),
         "ok": ok and len(rows) > 0,
@@ -269,6 +273,12 @@ def convergence_frame(run_dir: str | Path, method: str) -> pl.DataFrame:
     if not isinstance(data, dict):
         return pl.DataFrame()
     series = data.get("best_fitness_after_each_eval")
+    if not isinstance(series, list):
+        per_fold = data.get("per_fold")
+        if isinstance(per_fold, list) and per_fold:
+            first = per_fold[0]
+            if isinstance(first, dict):
+                series = first.get("best_fitness_after_each_eval")
     if not isinstance(series, list) or not series:
         return pl.DataFrame()
     return pl.DataFrame(
