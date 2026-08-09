@@ -6,6 +6,16 @@ requirement), selects each fold's winner on **validation** only, scores those
 winners once on **test**, and writes a machine-readable + human-readable
 comparison to a run-specific artifact directory.
 
+**Temporal contract (ADR 0012).** Search is run *independently inside every outer
+walk-forward fold*. Each fold gets its own evaluator, built from a bundle holding
+only that fold, its own RNG streams and its own full effective budget, so a
+candidate's fitness is a function of that fold's validation window alone. Nothing
+computed on a later fold can reach an earlier fold's selection. Within a fold the
+order is strict and irreversible: search on validation, **freeze** the winner
+(recording a fingerprint of the selection), then score it once on that fold's
+test slice. The test result is never fed back into fitness, ranking or any
+subsequent decision.
+
 The comparison metric is the aggregated **out-of-sample test** performance of the
 fold winners -- never the in-sample or validation score, and never the frozen
 holdout.
@@ -13,9 +23,12 @@ holdout.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
-from dataclasses import dataclass, field
+import math
+import time
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -23,6 +36,7 @@ from typing import Any
 import numpy as np
 import polars as pl
 
+from perp_lab.backtesting.engine import BacktestResult
 from perp_lab.config import Paths, load_data_contract, load_experiment_config
 from perp_lab.config.experiment import ExperimentConfig
 from perp_lab.config.models import DataContract
@@ -32,10 +46,15 @@ from perp_lab.experiments.pipeline import synthetic_klines
 from perp_lab.regimes.models import REGIME_COL, REGIME_NAME_COL
 from perp_lab.search.candidate import Candidate, CandidateStatus
 from perp_lab.search.config import SearchRunConfig
-from perp_lab.search.evaluator import CandidateEvaluator, FoldsBundle, build_folds_data
+from perp_lab.search.evaluator import (
+    CandidateEvaluator,
+    FoldsBundle,
+    build_folds_data,
+    single_fold_bundle,
+)
 from perp_lab.search.genetic_algorithm import run_genetic_algorithm
 from perp_lab.search.objective import ObjectiveConfig
-from perp_lab.search.outcome import SearchOutcome
+from perp_lab.search.outcome import Counters, SearchOutcome
 from perp_lab.search.random_search import run_random_search
 from perp_lab.search.registry import SPACE_VERSION, build_search_space
 from perp_lab.tracking.run import RunTracker, environment_info, git_state
@@ -53,6 +72,14 @@ EXPLORATORY_WARNING = (
     "on the development period only. They are NOT final holdout performance and must "
     "not be reported as the thesis's out-of-sample result."
 )
+
+# Identifies the temporal contract a set of artifacts was produced under. Results
+# from a different protocol describe a different experiment and must never be
+# pooled with these; see ADR 0012.
+SEARCH_PROTOCOL = "independent_search_per_outer_fold"
+ARTIFACT_SCHEMA_VERSION = 2
+
+ENGINE_NAMES = ("random_search", "genetic_algorithm")
 
 _TEST_METRIC_KEYS = ("sharpe", "total_return", "max_drawdown", "n_trades", "ann_return")
 
@@ -81,6 +108,19 @@ def _synthetic_funding(frame: pl.DataFrame, seed: int, *, interval_hours: int = 
 
 
 @dataclass
+class FoldEngineOutcome:
+    """One engine's complete, isolated search inside one outer fold."""
+
+    fold_index: int
+    engine: str
+    outcome: SearchOutcome
+    winner: dict[str, Any]
+    # Kept from the single test evaluation so artifact writing never re-runs it.
+    test_result: BacktestResult | None
+    seconds: float
+
+
+@dataclass
 class SearchRunResult:
     run_id: str
     run_dir: Path | None
@@ -88,6 +128,9 @@ class SearchRunResult:
     outcomes: dict[str, SearchOutcome]
     fold_winners: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
     artifact_paths: list[str] = field(default_factory=list)
+    # The primary structure: one independent search per (engine, outer fold).
+    # ``outcomes`` is the merged, report-oriented view of the same runs.
+    fold_outcomes: dict[str, list[FoldEngineOutcome]] = field(default_factory=dict)
 
 
 def _load_data(
@@ -259,44 +302,116 @@ def _build_folds(
     return folds
 
 
-def _fold_winners(
-    outcome: SearchOutcome,
-    evaluator: CandidateEvaluator,
-    bundle: FoldsBundle,
-    *,
-    min_trades_per_fold: int,
-) -> list[dict[str, Any]]:
-    """Per fold: best VALIDATION sharpe among feasible candidates, then TEST once."""
-    winners: list[dict[str, Any]] = []
-    feasible = outcome.feasible_candidates()
-    for i, fold in enumerate(bundle.folds):
-        best: Candidate | None = None
-        best_val = float("-inf")
-        for cand in feasible:
-            if i >= len(cand.fold_metrics):
-                continue
-            m = cand.fold_metrics[i]
-            if float(m.get("n_trades", 0.0)) < min_trades_per_fold:
-                continue
-            val_sharpe = float(m.get("sharpe", float("-inf")))
-            if val_sharpe > best_val:
-                best_val, best = val_sharpe, cand
-        if best is None:
-            winners.append({"fold": fold.index, "winner": None, "reason": "no feasible candidate"})
+def _select_fold_winner(
+    outcome: SearchOutcome, *, min_trades_per_fold: int
+) -> tuple[Candidate | None, float]:
+    """Pick a fold's winner from its own VALIDATION results only.
+
+    The outcome belongs to a single-fold search, so every candidate carries
+    exactly one validation record: the one for this fold. No test metric, and no
+    other fold's metric, is reachable from here.
+    """
+    best: Candidate | None = None
+    best_val = float("-inf")
+    for cand in outcome.feasible_candidates():
+        if not cand.fold_metrics:
             continue
-        test = evaluator.evaluate_on_test(best, i)
-        winners.append(
-            {
-                "fold": fold.index,
-                "winner": best.candidate_id,
-                "val_sharpe": best_val,
-                "test_metrics": {
-                    k: float(test.metrics.get(k, float("nan"))) for k in _TEST_METRIC_KEYS
-                },
-                "params": {k: _js(v) for k, v in best.active_params.items()},
-            }
-        )
-    return winners
+        m = cand.fold_metrics[0]
+        if float(m.get("n_trades", 0.0)) < min_trades_per_fold:
+            continue
+        val_sharpe = float(m.get("sharpe", float("-inf")))
+        if val_sharpe > best_val:
+            best_val, best = val_sharpe, cand
+    return best, best_val
+
+
+def _freeze_winner(candidate: Candidate | None, *, fold_index: int, val_sharpe: float) -> dict:
+    """Seal a fold's selection **before** its test slice is ever touched.
+
+    The fingerprint covers the identity and parameters of the selected candidate.
+    Recording it prior to the test evaluation is what makes "the strategy was
+    chosen without seeing its out-of-sample data" an auditable fact rather than a
+    claim: any later change to the winner would change this hash.
+    """
+    if candidate is None:
+        return {
+            "fold": fold_index,
+            "winner": None,
+            "reason": "no feasible candidate",
+            "selection_basis": "validation_only",
+        }
+    params = {k: _js(v) for k, v in candidate.active_params.items()}
+    payload = json.dumps(
+        {"fold": fold_index, "candidate_id": candidate.candidate_id, "params": params},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return {
+        "fold": fold_index,
+        "winner": candidate.candidate_id,
+        "val_sharpe": val_sharpe,
+        "params": params,
+        "selection_basis": "validation_only",
+        "selection_fingerprint": hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16],
+        "frozen_before_test": True,
+    }
+
+
+def _merge_fold_outcomes(engine: str, fold_outcomes: list[FoldEngineOutcome]) -> SearchOutcome:
+    """Collapse a engine's per-fold searches into one reporting view.
+
+    Counters add up, candidates are concatenated (each tagged with the fold whose
+    search produced it) and convergence traces are kept separated per fold.
+    Fitness values are **not** pooled: they are computed on different validation
+    windows and a maximum across them would be a comparison between different
+    quantities, so ``best`` is deliberately left unset.
+    """
+    ordered = sorted(fold_outcomes, key=lambda f: f.fold_index)
+    counters = Counters()
+    candidates: list[Candidate] = []
+    for fo in ordered:
+        c = fo.outcome.counters
+        counters.proposed += c.proposed
+        counters.invalid += c.invalid
+        counters.duplicate += c.duplicate
+        counters.cached += c.cached
+        counters.evaluated += c.evaluated
+        candidates.extend(fo.outcome.candidates)
+    first = ordered[0].outcome
+    return SearchOutcome(
+        algorithm=engine,
+        version=first.version,
+        seed=first.seed,
+        budget=first.budget,
+        candidates=candidates,
+        counters=counters,
+        convergence=[],
+        best=None,
+        extra={
+            "protocol": SEARCH_PROTOCOL,
+            "n_folds_searched": len(ordered),
+            "budget_per_fold": first.budget,
+            "seed_per_fold": {str(f.fold_index): f.outcome.seed for f in ordered},
+            "convergence_per_fold": {str(f.fold_index): f.outcome.convergence for f in ordered},
+            "best_fitness_per_fold": {
+                str(f.fold_index): (f.outcome.best.fitness if f.outcome.best else None)
+                for f in ordered
+            },
+            "termination_per_fold": {
+                str(f.fold_index): f.outcome.extra.get("termination_reason") for f in ordered
+            },
+            "seconds_per_fold": {str(f.fold_index): f.seconds for f in ordered},
+            "generation_best_per_fold": {
+                str(f.fold_index): f.outcome.extra.get("generation_best") for f in ordered
+            },
+            "diversity_per_fold": {
+                str(f.fold_index): f.outcome.extra.get("diversity") for f in ordered
+            },
+            "lineage_per_fold": {
+                str(f.fold_index): f.outcome.extra.get("lineage") for f in ordered
+            },
+        },
+    )
 
 
 def _js(value: object) -> object:
@@ -349,10 +464,6 @@ def run_search(
     # make them comparable; it would only couple them to an arbitrary sequence.
     seeds = SeedScheduler(seed)
     regime_stream = seeds.stream("regime_base", symbol=cfg.symbol, timeframe=cfg.timeframe)
-    engine_seeds = {
-        name: seeds.stream("engine", symbol=cfg.symbol, timeframe=cfg.timeframe, engine=name)
-        for name in ("random_search", "genetic_algorithm")
-    }
 
     tracker: RunTracker | None = None
     if write_artifacts:
@@ -368,12 +479,13 @@ def run_search(
     if len(folds) < 1:
         raise ValueError("Walk-forward geometry produced no folds for this data span.")
     log.info(
-        "run_id=%s | %s | family=%s | folds=%d | budget=%d",
+        "run_id=%s | %s | family=%s | folds=%d | budget=%d per fold | protocol=%s",
         rid,
         cfg.algorithm,
         cfg.family,
         len(folds),
         cfg.budget,
+        SEARCH_PROTOCOL,
     )
 
     reference_bars = _load_reference_bars(cfg, exp, contract, paths, seed=seed, log=log)
@@ -400,65 +512,120 @@ def run_search(
     fee = exp.costs.fee_bps_per_side
     slip = exp.costs.slippage.baseline_bps
 
-    def make_evaluator() -> CandidateEvaluator:
+    # The objective is now applied inside a single fold, so the study-level
+    # minimum trade count must be expressed per fold. Requiring total/n_folds in
+    # every fold guarantees the pooled total still clears the configured floor,
+    # whereas demanding the full total inside one validation window would reject
+    # nearly every candidate and silently empty the search.
+    n_folds = len(bundle.folds)
+    fold_objective_cfg = replace(
+        objective_cfg,
+        min_trades_total=math.ceil(objective_cfg.min_trades_total / n_folds),
+    )
+
+    def make_evaluator(fold_bundle: FoldsBundle) -> CandidateEvaluator:
         return CandidateEvaluator(
-            bundle,
+            fold_bundle,
             space,
             timeframe=cfg.timeframe,
             fee_bps_per_side=fee,
             slippage_bps_per_side=slip,
             days_per_year=exp.annualization_days,
             require_funding=cfg.require_funding,
-            objective_cfg=objective_cfg,
+            objective_cfg=fold_objective_cfg,
             reference_bars=reference_bars,
         )
 
-    run_rs = cfg.algorithm in ("random_search", "comparison")
-    run_ga = cfg.algorithm in ("genetic_algorithm", "comparison")
+    engines = [
+        name for name in ENGINE_NAMES if cfg.algorithm == "comparison" or cfg.algorithm == name
+    ]
 
-    outcomes: dict[str, SearchOutcome] = {}
-    evaluators: dict[str, CandidateEvaluator] = {}
-    fold_winners: dict[str, list[dict[str, Any]]] = {}
+    fold_outcomes: dict[str, list[FoldEngineOutcome]] = {name: [] for name in engines}
+    fold_engine_seeds: dict[str, dict[str, int]] = {name: {} for name in engines}
 
-    # Both engines target the SAME fixed budget declared in configuration, and each
-    # keeps generating until it has spent exactly that many unique, valid,
-    # non-cached objective evaluations. Neither is capped at what the other
-    # happened to consume: that would make the shared budget an accident of one
-    # engine's convergence and let it drift from seed to seed.
-    if run_ga:
-        ev = make_evaluator()
-        outcomes["genetic_algorithm"] = run_genetic_algorithm(
-            ev,
-            space,
-            population_size=cfg.ga.population_size,
-            max_generations=cfg.ga.max_generations,
-            crossover_rate=cfg.ga.crossover_rate,
-            mutation_rate=cfg.ga.mutation_rate,
-            elitism=cfg.ga.elitism,
-            tournament_size=cfg.ga.tournament_size,
-            seed=engine_seeds["genetic_algorithm"],
-            budget=cfg.budget,
+    # One independent search environment per outer fold. Every engine receives the
+    # SAME full effective budget inside EVERY fold, so the comparison holds at the
+    # level where selection actually happens rather than only on average.
+    for fd in bundle.folds:
+        fold_bundle = single_fold_bundle(bundle, fd.index)
+        per_engine: dict[str, SearchOutcome] = {}
+        per_engine_ev: dict[str, CandidateEvaluator] = {}
+        per_engine_secs: dict[str, float] = {}
+
+        for name in engines:
+            ev = make_evaluator(fold_bundle)
+            engine_seed = seeds.stream(
+                "engine",
+                symbol=cfg.symbol,
+                timeframe=cfg.timeframe,
+                engine=name,
+                fold=fd.index,
+            )
+            fold_engine_seeds[name][str(fd.index)] = engine_seed
+            started = time.perf_counter()
+            if name == "random_search":
+                out = run_random_search(ev, space, budget=cfg.budget, seed=engine_seed)
+            else:
+                out = run_genetic_algorithm(
+                    ev,
+                    space,
+                    population_size=cfg.ga.population_size,
+                    max_generations=cfg.ga.max_generations,
+                    crossover_rate=cfg.ga.crossover_rate,
+                    mutation_rate=cfg.ga.mutation_rate,
+                    elitism=cfg.ga.elitism,
+                    tournament_size=cfg.ga.tournament_size,
+                    seed=engine_seed,
+                    budget=cfg.budget,
+                )
+            per_engine_secs[name] = time.perf_counter() - started
+            for cand in out.candidates:
+                cand.fold_index = fd.index
+            per_engine[name] = out
+            per_engine_ev[name] = ev
+
+        # Parity is checked inside the fold. An engine that searched less here has
+        # not been compared at equal effort here, and a run-level average would
+        # hide exactly that.
+        _assert_budget_parity(per_engine, target=cfg.budget, fold_index=fd.index)
+
+        for name in engines:
+            outcome = per_engine[name]
+            candidate, val_sharpe = _select_fold_winner(
+                outcome, min_trades_per_fold=fold_objective_cfg.min_trades_per_fold
+            )
+            # Freeze first, evaluate second. The order is the guarantee.
+            winner = _freeze_winner(candidate, fold_index=fd.index, val_sharpe=val_sharpe)
+            test_result: BacktestResult | None = None
+            if candidate is not None:
+                test_result = per_engine_ev[name].evaluate_on_test(candidate, fd.index)
+                winner["test_metrics"] = {
+                    k: float(test_result.metrics.get(k, float("nan"))) for k in _TEST_METRIC_KEYS
+                }
+            fold_outcomes[name].append(
+                FoldEngineOutcome(
+                    fold_index=fd.index,
+                    engine=name,
+                    outcome=outcome,
+                    winner=winner,
+                    test_result=test_result,
+                    seconds=per_engine_secs[name],
+                )
+            )
+        log.info(
+            "fold %d/%d searched independently | %s",
+            fd.index + 1,
+            n_folds,
+            {n: per_engine[n].counters.evaluated for n in engines},
         )
-        evaluators["genetic_algorithm"] = ev
-        log.info("genetic_algorithm | %s", outcomes["genetic_algorithm"].summary())
-    if run_rs:
-        ev = make_evaluator()
-        outcomes["random_search"] = run_random_search(
-            ev, space, budget=cfg.budget, seed=engine_seeds["random_search"]
-        )
-        evaluators["random_search"] = ev
-        log.info("random_search | %s", outcomes["random_search"].summary())
 
-    _assert_budget_parity(outcomes, target=cfg.budget)
-
-    # Canonical reporting order, independent of execution order.
-    order = [n for n in ("random_search", "genetic_algorithm") if n in outcomes]
-    outcomes = {n: outcomes[n] for n in order}
-
-    for name, outcome in outcomes.items():
-        fold_winners[name] = _fold_winners(
-            outcome, evaluators[name], bundle, min_trades_per_fold=objective_cfg.min_trades_per_fold
-        )
+    outcomes = {name: _merge_fold_outcomes(name, fold_outcomes[name]) for name in engines}
+    fold_winners = {
+        name: [fo.winner for fo in sorted(fold_outcomes[name], key=lambda f: f.fold_index)]
+        for name in engines
+    }
+    for name in engines:
+        log.info("%s | %s", name, outcomes[name].summary())
 
     seed_schedule = {
         "base_seed": seed,
@@ -467,7 +634,9 @@ def run_search(
             "reconstructible from base_seed alone"
         ),
         "regime_base": regime_stream,
-        "engines": engine_seeds,
+        # Each fold's search draws from its own stream, so a fold's result cannot
+        # depend on how many draws an earlier fold happened to consume.
+        "engines_per_fold": fold_engine_seeds,
         "per_fold_regime": {
             str(f.index): seeds.stream(
                 "regime", symbol=cfg.symbol, timeframe=cfg.timeframe, fold=f.index
@@ -476,7 +645,16 @@ def run_search(
         },
     }
     summary = _build_summary(
-        cfg, exp, seed, folds, bundle, outcomes, fold_winners, seed_schedule=seed_schedule
+        cfg,
+        exp,
+        seed,
+        folds,
+        outcomes,
+        fold_winners,
+        fold_outcomes,
+        objective_cfg=objective_cfg,
+        fold_objective_cfg=fold_objective_cfg,
+        seed_schedule=seed_schedule,
     )
 
     artifact_paths: list[str] = []
@@ -489,9 +667,9 @@ def run_search(
             manifests=manifests,
             bundle=bundle,
             space=space,
-            objective_cfg=objective_cfg,
+            objective_cfg=fold_objective_cfg,
             outcomes=outcomes,
-            evaluators=evaluators,
+            fold_outcomes=fold_outcomes,
             fold_winners=fold_winners,
             summary=summary,
             repo_root=repo_root,
@@ -505,6 +683,7 @@ def run_search(
         outcomes=outcomes,
         fold_winners=fold_winners,
         artifact_paths=artifact_paths,
+        fold_outcomes=fold_outcomes,
     )
 
 
@@ -512,11 +691,14 @@ class BudgetParityError(RuntimeError):
     """An engine did not spend exactly the configured effective budget."""
 
 
-def _assert_budget_parity(outcomes: dict[str, SearchOutcome], *, target: int) -> None:
-    """Fail the unit unless every engine spent exactly the configured budget.
+def _assert_budget_parity(
+    outcomes: dict[str, SearchOutcome], *, target: int, fold_index: int
+) -> None:
+    """Fail the fold unless every engine spent exactly the configured budget in it.
 
-    A unit that quietly finished short is worse than a unit that failed: it enters
-    the aggregate looking complete while having searched less than its peers.
+    Parity has to hold where selection happens. Two engines that each spend the
+    right total across the run but differ inside a given fold were not compared at
+    equal effort on the decision that fold made, and averaging conceals it.
     """
     short = {
         name: {
@@ -533,42 +715,61 @@ def _assert_budget_parity(outcomes: dict[str, SearchOutcome], *, target: int) ->
     }
     if short:
         raise BudgetParityError(
-            f"Engines must each spend exactly {target} unique objective evaluations. "
-            f"These did not: {short}. Raise ga.max_generations, widen the search "
-            "space, or lower effective_budget."
+            f"In outer fold {fold_index} every engine must spend exactly {target} unique "
+            f"objective evaluations. These did not: {short}. Raise ga.max_generations, "
+            "widen the search space, or lower effective_budget."
         )
 
 
-def _budget_report(outcomes: dict[str, SearchOutcome], *, target: int) -> dict[str, Any]:
+def _budget_report(
+    fold_outcomes: dict[str, list[FoldEngineOutcome]], *, target: int, n_folds: int
+) -> dict[str, Any]:
     """Everything needed to audit that the comparison was run at equal budget."""
-    per_engine = {
-        name: {
-            "target": target,
-            "consumed": o.counters.evaluated,
-            "proposed": o.counters.proposed,
-            "invalid": o.counters.invalid,
-            "duplicate": o.counters.duplicate,
-            "cached": o.counters.cached,
-            "attempts": o.extra.get("attempts"),
-            "generations_run": o.extra.get("generations_run"),
-            "termination_reason": o.extra.get("termination_reason"),
-            "budget_reached": o.extra.get("budget_reached"),
+    per_engine: dict[str, Any] = {}
+    for name, folds in fold_outcomes.items():
+        ordered = sorted(folds, key=lambda f: f.fold_index)
+        per_fold = {
+            str(f.fold_index): {
+                "target": target,
+                "consumed": f.outcome.counters.evaluated,
+                "proposed": f.outcome.counters.proposed,
+                "invalid": f.outcome.counters.invalid,
+                "duplicate": f.outcome.counters.duplicate,
+                "cached": f.outcome.counters.cached,
+                "attempts": f.outcome.extra.get("attempts"),
+                "generations_run": f.outcome.extra.get("generations_run"),
+                "termination_reason": f.outcome.extra.get("termination_reason"),
+                "seconds": round(f.seconds, 4),
+            }
+            for f in ordered
         }
-        for name, o in outcomes.items()
-    }
-    consumed = {name: payload["consumed"] for name, payload in per_engine.items()}
+        per_engine[name] = {
+            "budget_per_fold": target,
+            "n_folds_searched": len(ordered),
+            "total_unique_evaluations": sum(f.outcome.counters.evaluated for f in ordered),
+            "total_seconds": round(sum(f.seconds for f in ordered), 4),
+            "reached_target_in_every_fold": all(
+                f.outcome.counters.evaluated == target for f in ordered
+            ),
+            "per_fold": per_fold,
+        }
+    totals = {name: payload["total_unique_evaluations"] for name, payload in per_engine.items()}
     return {
-        "effective_budget": target,
+        "effective_budget_per_fold": target,
+        "n_folds": n_folds,
         "per_engine": per_engine,
-        "consumed_per_engine": consumed,
-        "equal_effective_budget": len(set(consumed.values())) <= 1,
-        "all_engines_reached_target": all(v == target for v in consumed.values()),
+        "total_evaluations_per_engine": totals,
+        "equal_effective_budget": len(set(totals.values())) <= 1,
+        "all_engines_reached_target": all(
+            payload["reached_target_in_every_fold"] for payload in per_engine.values()
+        ),
+        "parity_level": "per outer fold",
         "definition": (
-            "budget counts UNIQUE, VALID, NON-CACHED objective evaluations. Invalid "
-            "proposals, duplicates and cache hits do not consume it. Each engine "
-            "generates until it reaches the configured target or hits its explicit "
-            "attempt cap, in which case the unit fails rather than reporting a "
-            "short run as complete."
+            "budget counts UNIQUE, VALID, NON-CACHED objective evaluations and is "
+            "spent in full INSIDE EVERY outer fold. Invalid proposals, duplicates and "
+            "cache hits do not consume it. Each engine generates until it reaches the "
+            "configured target in that fold or hits its explicit attempt cap, in which "
+            "case the run fails rather than reporting a short search as complete."
         ),
     }
 
@@ -626,24 +827,74 @@ def _with_regime(ledger: pl.DataFrame, test_frame: pl.DataFrame) -> pl.DataFrame
     return ledger.join(test_frame.select("open_time", *cols), on="open_time", how="left")
 
 
+def _protocol_record(
+    cfg: SearchRunConfig,
+    n_folds: int,
+    objective_cfg: ObjectiveConfig,
+    fold_objective_cfg: ObjectiveConfig,
+) -> dict[str, Any]:
+    """The temporal contract these artifacts were produced under (ADR 0012)."""
+    return {
+        "protocol": SEARCH_PROTOCOL,
+        "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
+        "adr": "0012-outer-fold-contamination-in-candidate-search",
+        "description": (
+            "Search runs independently inside every outer walk-forward fold. A "
+            "candidate's fitness is computed on that fold's validation window alone, "
+            "so no chronologically later fold can influence an earlier selection. "
+            "Each fold's winner is frozen (fingerprinted) on validation before its "
+            "test slice is evaluated once."
+        ),
+        "fitness_scope": "single outer fold validation window",
+        "selection_scope": "single outer fold validation window",
+        "test_usage": "scored once per fold, after freezing; never an input to search",
+        "budget_per_fold": cfg.budget,
+        "n_folds": n_folds,
+        "total_unique_evaluations_per_engine": cfg.budget * n_folds,
+        "dispersion_penalty_source": (
+            "standard deviation of Sharpe across contiguous sub-blocks WITHIN the "
+            "fold's validation window; across-fold spread is unobservable inside an "
+            "isolated fold"
+        ),
+        "stability_blocks": fold_objective_cfg.stability_blocks,
+        "min_trades_total_configured": objective_cfg.min_trades_total,
+        "min_trades_total_per_fold": fold_objective_cfg.min_trades_total,
+        "min_trades_total_rescaling": (
+            "ceil(min_trades_total / n_folds), so the pooled total across folds still "
+            "clears the configured study-level floor"
+        ),
+        "supersedes": "pooled-across-folds fitness (contaminated; results not poolable)",
+    }
+
+
 def _build_summary(
     cfg: SearchRunConfig,
     exp: ExperimentConfig,
     seed: int,
     folds: list[WalkForwardFold],
-    bundle: FoldsBundle,
     outcomes: dict[str, SearchOutcome],
     fold_winners: dict[str, list[dict[str, Any]]],
+    fold_outcomes: dict[str, list[FoldEngineOutcome]],
+    *,
+    objective_cfg: ObjectiveConfig,
+    fold_objective_cfg: ObjectiveConfig,
     seed_schedule: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     methods: dict[str, Any] = {}
     for name, outcome in outcomes.items():
+        per_fold_best = outcome.extra.get("best_fitness_per_fold", {})
+        values = [v for v in per_fold_best.values() if v is not None and np.isfinite(v)]
         methods[name] = {
             **outcome.summary(),
+            # Validation fitness is computed on a different window in each fold, so
+            # the only defensible scalar is an average over folds, not a maximum.
+            "best_fitness": float(np.mean(values)) if values else None,
+            "best_fitness_semantics": "mean over folds of each fold's best validation fitness",
+            "best_fitness_per_fold": per_fold_best,
+            "seconds_per_fold": outcome.extra.get("seconds_per_fold"),
             "aggregate_test": _aggregate_test(fold_winners[name]),
-            "diversity": outcome.extra.get("diversity"),
         }
-    budget_parity = _budget_report(outcomes, target=cfg.budget)
+    budget_parity = _budget_report(fold_outcomes, target=cfg.budget, n_folds=len(folds))
     verdict = None
     if "random_search" in methods and "genetic_algorithm" in methods:
         rs_oos = methods["random_search"]["aggregate_test"].get("mean_test_sharpe")
@@ -667,9 +918,15 @@ def _build_summary(
         "budget": cfg.budget,
         "space_version": SPACE_VERSION,
         "n_folds": len(folds),
+        "search_protocol": SEARCH_PROTOCOL,
+        "artifact_schema_version": ARTIFACT_SCHEMA_VERSION,
+        "protocol": _protocol_record(cfg, len(folds), objective_cfg, fold_objective_cfg),
         "walk_forward_coverage": _coverage(cfg, exp, folds),
         "budget_parity": budget_parity,
-        "fair_budget": "budget caps UNIQUE objective evaluations; invalid/duplicate/cached excluded",
+        "fair_budget": (
+            "budget caps UNIQUE objective evaluations and is spent in full inside "
+            "EVERY outer fold; invalid/duplicate/cached excluded"
+        ),
         "comparison_metric": "aggregate out-of-sample TEST sharpe of per-fold winners",
         "methods": methods,
         "best_out_of_sample_method": verdict,
@@ -688,7 +945,7 @@ def _write_artifacts(
     space: Any,
     objective_cfg: ObjectiveConfig,
     outcomes: dict[str, SearchOutcome],
-    evaluators: dict[str, CandidateEvaluator],
+    fold_outcomes: dict[str, list[FoldEngineOutcome]],
     fold_winners: dict[str, list[dict[str, Any]]],
     summary: dict[str, Any],
     repo_root: str | Path,
@@ -698,10 +955,16 @@ def _write_artifacts(
     written: list[Path] = [
         tracker.write_yaml("resolved_experiment_config.yaml", exp.model_dump(mode="json")),
         tracker.write_json("search_config.json", cfg.model_dump(mode="json")),
+        tracker.write_json("search_protocol.json", summary["protocol"]),
         tracker.write_json(
             "algorithms.json",
             {
-                name: {"version": o.version, "seed": o.seed, "budget": o.budget}
+                name: {
+                    "version": o.version,
+                    "budget_per_fold": o.budget,
+                    "seed_per_fold": o.extra.get("seed_per_fold"),
+                    "protocol": SEARCH_PROTOCOL,
+                }
                 for name, o in outcomes.items()
             },
         ),
@@ -740,40 +1003,46 @@ def _write_artifacts(
             )
         )
         written.append(tracker.write_json(f"{name}_fold_winners.json", fold_winners[name]))
+        # Convergence is recorded per fold. A single concatenated trace would splice
+        # together fitness values measured on different validation windows, which is
+        # not a curve of anything.
         written.append(
             tracker.write_json(
-                f"{name}_convergence.json", {"best_fitness_after_each_eval": outcome.convergence}
+                f"{name}_convergence.json",
+                {
+                    "protocol": SEARCH_PROTOCOL,
+                    "per_fold": outcome.extra.get("convergence_per_fold", {}),
+                },
             )
         )
         if outcome.algorithm == "genetic_algorithm":
-            written.append(tracker.write_json("ga_lineage.json", outcome.extra.get("lineage", [])))
+            written.append(
+                tracker.write_json("ga_lineage.json", outcome.extra.get("lineage_per_fold", {}))
+            )
             written.append(
                 tracker.write_json(
                     "ga_diversity.json",
                     {
-                        "generation_best": outcome.extra.get("generation_best"),
-                        "diversity": outcome.extra.get("diversity"),
+                        "protocol": SEARCH_PROTOCOL,
+                        "generation_best_per_fold": outcome.extra.get("generation_best_per_fold"),
+                        "diversity_per_fold": outcome.extra.get("diversity_per_fold"),
                     },
                 )
             )
 
-    # Fold-winner TEST outputs (positions/trades/equity) for EVERY method. Both
-    # methods must persist their out-of-sample series, otherwise the concatenated
-    # walk-forward OOS evidence can only be rebuilt for one of them and the
-    # RS-vs-GA comparison is not auditable at the series level.
-    for method, outcome in outcomes.items():
-        ev = evaluators[method]
-        by_id = {c.candidate_id: c for c in outcome.candidates}
-        for w in fold_winners[method]:
-            if w.get("winner") is None:
+    # Fold-winner TEST outputs (positions/trades/equity) for EVERY method, taken
+    # from the single evaluation performed after the winner was frozen. Re-running
+    # the backtest here would be a second, unaccounted contact with the fold's
+    # out-of-sample data.
+    fold_by_index = {fd.index: fd for fd in bundle.folds}
+    for method, per_fold in fold_outcomes.items():
+        for fo in sorted(per_fold, key=lambda f: f.fold_index):
+            if fo.test_result is None:
                 continue
-            cand = by_id[w["winner"]]
-            fold_index = int(w["fold"])
-            result = ev.evaluate_on_test(cand, fold_index)
-            tag = f"{method}_fold{fold_index}"
-            ledger = _with_regime(result.ledger, bundle.folds[fold_index].test)
+            tag = f"{method}_fold{fo.fold_index}"
+            ledger = _with_regime(fo.test_result.ledger, fold_by_index[fo.fold_index].test)
             written.append(tracker.write_parquet(f"{tag}_test_equity.parquet", ledger))
-            trades = result.trades()
+            trades = fo.test_result.trades()
             if trades.height:
                 written.append(tracker.write_parquet(f"{tag}_test_trades.parquet", trades))
 
@@ -802,15 +1071,21 @@ def _human_report(summary: dict[str, Any]) -> str:
         f"- Label: **{summary['label']}**",
         f"- Family: `{summary['family']}`  |  Algorithm: `{summary['algorithm']}`",
         f"- Symbol/timeframe: {summary['symbol']} {summary['timeframe']}  |  Seed: {summary['seed']}",
-        f"- Budget (unique evaluations): {summary['budget']}  |  Folds: {summary['n_folds']}",
+        f"- Budget per outer fold (unique evaluations): {summary['budget']}"
+        f"  |  Folds: {summary['n_folds']}",
+        f"- Search protocol: `{summary['search_protocol']}` (ADR 0012)",
         f"- Comparison metric: {summary['comparison_metric']}",
         f"- Fair budget: {summary['fair_budget']}",
         "",
         f"> {summary['warning']}",
         "",
+        "Each outer fold was searched independently: fitness never crosses folds and "
+        "every fold's winner was frozen on validation before its test slice was scored.",
+        "",
         "## Methods",
         "",
-        "| method | evaluated | feasible | best val fitness | mean OOS test sharpe |",
+        "| method | evaluations (all folds) | feasible | mean best val fitness | "
+        "mean OOS test sharpe |",
         "|---|---|---|---|---|",
     ]
     for name, m in summary["methods"].items():

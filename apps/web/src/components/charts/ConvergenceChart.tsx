@@ -19,14 +19,26 @@ const METHOD_COLOR: Record<string, "accent" | "alt"> = {
   genetic_algorithm: "accent",
 };
 
-export function ConvergenceChart({ series }: { series: Record<string, ConvergencePoint[]> }) {
+export function ConvergenceChart({
+  series,
+  fold,
+}: {
+  series: Record<string, ConvergencePoint[]>;
+  /** Restrict to one outer fold. Traces from different folds are measured on
+   * different validation windows, so they must not be drawn as one curve. */
+  fold?: number;
+}) {
   const c = useChartColors();
   const methods = Object.keys(series);
+  const points: Record<string, ConvergencePoint[]> = {};
+  for (const m of methods) {
+    points[m] = fold === undefined ? series[m] : series[m].filter((p) => p.fold === fold);
+  }
   // Merge to a wide table keyed by evaluation index.
-  const maxLen = Math.max(0, ...methods.map((m) => series[m].length));
+  const maxLen = Math.max(0, ...methods.map((m) => points[m].length));
   const data = Array.from({ length: maxLen }, (_, i) => {
     const row: Record<string, number | null> = { evaluation: i + 1 };
-    for (const m of methods) row[m] = series[m][i]?.best_fitness ?? null;
+    for (const m of methods) row[m] = points[m][i]?.best_fitness ?? null;
     return row;
   });
 

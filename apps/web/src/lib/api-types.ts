@@ -34,6 +34,10 @@ export interface RunSummary {
   n_folds: number | null;
   best_method: string | null;
   has_comparison: boolean;
+  /** Temporal contract the run was produced under (ADR 0012). */
+  protocol: string;
+  /** True when candidate selection could see other outer folds. */
+  contaminated: boolean;
 }
 
 export interface RunListResponse {
@@ -68,18 +72,24 @@ export interface MethodComparison {
 
 export interface FairBudgetRow {
   method: string;
+  /** Unique evaluations per outer fold. */
   budget: number | null;
+  n_folds_searched: number | null;
   proposed: number | null;
   invalid: number | null;
   duplicate: number | null;
   cached: number | null;
+  /** Total across all outer folds. */
   evaluated: number | null;
   unique_candidates: number | null;
+  /** The engine reached the target in every outer fold. */
   within_budget: boolean | null;
 }
 
 export interface FairBudget {
   budget: number | null;
+  n_folds: number | null;
+  parity_level: string | null;
   definition: string | null;
   ok: boolean;
   rows: FairBudgetRow[];
@@ -95,6 +105,8 @@ export interface ComparisonResponse {
   comparison_metric: string | null;
   best_out_of_sample_method: string | null;
   warning: string | null;
+  search_protocol: string | null;
+  contaminated: boolean;
   methods: MethodComparison[];
   fair_budget: FairBudget;
 }
@@ -102,6 +114,8 @@ export interface ComparisonResponse {
 export interface CandidateModel {
   candidate_id: string;
   family: string | null;
+  /** Outer fold whose isolated search produced this candidate. */
+  fold_index: number | null;
   status: string | null;
   fitness: number | null;
   failure_reason: string | null;
@@ -140,6 +154,9 @@ export interface FoldWinnerModel {
   test_max_drawdown: number | null;
   test_ann_return: number | null;
   test_n_trades: number | null;
+  /** Hash of the winner, recorded before its test slice was scored. */
+  selection_fingerprint: string | null;
+  frozen_before_test: boolean | null;
   params: Record<string, unknown>;
 }
 
@@ -151,18 +168,23 @@ export interface FoldsResponse {
 }
 
 export interface ConvergencePoint {
+  /** Each outer fold is searched independently and has its own trace. */
+  fold: number;
   evaluation: number;
   best_fitness: number | null;
 }
 
 export interface GaGenerationDiversity {
   generation: number;
+  fold: number | null;
   param_diversity: number | null;
   unique_ratio: number | null;
 }
 
 export interface SearchAnalyticsResponse {
   run_id: string;
+  search_protocol: string | null;
+  convergence_folds: number[];
   convergence: Record<string, ConvergencePoint[]>;
   ga_diversity: GaGenerationDiversity[];
   ga_generation_best: Record<string, unknown>[];

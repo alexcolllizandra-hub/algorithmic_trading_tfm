@@ -613,6 +613,11 @@ class Fitness(_Strict):
     primary_objective: str = "walk_forward_sharpe"
     weights: FitnessWeights = FitnessWeights()
     constraints: FitnessConstraints = FitnessConstraints()
+    # Contiguous sub-blocks each fold's validation window is cut into to measure
+    # within-fold stability. Under the per-outer-fold protocol (ADR 0012) this
+    # replaces the across-fold spread, which a single fold cannot observe without
+    # reading later folds.
+    stability_blocks: int = Field(default=4, ge=2)
     provisional: bool = True
 
 

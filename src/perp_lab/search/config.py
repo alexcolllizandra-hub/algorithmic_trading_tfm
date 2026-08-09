@@ -69,6 +69,7 @@ class ObjectiveOverride(_Strict):
     min_trades_total: int | None = Field(default=None, ge=0)
     min_trades_per_fold: int | None = Field(default=None, ge=0)
     max_drawdown_limit: float | None = Field(default=None, gt=0)
+    stability_blocks: int | None = Field(default=None, ge=2)
 
     def as_overrides(self) -> dict[str, Any]:
         return {k: v for k, v in self.model_dump().items() if v is not None}

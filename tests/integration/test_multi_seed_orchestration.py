@@ -105,10 +105,15 @@ def test_each_unit_records_its_own_seed_streams(tmp_path: Path, smoke_config) ->
     )
     schedules = [u["seed_schedule"] for u in result.units.values()]
     for schedule in schedules:
-        assert schedule["engines"]["random_search"] != schedule["engines"]["genetic_algorithm"]
+        per_fold = schedule["engines_per_fold"]
+        assert per_fold["random_search"] != per_fold["genetic_algorithm"]
+        # Every fold searches from its own stream, so one fold's number of draws
+        # can never shift another fold's search.
+        for engine_streams in per_fold.values():
+            assert len(set(engine_streams.values())) == len(engine_streams)
         assert schedule["per_fold_regime"]
     # Different base seeds must move every derived stream.
-    assert schedules[0]["engines"] != schedules[1]["engines"]
+    assert schedules[0]["engines_per_fold"] != schedules[1]["engines_per_fold"]
 
 
 def test_resume_skips_completed_units_and_finishes_the_rest(tmp_path: Path, smoke_config) -> None:

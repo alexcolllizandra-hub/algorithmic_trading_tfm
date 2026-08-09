@@ -50,7 +50,7 @@ These hold at **every** gate. Violating one fails the gate regardless of results
 
 ---
 
-## Gate R1 — Restore temporal validity
+## Gate R1 — Restore temporal validity — **PASSED 2026-08-09**
 
 **Objective.** Make candidate search independent per outer fold.
 
@@ -91,20 +91,39 @@ protocol was invalid, and which frozen results it affects.
 
 **Promotion criteria.**
 
-- [ ] Fold-isolation tests pass.
-- [ ] Budget parity holds per outer fold for both engines.
-- [ ] Full offline suite green; lint, format and type checks clean.
-- [ ] A fixed-seed run reproduces exactly.
-- [ ] The branch divergence is resolved so one branch contains both the fix and
-      the multi-seed work.
+- [x] Fold-isolation tests pass — `tests/unit/test_search_fold_isolation.py`.
+- [x] Budget parity holds per outer fold for both engines — pilot audit: 60
+      evaluations per engine in each of 15 folds.
+- [x] Full offline suite green (634 passed); `ruff check`, `ruff format --check`
+      and `pyright` (0 errors) clean, plus frontend `tsc`, ESLint and `vitest`.
+- [x] A fixed-seed run reproduces exactly — per-fold convergence traces and seed
+      streams compared in `tests/integration/test_search_pipeline.py`.
+- [x] The branch divergence is resolved: `fix/outer-fold-leakage` was abandoned
+      and R1 re-implemented on `docs/roadmap-consolidation`, which descends from
+      the multi-seed branch.
 
-**Rejection criteria.**
+**Rejection criteria** (neither triggered).
 
 - If per-fold search cannot reach the configured budget in a realistic space, the
   budget contract is renegotiated **in an ADR** — never silently lowered.
+  *Not triggered:* both engines reached the full 60-evaluation target in all 15
+  folds of the real momentum pilot.
 - If enforcing isolation makes runtime infeasible for 15 folds × 10 seeds ×
   2 assets, the geometry is reduced **explicitly and symmetrically** for both
-  engines, and recorded.
+  engines, and recorded. *Not triggered:* the measured cost is 1.00x in
+  backtests and 1.18x in wall-clock, not the 15x originally feared; the full
+  15-fold two-engine pilot runs in 16.5 s. The geometry is unchanged.
+
+**Evidence.**
+
+| Item | Where |
+|---|---|
+| Protocol decision, cost measurement, isolation argument | [ADR 0012](../decisions/0012-outer-fold-contamination-in-candidate-search.md) |
+| Isolation tests | `tests/unit/test_search_fold_isolation.py` |
+| Cost benchmark (old vs new, real data) | `scripts/benchmark_protocol_cost.py`, `reports/tables/protocol_cost.json` |
+| Artifact-level audit of a real run | `scripts/audit_fold_isolation.py` |
+| Pilot run | `artifacts/runs/search_momentum_20260809T085829Z_c28e3b` |
+| Quarantine of superseded results | `scripts/mark_superseded_runs.py` (64 directories marked, none deleted) |
 
 ---
 

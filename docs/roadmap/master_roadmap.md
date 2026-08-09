@@ -57,8 +57,8 @@ or overfitting.
 | # | Phase | Status | Blocks |
 |---|---|---|---|
 | F | Foundation | **Complete** | — |
-| **R1** | **Restore temporal validity** | **Blocking, not started** | everything |
-| R2 | Re-baseline momentum + RS/GA | Not started | R3 |
+| R1 | Restore temporal validity | **Complete (2026-08-09)** | — |
+| **R2** | **Re-baseline momentum + RS/GA** | **Next, not started** | R3 |
 | R3 | Evaluate implemented families | Not started | R4 |
 | R4 | Robustness coverage | Not started | S1 |
 | S1 | Controlled strategy expansion | Specified | M1 |
@@ -87,11 +87,12 @@ and a FastAPI + Next.js research dashboard.
 Evidence: [current_state.md](current_state.md#component-inventory).
 
 **One caveat carries forward:** this foundation produced its results under a
-contaminated search protocol. Phase R1 exists to fix that.
+contaminated search protocol. Phase R1 fixed the protocol on 2026-08-09; the
+*results* it produced are still superseded and are re-established in R2.
 
 ---
 
-## Phase R1 — Restore temporal validity (BLOCKING)
+## Phase R1 — Restore temporal validity — **COMPLETE (2026-08-09)**
 
 **Objective.** Make candidate search independent per outer fold, so that
 selecting a strategy for fold *i* cannot use information from fold *j > i*.
@@ -118,17 +119,30 @@ evidence with the same defect and waste the compute.
 5. Reconciliation of the divergent branches
    ([Inconsistency 2](current_state.md#inconsistency-2-the-leakage-fix-is-on-a-divergent-branch)).
 
-**A working implementation already exists** on `fix/outer-fold-leakage`
-(`588ab8e`) but was built on a base that predates the multi-seed work. It must be
-re-applied against the multi-seed branch, not merged.
+**Outcome.** All five deliverables landed on `docs/roadmap-consolidation`.
+`fix/outer-fold-leakage` was abandoned rather than merged, and R1 was
+re-implemented on a base that carries the multi-seed work, so it also covers
+per-fold budget parity, the multi-seed protocol guard and the API/dashboard
+contract — none of which the old branch could see.
 
-**Promotion criterion.** Fold-isolation tests pass; budget parity holds per fold;
-the full offline suite is green; a smoke run reproduces byte-identically under a
-fixed seed.
+Two design points were forced by isolation and are worth stating, because a
+naive fix would have quietly changed the experiment:
 
-**Rejection criterion.** If per-fold search cannot reach the configured budget in
-a realistic search space, the budget contract must be renegotiated and recorded
-in an ADR before proceeding — not silently lowered.
+* **The dispersion penalty had to be redefined.** Fitness penalised the spread of
+  Sharpe *across folds*, which an isolated fold cannot observe. Dropping it would
+  have removed the objective's robustness pressure, so it became the spread
+  across contiguous sub-blocks *within* the fold's own validation window,
+  computed from the existing ledger at no extra backtest cost.
+* **The cost fear was wrong.** Measured on real data at the research geometry,
+  the corrected protocol runs the *same* number of backtests and costs **1.18x**
+  wall-clock, not the 15x the original ADR feared. The geometry was not reduced.
+
+**Promotion criterion — met.** Fold-isolation tests pass; budget parity holds per
+fold (60 evaluations per engine in each of 15 folds on a real pilot); the full
+offline suite is green (634 tests); fixed-seed runs reproduce.
+
+Evidence: [ADR 0012](../decisions/0012-outer-fold-contamination-in-candidate-search.md),
+[Gate R1](phase_gates.md#gate-r1--restore-temporal-validity--passed-2026-08-09).
 
 ---
 
@@ -489,9 +503,19 @@ and checkpoints; and final statistical summaries.
 **Two runs whose experimental contracts differ materially must never be compared
 without stating the difference.** `RunIdentity` exists to enforce exactly this.
 
+The temporal contract is part of that identity. Run summaries record
+`search_protocol`, and `evaluation/multi_seed.assert_protocol()` raises rather
+than pool a superseded unit with a clean one, so the two protocols cannot be
+mixed by accident.
+
 ---
 
 ## Next executable phase
 
-**Phase R1.** Nothing else may start first. The implementation largely exists on
-`fix/outer-fold-leakage` and needs re-application to the multi-seed branch.
+**Phase R2 — re-baseline momentum and the RS/GA comparison.** R1 is complete, so
+the protocol is now trustworthy but every *number* is not. The first experiment
+to repeat is the momentum multi-seed study (2 assets × 10 seeds × 15 folds,
+geometry and budget unchanged), because it is what FR-1 and FR-2 rest on and its
+outcome is pre-registered: momentum should stay negative or worsen, and the
+GA − RS estimate should move toward zero. No new family is evaluated before that
+re-baseline exists.

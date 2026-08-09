@@ -28,6 +28,19 @@ KIND_UNKNOWN = "unknown"
 
 METHODS: tuple[str, ...] = ("random_search", "genetic_algorithm")
 
+# The temporal contract current artifacts are produced under (ADR 0012). Runs
+# recorded under any other protocol pooled fitness across outer folds and their
+# selections are contaminated; they are still browsable, but clearly labelled.
+CURRENT_SEARCH_PROTOCOL = "independent_search_per_outer_fold"
+LEGACY_SEARCH_PROTOCOL = "pooled_across_folds_contaminated"
+
+
+def search_protocol(summary: Mapping[str, Any] | None) -> str:
+    """The protocol a run was produced under, inferred when not recorded."""
+    if summary and isinstance(summary.get("search_protocol"), str):
+        return str(summary["search_protocol"])
+    return LEGACY_SEARCH_PROTOCOL
+
 
 def _read_json(path: Path) -> Any | None:
     """Read a JSON artifact, returning ``None`` when it is missing or invalid."""
@@ -96,6 +109,7 @@ class RunSummary:
     n_folds: int | None
     best_method: str | None
     has_comparison: bool
+    protocol: str = LEGACY_SEARCH_PROTOCOL
 
 
 def discover_runs(runs_dir: str | Path) -> list[RunSummary]:
@@ -134,6 +148,7 @@ def discover_runs(runs_dir: str | Path) -> list[RunSummary]:
                 n_folds=summary.get("n_folds"),
                 best_method=summary.get("best_out_of_sample_method"),
                 has_comparison=(d / "comparison_summary.json").exists(),
+                protocol=search_protocol(summary),
             )
         )
     out.sort(key=lambda r: r.run_id, reverse=True)
@@ -164,6 +179,15 @@ class RunArtifacts:
         return classify_run_kind(self.summary, self.config)
 
     @property
+    def protocol(self) -> str:
+        return search_protocol(self.summary)
+
+    @property
+    def contaminated(self) -> bool:
+        """True when this run's candidate selection saw other folds (pre-ADR-0012)."""
+        return self.protocol != CURRENT_SEARCH_PROTOCOL
+
+    @property
     def available_methods(self) -> list[str]:
         """Methods for which a candidate ledger exists on disk."""
         found: list[str] = []
@@ -176,7 +200,7 @@ class RunArtifacts:
 def load_run(run_dir: str | Path) -> RunArtifacts:
     """Load all JSON/text artifacts for a run (frames are loaded on demand)."""
     d = Path(run_dir)
-    lineage = _read_json(d / "ga_lineage.json")
+    lineage = _flatten_lineage(_read_json(d / "ga_lineage.json"))
     report_path = d / "comparison_report.md"
     return RunArtifacts(
         run_dir=d,
@@ -191,9 +215,23 @@ def load_run(run_dir: str | Path) -> RunArtifacts:
         algorithms=_read_json(d / "algorithms.json"),
         search_space=_read_json(d / "search_space.json"),
         ga_diversity=_read_json(d / "ga_diversity.json"),
-        ga_lineage=lineage if isinstance(lineage, list) else [],
+        ga_lineage=lineage,
         report_md=report_path.read_text(encoding="utf-8") if report_path.exists() else None,
     )
+
+
+def _flatten_lineage(raw: Any) -> list[dict[str, Any]]:
+    """GA lineage as one list, tagging each edge with the fold that produced it."""
+    if isinstance(raw, list):
+        return [r for r in raw if isinstance(r, dict)]
+    if not isinstance(raw, dict):
+        return []
+    out: list[dict[str, Any]] = []
+    for fold_key, rows in sorted(raw.items(), key=lambda kv: int(kv[0])):
+        if not isinstance(rows, list):
+            continue
+        out.extend({**r, "fold": int(fold_key)} for r in rows if isinstance(r, dict))
+    return out
 
 
 def _method_summaries(summary: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -227,78 +265,120 @@ def comparison_table(summary: Mapping[str, Any] | None) -> pl.DataFrame:
 
 
 def fair_budget_report(summary: Mapping[str, Any] | None) -> dict[str, Any]:
-    """Verify that both methods respected the same unique-evaluation budget.
+    """Verify that both methods spent the same budget inside every outer fold.
 
-    Returns per-method counters plus a boolean ``ok`` that is True when every
-    method's evaluated count is within the shared budget and no method exceeded
-    it. This is the fair-budget verification surfaced in the UI.
+    Under the per-fold protocol the budget is a per-fold quantity, so the check
+    that matters is whether each engine reached the target in *every* fold, not
+    whether its run-level total happens to match. ``ok`` is True only when it did.
     """
-    budget = summary.get("budget") if summary else None
+    parity = summary.get("budget_parity", {}) if summary else {}
+    if not isinstance(parity, dict):
+        parity = {}
+    budget = parity.get("effective_budget_per_fold", summary.get("budget") if summary else None)
+    n_folds = parity.get("n_folds")
+    per_engine = parity.get("per_engine", {})
     methods = _method_summaries(summary)
+
     rows: list[dict[str, Any]] = []
     ok = True
     for name, m in methods.items():
         counters = m.get("counters", {}) if isinstance(m, dict) else {}
-        evaluated = counters.get("evaluated")
-        within = evaluated is not None and budget is not None and evaluated <= budget
-        ok = ok and within
+        engine = per_engine.get(name, {}) if isinstance(per_engine, dict) else {}
+        reached = engine.get("reached_target_in_every_fold")
+        # Absent parity block: fall back to the run-level containment check so a
+        # partially written or legacy run still renders instead of erroring.
+        if reached is None:
+            evaluated = counters.get("evaluated")
+            reached = evaluated is not None and budget is not None and evaluated <= budget
+        ok = ok and bool(reached)
         rows.append(
             {
                 "method": name,
                 "budget": budget,
+                "n_folds_searched": engine.get("n_folds_searched", n_folds),
                 "proposed": counters.get("proposed"),
                 "invalid": counters.get("invalid"),
                 "duplicate": counters.get("duplicate"),
                 "cached": counters.get("cached"),
-                "evaluated": evaluated,
+                "evaluated": counters.get("evaluated"),
                 "unique_candidates": m.get("n_unique_candidates"),
-                "within_budget": within,
+                "within_budget": bool(reached),
             }
         )
     return {
         "budget": budget,
+        "n_folds": n_folds,
+        "parity_level": parity.get("parity_level"),
         "definition": summary.get("fair_budget") if summary else None,
         "rows": pl.DataFrame(rows),
         "ok": ok and len(rows) > 0,
     }
 
 
-def convergence_frame(run_dir: str | Path, method: str) -> pl.DataFrame:
-    """Best-fitness-so-far versus evaluation index for one method."""
+def convergence_frame(run_dir: str | Path, method: str, fold: int | None = None) -> pl.DataFrame:
+    """Best-fitness-so-far versus evaluation index, per outer fold.
+
+    Returns a ``fold`` / ``evaluation`` / ``best_fitness`` frame. Traces from
+    different folds are separate series: they are measured on different validation
+    windows, so concatenating them would not describe a single search.
+    """
     data = _read_json(Path(run_dir) / f"{method}_convergence.json")
     if not isinstance(data, dict):
         return pl.DataFrame()
-    series = data.get("best_fitness_after_each_eval")
-    if not isinstance(series, list) or not series:
+
+    per_fold = data.get("per_fold")
+    if not isinstance(per_fold, dict):
+        # Legacy single-trace artifact (pre-ADR-0012 protocol).
+        series = data.get("best_fitness_after_each_eval")
+        if not isinstance(series, list) or not series:
+            return pl.DataFrame()
+        per_fold = {"0": series}
+
+    rows: list[dict[str, Any]] = []
+    for key, series in sorted(per_fold.items(), key=lambda kv: int(kv[0])):
+        if not isinstance(series, list) or not series:
+            continue
+        idx = int(key)
+        if fold is not None and idx != fold:
+            continue
+        rows.extend(
+            {"fold": idx, "evaluation": i, "best_fitness": v} for i, v in enumerate(series, start=1)
+        )
+    return pl.DataFrame(rows) if rows else pl.DataFrame()
+
+
+def convergence_folds(run_dir: str | Path, method: str) -> list[int]:
+    """Outer folds for which a convergence trace exists."""
+    cf = convergence_frame(run_dir, method)
+    if cf.is_empty() or "fold" not in cf.columns:
+        return []
+    return sorted({int(v) for v in cf["fold"].to_list()})
+
+
+def _ga_per_fold(artifacts: RunArtifacts, key: str, legacy_key: str) -> pl.DataFrame:
+    div = artifacts.ga_diversity
+    if not isinstance(div, dict):
         return pl.DataFrame()
-    return pl.DataFrame(
-        {
-            "evaluation": list(range(1, len(series) + 1)),
-            "best_fitness": series,
-        }
-    )
+    per_fold = div.get(key)
+    if not isinstance(per_fold, dict):
+        rows = div.get(legacy_key)
+        return pl.DataFrame(rows) if isinstance(rows, list) and rows else pl.DataFrame()
+    frames: list[pl.DataFrame] = []
+    for fold_key, rows in sorted(per_fold.items(), key=lambda kv: int(kv[0])):
+        if not isinstance(rows, list) or not rows:
+            continue
+        frames.append(pl.DataFrame(rows).with_columns(pl.lit(int(fold_key)).alias("fold")))
+    return pl.concat(frames, how="diagonal") if frames else pl.DataFrame()
 
 
 def diversity_frame(artifacts: RunArtifacts) -> pl.DataFrame:
-    """Per-generation GA diversity (empty when the run had no GA)."""
-    div = artifacts.ga_diversity
-    if not isinstance(div, dict):
-        return pl.DataFrame()
-    rows = div.get("diversity")
-    if not isinstance(rows, list) or not rows:
-        return pl.DataFrame()
-    return pl.DataFrame(rows)
+    """Per-generation GA diversity for every outer fold (empty when no GA ran)."""
+    return _ga_per_fold(artifacts, "diversity_per_fold", "diversity")
 
 
 def generation_best_frame(artifacts: RunArtifacts) -> pl.DataFrame:
-    """Per-generation best fitness / candidate for the GA."""
-    div = artifacts.ga_diversity
-    if not isinstance(div, dict):
-        return pl.DataFrame()
-    rows = div.get("generation_best")
-    if not isinstance(rows, list) or not rows:
-        return pl.DataFrame()
-    return pl.DataFrame(rows)
+    """Per-generation best fitness / candidate for the GA, per outer fold."""
+    return _ga_per_fold(artifacts, "generation_best_per_fold", "generation_best")
 
 
 def fold_winners_frame(run_dir: str | Path, method: str) -> pl.DataFrame:
@@ -321,6 +401,8 @@ def fold_winners_frame(run_dir: str | Path, method: str) -> pl.DataFrame:
                 "test_max_drawdown": tm.get("max_drawdown"),
                 "test_ann_return": tm.get("ann_return"),
                 "test_n_trades": tm.get("n_trades"),
+                "selection_fingerprint": w.get("selection_fingerprint"),
+                "frozen_before_test": w.get("frozen_before_test"),
                 "params": json.dumps(w.get("params", {}), sort_keys=True),
             }
         )

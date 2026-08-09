@@ -30,7 +30,7 @@ from typing import Any
 
 from perp_lab.config import Paths
 from perp_lab.search.config import SearchRunConfig
-from perp_lab.search.runner import SearchRunResult, run_search
+from perp_lab.search.runner import SEARCH_PROTOCOL, SearchRunResult, run_search
 from perp_lab.tracking.identity import build_identity, identity_record
 from perp_lab.tracking.journal import Checkpoint, Journal, atomic_write_json
 from perp_lab.tracking.run import generate_run_id, git_state
@@ -50,6 +50,10 @@ def _poolable_payload(cfg: SearchRunConfig) -> dict[str, Any]:
     payload = cfg.model_dump(mode="json")
     for varying in ("seed", "symbol", "label"):
         payload.pop(varying, None)
+    # The temporal contract is part of what makes units comparable. Including it
+    # means a checkpoint written under the superseded protocol can never be
+    # resumed into, or pooled with, a study run under the current one.
+    payload["search_protocol"] = SEARCH_PROTOCOL
     return payload
 
 
@@ -119,6 +123,10 @@ def _unit_summary(result: SearchRunResult) -> dict[str, Any]:
         "run_id": result.run_id,
         "run_dir": str(result.run_dir) if result.run_dir else None,
         "n_folds": summary.get("n_folds"),
+        # Carried into the checkpoint so a later analysis can prove every pooled
+        # unit was searched under the same temporal contract (ADR 0012).
+        "search_protocol": summary.get("search_protocol"),
+        "protocol": summary.get("protocol"),
         "budget_parity": summary.get("budget_parity"),
         "seed_schedule": summary.get("seed_schedule"),
         "engines": {
@@ -215,6 +223,7 @@ def run_multi_seed(
         seeds=list(seeds),
         family=base_config.family,
         budget=base_config.budget,
+        search_protocol=SEARCH_PROTOCOL,
     )
     atomic_write_json(study_path / "run_identity.json", record)
 

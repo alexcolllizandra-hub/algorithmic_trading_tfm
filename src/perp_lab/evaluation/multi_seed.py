@@ -28,6 +28,38 @@ ENGINES = ("random_search", "genetic_algorithm")
 
 _TEST_METRICS = ("sharpe", "total_return", "max_drawdown", "n_trades", "ann_return")
 
+# Only units produced under the per-outer-fold protocol describe the experiment
+# this module analyses. Units from the earlier protocol ranked candidates on a
+# fitness pooled across all folds, so their fold winners were chosen with partial
+# knowledge of later folds; see ADR 0012.
+REQUIRED_SEARCH_PROTOCOL = "independent_search_per_outer_fold"
+
+
+class ContaminatedStudyError(RuntimeError):
+    """A study contains units produced under a superseded search protocol."""
+
+
+def assert_protocol(units: dict[str, dict[str, Any]]) -> None:
+    """Refuse to analyse units whose selection protocol is not the current one.
+
+    Silently pooling contaminated units with clean ones would produce a number
+    that describes neither experiment. Failing loudly is the only safe default.
+    """
+    offenders = {
+        key: payload.get("search_protocol", "unrecorded")
+        for key, payload in units.items()
+        if payload.get("search_protocol") != REQUIRED_SEARCH_PROTOCOL
+    }
+    if offenders:
+        raise ContaminatedStudyError(
+            f"{len(offenders)} of {len(units)} units were not produced under "
+            f"'{REQUIRED_SEARCH_PROTOCOL}': {sorted(offenders)[:5]}"
+            f"{' ...' if len(offenders) > 5 else ''}. These come from the superseded "
+            "protocol that pooled fitness across outer folds (ADR 0012); their fold "
+            "winners are contaminated and must not be pooled with clean runs. Re-run "
+            "the study under the current protocol."
+        )
+
 
 def long_table(units: dict[str, dict[str, Any]]) -> pl.DataFrame:
     """Flatten a study's per-unit summaries into one tidy per-fold table."""
@@ -381,11 +413,23 @@ def seed_stability_report(
     return out
 
 
-def analyse_study(units: dict[str, dict[str, Any]], metric: str = "test_sharpe") -> dict[str, Any]:
-    """Full analysis payload for one multi-seed study."""
+def analyse_study(
+    units: dict[str, dict[str, Any]],
+    metric: str = "test_sharpe",
+    *,
+    require_protocol: bool = True,
+) -> dict[str, Any]:
+    """Full analysis payload for one multi-seed study.
+
+    ``require_protocol`` may only be disabled to inspect a superseded study for
+    documentation purposes; the result must never be reported as evidence.
+    """
+    if require_protocol:
+        assert_protocol(units)
     table = long_table(units)
     return {
         "metric": metric,
+        "search_protocol": REQUIRED_SEARCH_PROTOCOL if require_protocol else "unverified",
         "n_rows": table.height,
         "symbols": sorted(set(table["symbol"].to_list())) if table.height else [],
         "seeds": sorted(set(table["seed"].to_list())) if table.height else [],

@@ -1,7 +1,8 @@
 # Current state inventory
 
-**Audit date:** 2026-08-08
-**Audited branch:** `feat/multi-seed-and-strategy-families` (commit `2393eb6`)
+**Audit date:** 2026-08-08 · **Updated:** 2026-08-09 (Gate R1 closed)
+**Audited branch:** `feat/multi-seed-and-strategy-families` (commit `2393eb6`);
+R1 implemented on `docs/roadmap-consolidation`
 **Method:** direct inspection of source, tests, configs, ADRs and local `artifacts/`.
 Where documentation contradicted the code, **the code was taken as the source of
 truth** and the contradiction is recorded in [Known inconsistencies](#known-inconsistencies).
@@ -54,13 +55,19 @@ component anywhere in this repository is `PROMOTED`.
    inconclusive**. Zero of 40 run/engine combinations produced a bootstrap Sharpe
    confidence interval excluding zero.
 
-3. **A confirmed outer-fold contamination affects every result produced so far.**
-   Candidate search optimised a fitness pooled across *all* walk-forward folds,
-   including folds chronologically later than the fold being scored. See
+3. **A confirmed outer-fold contamination affected every result produced up to
+   2026-08-08.** Candidate search optimised a fitness pooled across *all*
+   walk-forward folds, including folds chronologically later than the fold being
+   scored. See
    [Inconsistency 1](#inconsistency-1-outer-fold-contamination-in-candidate-search).
 
-4. **The fix for that contamination exists but sits on the wrong base branch.**
-   See [Inconsistency 2](#inconsistency-2-the-leakage-fix-is-on-a-divergent-branch).
+4. **That contamination is fixed as of 2026-08-09 (Gate R1).** Search now runs
+   independently inside each outer fold, each fold's winner is fingerprinted on
+   validation before its test slice is scored, and budget parity is enforced per
+   fold. Verified by a real 15-fold pilot and by
+   `tests/unit/test_search_fold_isolation.py`. **Every pre-existing experimental
+   number remains invalid as inference** and is marked `SUPERSEDED.json` on disk;
+   nothing has been deleted.
 
 ---
 
@@ -71,12 +78,16 @@ component anywhere in this repository is `PROMOTED`.
 | `main` | `daa8de0` | baseline | Data, EDA, features, 3 families, backtester, walk-forward, RS/GA, dashboard v0 |
 | `feat/multi-seed-and-strategy-families` | `2393eb6` | 18 commits ahead of `main` | **Everything in `main` plus** evaluation layer, 3 extra families, multi-seed orchestration, budget parity, journaling, run identity |
 | `feat/research-dashboard-redesign` | `c621760` | 2 commits ahead of `main`, **diverged from** the multi-seed branch | Dashboard/API hardening and docs only |
-| `fix/outer-fold-leakage` | `588ab8e` | 1 commit ahead of the dashboard branch | Per-outer-fold independent search — **built on a base that lacks the multi-seed work** |
+| `fix/outer-fold-leakage` | `588ab8e` | 1 commit ahead of the dashboard branch | Per-outer-fold independent search — **abandoned**: built on a base that lacks the multi-seed work |
+| `docs/roadmap-consolidation` | current | descends from the multi-seed branch | Roadmap consolidation **plus the R1 leakage fix**, re-implemented on the correct base |
 
 `feat/research-dashboard-redesign` and `fix/outer-fold-leakage` branched from
 `main`, not from the multi-seed branch. They therefore do **not** contain the
 `evaluation/` package, the three newer strategy families, `effective_budget`
-parity or the multi-seed orchestrator.
+parity or the multi-seed orchestrator. `fix/outer-fold-leakage` was consequently
+**not merged**; R1 was re-implemented from scratch on
+`docs/roadmap-consolidation`, where it also covers the newer families, the
+per-fold budget parity and the multi-seed contract.
 
 ---
 
@@ -254,8 +265,8 @@ fails closed.
 | **Implementation** | `TESTED` — `src/perp_lab/search/random_search.py` |
 | **Validation maturity** | `MULTI-SEED` (as part of the momentum study) |
 | **Evidence** | `tests/unit/test_search_random.py`; multi-seed study artifacts |
-| **Limitations** | Ranks candidates on the cross-fold pooled objective (Inconsistency 1) |
-| **Next action** | Re-run under per-fold search |
+| **Limitations** | The recorded multi-seed evidence predates the R1 fix and is superseded; the engine itself now searches per fold |
+| **Next action** | Re-run the momentum baseline under the corrected protocol (Gate R2) |
 
 ### Genetic Algorithm
 
@@ -265,8 +276,8 @@ fails closed.
 | **Implementation** | `TESTED` — `src/perp_lab/search/genetic_algorithm.py` |
 | **Validation maturity** | `MULTI-SEED` — **no evidence of superiority over Random Search** |
 | **Evidence** | Paired fold-level comparison, n = 30 units: mean GA − RS = **+0.183**, 95 % CI **[−0.053, +0.419]**, Cohen's dz = 0.289 → CI includes zero |
-| **Limitations** | **The comparison is confounded**: the GA's population evolved on a fitness that pooled future folds' validation, an advantage Random Search's fitness-independent sampling never received |
-| **Next action** | Re-run the comparison under per-fold search before drawing any RS-vs-GA conclusion |
+| **Limitations** | **The recorded comparison is confounded**: the GA's population evolved on a fitness that pooled future folds' validation, an advantage Random Search's fitness-independent sampling never received. Fixed in the code as of R1; the *numbers* remain confounded |
+| **Next action** | Re-run the comparison under per-fold search before drawing any RS-vs-GA conclusion (Gate R2) |
 
 ### Budget parity
 
@@ -275,9 +286,9 @@ fails closed.
 | **Purpose** | Guarantee both engines spend an identical number of objective evaluations |
 | **Implementation** | `TESTED` |
 | **Files** | `src/perp_lab/search/config.py` (`effective_budget`, `reachable_evaluations`), `src/perp_lab/config/experiment.py` (`ga_unique_evaluations`), `_assert_budget_parity` / `_budget_report` in `src/perp_lab/search/runner.py` |
-| **Evidence** | `BudgetParityError` raised when an engine falls short; `equal_effective_budget` recorded in every run summary |
-| **Limitations** | Parity is enforced per run; it must be re-derived per outer fold once search becomes per-fold |
-| **Next action** | Re-assert parity at the per-fold level |
+| **Evidence** | `BudgetParityError` raised when an engine falls short, naming the offending fold; `budget_parity.per_engine[*].per_fold` recorded in every run summary; pilot audit confirms 60 evaluations per engine in each of 15 folds |
+| **Limitations** | None known. Parity is now asserted **inside every outer fold**, since a matching run-level total can still hide an unevenly searched fold |
+| **Next action** | None |
 
 Budget counts **unique, valid, non-cached** evaluations. Invalid proposals,
 duplicates and cache hits do not consume it — this is what makes the GA's elitism
@@ -399,6 +410,13 @@ These results are **frozen**. They may be superseded by a re-run under a
 corrected protocol, but they must never be quietly deleted, retuned or restated
 more favourably.
 
+> **All of FR-1 … FR-4 were produced under the superseded search protocol and
+> are invalid as inference as of 2026-08-09.** They are retained verbatim for
+> traceability. Their run directories carry a `SUPERSEDED.json` marker recording
+> the reason and the original provenance (run id, git commit, seeds, budget,
+> config fingerprint), written by `scripts/mark_superseded_runs.py`; 64
+> directories were marked and none deleted. The corrected re-run is Gate R2.
+
 ### FR-1 — Momentum has no demonstrated edge
 
 **Source:** `artifacts/runs/multiseed_momentum_baseline/`,
@@ -440,7 +458,13 @@ one. Reported Sharpe values must never be cited as evidence of edge.
 
 ### Inconsistency 1 — Outer-fold contamination in candidate search
 
-**Severity: high. Affects every experimental result in the repository.**
+**Severity: high. RESOLVED IN CODE 2026-08-09 (Gate R1). Every experimental
+result produced before that date remains invalid as inference.**
+
+The description below is retained because it explains what the superseded
+artifacts contain and why they may not be cited. For the corrected contract, the
+measured cost and the isolation evidence, see
+[ADR 0012](../decisions/0012-outer-fold-contamination-in-candidate-search.md).
 
 `CandidateEvaluator.evaluate()` in `src/perp_lab/search/evaluator.py` backtests a
 candidate on the validation slice of **every** fold and collapses the result into
@@ -472,21 +496,32 @@ validation Sharpe, which limits but does not remove the problem:
 FR-2 still finds no GA advantage makes the negative conclusion conservative, but
 it invalidates any positive reading of the GA's single-seed results.
 
-**Action:** implement independent search per outer fold. See
-[Phase R1](master_roadmap.md#phase-r1--restore-temporal-validity-blocking).
+**Resolution (2026-08-09).** Search now runs independently inside every outer
+fold via `single_fold_bundle()` and one evaluator per fold; another fold's data
+is absent rather than filtered, and a cross-fold request raises
+`FoldIsolationError`. The cross-fold dispersion penalty was replaced by a
+within-fold sub-block dispersion so the robustness pressure survived the change.
+Each fold's winner is fingerprinted on validation before its test slice is
+scored once. Verified by `tests/unit/test_search_fold_isolation.py` and by
+`scripts/audit_fold_isolation.py` on a real 15-fold momentum pilot.
 
-### Inconsistency 2 — The leakage fix is on a divergent branch
+**Still outstanding:** every *number* produced before the fix. See
+[Phase R2](master_roadmap.md).
 
-A working per-outer-fold implementation exists on `fix/outer-fold-leakage`
-(`588ab8e`): it adds `single_fold_bundle()`, runs each engine independently per
-fold, freezes the winner, evaluates test exactly once, and adds
-`tests/unit/test_search_fold_isolation.py`.
+### Inconsistency 2 — The leakage fix was on a divergent branch — RESOLVED
 
-That branch descends from `main` via `feat/research-dashboard-redesign`, so it
-lacks the `evaluation/` package, the three newer families, `effective_budget`
-parity and the multi-seed orchestrator. **The fix cannot simply be merged**; it
-must be re-applied against the multi-seed branch, where `runner.py` differs by
-roughly 268 lines.
+`fix/outer-fold-leakage` (`588ab8e`) descended from `main` via
+`feat/research-dashboard-redesign`, so it lacked the `evaluation/` package, the
+three newer families, `effective_budget` parity and the multi-seed orchestrator,
+and could not be merged.
+
+**Resolution:** the branch was abandoned rather than merged, and R1 was
+re-implemented on `docs/roadmap-consolidation`, which descends from the
+multi-seed branch. The re-implementation additionally covers what the old branch
+could not see: per-fold budget parity across both engines, the within-fold
+dispersion penalty, the multi-seed protocol guard
+(`ContaminatedStudyError`), the per-fold artifact schema (v2) and the
+API/dashboard contract.
 
 ### Inconsistency 3 — `docs/roadmap.md` is stale
 
@@ -538,9 +573,10 @@ orchestration test output, not a mean-reversion study. Mean reversion is
 | Baselines | `TESTED` | n/a | 6 fixed references | None |
 | Backtester | `TESTED` | n/a | Next-bar tests | None |
 | Walk-forward | `TESTED` | n/a | 15 folds, guards fail closed | None |
-| Random Search | `TESTED` | `MULTI-SEED` | FR-2 | Re-run per fold |
-| Genetic Algorithm | `TESTED` | `MULTI-SEED` — no advantage | FR-2 | Re-run per fold |
-| Budget parity | `TESTED` | n/a | `BudgetParityError` | Re-assert per fold |
+| Random Search | `TESTED` | `MULTI-SEED` — superseded | FR-2 | Re-run (R2) |
+| Genetic Algorithm | `TESTED` | `MULTI-SEED` — superseded, no advantage | FR-2 | Re-run (R2) |
+| Budget parity | `TESTED` | n/a | Per-fold parity, pilot-audited | None |
+| Fold isolation (R1) | `TESTED` | verified on a real pilot | ADR 0012, `test_search_fold_isolation.py`, `audit_fold_isolation.py` | None |
 | Multi-seed | `TESTED` | applied once | FR-1, FR-3 | Extend to other families |
 | Robustness | `TESTED` | applied once | Battery partial | Add perturbation, regimes |
 | Tracking | `TESTED` | n/a | Run identity | None |

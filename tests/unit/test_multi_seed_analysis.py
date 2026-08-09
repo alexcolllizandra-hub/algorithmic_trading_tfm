@@ -11,6 +11,8 @@ import numpy as np
 import pytest
 
 from perp_lab.evaluation.multi_seed import (
+    REQUIRED_SEARCH_PROTOCOL,
+    ContaminatedStudyError,
     analyse_study,
     long_table,
     paired_rs_ga,
@@ -64,6 +66,7 @@ def _units(
                 "symbol": symbol,
                 "seed": s,
                 "run_id": f"run-{symbol}-{s}",
+                "search_protocol": REQUIRED_SEARCH_PROTOCOL,
                 "fold_winners": winners,
                 "engines": {},
             }
@@ -238,3 +241,35 @@ def test_full_analysis_always_carries_the_seed_caveat() -> None:
     assert "repeated measurements" in analysis["caveat"]
     assert "never be pooled across seeds" in analysis["caveat"]
     assert analysis["seeds"] == [0, 1, 2]
+    assert analysis["search_protocol"] == REQUIRED_SEARCH_PROTOCOL
+
+
+# --------------------------------------------------------------------------- #
+# Contaminated artifacts must not be silently reused (ADR 0012)
+# --------------------------------------------------------------------------- #
+
+
+def test_analysis_refuses_units_from_the_superseded_protocol() -> None:
+    """Pooling pre-ADR-0012 units with clean ones describes neither experiment."""
+    units = _units(n_seeds=3, n_folds=5)
+    for payload in units.values():
+        payload["search_protocol"] = "pooled_across_folds_contaminated"
+    with pytest.raises(ContaminatedStudyError, match="ADR 0012"):
+        analyse_study(units)
+
+
+def test_analysis_refuses_units_that_do_not_record_a_protocol() -> None:
+    """An unrecorded protocol is not evidence of a clean one."""
+    units = _units(n_seeds=2, n_folds=4)
+    for payload in units.values():
+        payload.pop("search_protocol")
+    with pytest.raises(ContaminatedStudyError, match=r"unrecorded|not produced under"):
+        analyse_study(units)
+
+
+def test_a_single_contaminated_unit_fails_the_whole_study() -> None:
+    """One bad unit is enough: the aggregate would silently mix two protocols."""
+    units = _units(n_seeds=4, n_folds=5)
+    next(iter(units.values()))["search_protocol"] = "pooled_across_folds_contaminated"
+    with pytest.raises(ContaminatedStudyError):
+        analyse_study(units)

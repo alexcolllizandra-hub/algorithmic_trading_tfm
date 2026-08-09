@@ -41,6 +41,14 @@ class RunSummaryModel(BaseModel):
     n_folds: int | None = None
     best_method: str | None = None
     has_comparison: bool
+    protocol: str = Field(
+        default="pooled_across_folds_contaminated",
+        description="Temporal contract the run was produced under (ADR 0012).",
+    )
+    contaminated: bool = Field(
+        default=True,
+        description="True when candidate selection could see other outer folds.",
+    )
 
 
 class RunListResponse(BaseModel):
@@ -75,18 +83,23 @@ class MethodComparison(BaseModel):
 
 class FairBudgetRow(BaseModel):
     method: str
-    budget: int | None = None
+    budget: int | None = Field(default=None, description="Unique evaluations per outer fold.")
+    n_folds_searched: int | None = None
     proposed: int | None = None
     invalid: int | None = None
     duplicate: int | None = None
     cached: int | None = None
-    evaluated: int | None = None
+    evaluated: int | None = Field(default=None, description="Total across all outer folds.")
     unique_candidates: int | None = None
-    within_budget: bool | None = None
+    within_budget: bool | None = Field(
+        default=None, description="Engine reached the target in every outer fold."
+    )
 
 
 class FairBudget(BaseModel):
     budget: int | None = None
+    n_folds: int | None = None
+    parity_level: str | None = None
     definition: str | None = None
     ok: bool
     rows: list[FairBudgetRow]
@@ -102,6 +115,8 @@ class ComparisonResponse(BaseModel):
     comparison_metric: str | None = None
     best_out_of_sample_method: str | None = None
     warning: str | None = None
+    search_protocol: str | None = None
+    contaminated: bool = False
     methods: list[MethodComparison]
     fair_budget: FairBudget
 
@@ -109,6 +124,9 @@ class ComparisonResponse(BaseModel):
 class CandidateModel(BaseModel):
     candidate_id: str
     family: str | None = None
+    fold_index: int | None = Field(
+        default=None, description="Outer fold whose isolated search produced this candidate."
+    )
     status: str | None = None
     fitness: float | None = None
     failure_reason: str | None = None
@@ -147,6 +165,10 @@ class FoldWinnerModel(BaseModel):
     test_max_drawdown: float | None = None
     test_ann_return: float | None = None
     test_n_trades: float | None = None
+    selection_fingerprint: str | None = Field(
+        default=None, description="Hash of the winner, recorded before its test slice was scored."
+    )
+    frozen_before_test: bool | None = None
     params: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -159,17 +181,24 @@ class FoldsResponse(BaseModel):
 
 class GaGenerationDiversity(BaseModel):
     generation: int
+    fold: int | None = None
     param_diversity: float | None = None
     unique_ratio: float | None = None
 
 
 class ConvergencePoint(BaseModel):
+    fold: int
     evaluation: int
     best_fitness: float | None = None
 
 
 class SearchAnalyticsResponse(BaseModel):
     run_id: str
+    search_protocol: str | None = None
+    convergence_folds: list[int] = Field(
+        default_factory=list,
+        description="Outer folds with a trace; each fold was searched independently.",
+    )
     convergence: dict[str, list[ConvergencePoint]]
     ga_diversity: list[GaGenerationDiversity]
     ga_generation_best: list[dict[str, Any]]

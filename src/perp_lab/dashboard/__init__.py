@@ -14,6 +14,7 @@ from perp_lab.dashboard.loader import (
     candidates_frame,
     classify_run_kind,
     comparison_table,
+    convergence_folds,
     convergence_frame,
     dataset_manifest_frame,
     discover_runs,
@@ -25,6 +26,7 @@ from perp_lab.dashboard.loader import (
     folds_frame,
     generation_best_frame,
     load_run,
+    search_protocol,
     trades_frame,
     warning_messages,
 )
@@ -36,6 +38,7 @@ __all__ = [
     "candidates_frame",
     "classify_run_kind",
     "comparison_table",
+    "convergence_folds",
     "convergence_frame",
     "dataset_manifest_frame",
     "discover_runs",
@@ -47,6 +50,7 @@ __all__ = [
     "folds_frame",
     "generation_best_frame",
     "load_run",
+    "search_protocol",
     "trades_frame",
     "warning_messages",
 ]

@@ -254,13 +254,39 @@ def test_fair_budget_report_detects_violation() -> None:
     assert fb["ok"] is False
 
 
-def test_convergence_frame(run_dir: Path) -> None:
+def test_convergence_frame_reads_a_legacy_single_trace(run_dir: Path) -> None:
+    """Pre-ADR-0012 runs stored one trace; they must still render, tagged as fold 0."""
     cf = loader.convergence_frame(run_dir, "random_search")
-    assert cf.shape == (4, 2)
+    assert cf.shape == (4, 3)
+    assert cf["fold"].to_list() == [0, 0, 0, 0]
     assert cf["evaluation"].to_list() == [1, 2, 3, 4]
     # Best fitness must be monotonically non-decreasing.
     vals = cf["best_fitness"].to_list()
     assert all(b >= a for a, b in pairwise(vals))
+
+
+def test_convergence_frame_keeps_folds_separate(tmp_path: Path) -> None:
+    """Each outer fold is its own search, so its trace is its own series.
+
+    Concatenating them would splice fitness values measured on different
+    validation windows into a curve that describes no single search.
+    """
+    d = tmp_path / "run_per_fold"
+    d.mkdir()
+    _write_json(
+        d / "random_search_convergence.json",
+        {
+            "protocol": loader.CURRENT_SEARCH_PROTOCOL,
+            "per_fold": {"0": [-0.5, -0.2], "1": [-0.9, -0.9, -0.1]},
+        },
+    )
+    cf = loader.convergence_frame(d, "random_search")
+    assert cf["fold"].to_list() == [0, 0, 1, 1, 1]
+    assert cf["evaluation"].to_list() == [1, 2, 1, 2, 3]
+    assert loader.convergence_folds(d, "random_search") == [0, 1]
+
+    only_one = loader.convergence_frame(d, "random_search", fold=1)
+    assert only_one["fold"].to_list() == [1, 1, 1]
 
 
 def test_convergence_frame_missing_returns_empty(run_dir: Path) -> None:
