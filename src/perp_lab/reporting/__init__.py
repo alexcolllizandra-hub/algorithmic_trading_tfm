@@ -11,6 +11,8 @@ from perp_lab.reporting.artifacts import (
     save_table,
 )
 from perp_lab.reporting.r3_gate import (
+    R3_GATE_FAMILIES,
+    ArtifactReader,
     R3ReportConsistencyError,
     R3ReportError,
     build_r3_thesis_report,
@@ -29,9 +31,11 @@ from perp_lab.reporting.style import (
 
 __all__ = [
     "ASSET_COLORS",
+    "R3_GATE_FAMILIES",
     "REGIME_COLORS",
     "TIMEFRAME_COLORS",
     "ArtifactContext",
+    "ArtifactReader",
     "R3ReportConsistencyError",
     "R3ReportError",
     "apply_house_style",

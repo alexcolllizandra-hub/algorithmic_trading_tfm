@@ -24,7 +24,7 @@ from perp_lab.config import load_data_contract, load_experiment_config, load_set
 from perp_lab.data.download import run_ingestion
 from perp_lab.data.providers.binance_vision import BinanceVisionBulkProvider
 from perp_lab.experiments.pipeline import run_dev_pipeline
-from perp_lab.reporting.r3_gate import default_r3_root, write_r3_thesis_report
+from perp_lab.reporting.r3_gate import R3ReportError, default_r3_root, write_r3_thesis_report
 from perp_lab.search.config import load_search_config
 from perp_lab.search.runner import run_search
 from perp_lab.utils.logging import add_file_logging, get_logger
@@ -693,11 +693,12 @@ def cmd_robustness(args: argparse.Namespace) -> int:
 def cmd_report_r3_gate(args: argparse.Namespace) -> int:
     """Generate thesis-ready Gate R3 tables from persisted artifacts (read-only)."""
     root = args.root.resolve()
-    if "holdout" in str(root).lower():
-        _log.error("holdout paths cannot be used for Gate R3 thesis reporting")
-        return 1
     output_dir = (args.output_dir or Path("reports/r3_gate") / root.name).resolve()
-    paths = write_r3_thesis_report(root, output_dir)
+    try:
+        paths = write_r3_thesis_report(root, output_dir)
+    except R3ReportError as exc:
+        _log.error("%s", exc)
+        return 1
     print("Gate R3 thesis report written:")
     print(f"  JSON : {paths['json']}")
     print(f"  MD   : {paths['markdown']}")

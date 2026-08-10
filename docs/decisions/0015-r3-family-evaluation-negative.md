@@ -20,10 +20,13 @@ per-outer-fold protocol. The frozen contract was:
 All five families completed the full multi-seed study on 2026-08-10 under
 `artifacts/runs/r3_full_budget100_ga21/`. Each study passed
 `scripts/audit_study_isolation.py` (100/100 runs). Promotion was evaluated with
-the six pre-registered criteria in
+**six documented promotion criteria** in
 [phase_gates.md](../roadmap/phase_gates.md#gate-r3--family-evaluation), including
-drop-top-5 trades, minimum OOS trade count and fold-locality checks added before
-the studies finished.
+drop-top-5 trades and fold-locality checks recorded before the studies finished.
+**`min_oos_trades_met` is a separate veto** (minimum OOS trade count); it is not
+one of the six promotion criteria and does not enter the `≥6/10` majority tally.
+The promoted-only Gate R4 scope rule was harmonised in documentation **after**
+R3 closed with zero promotions; it was not part of the executed R3 contract.
 
 ## Evidence
 

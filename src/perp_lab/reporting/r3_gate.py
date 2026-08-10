@@ -1,13 +1,15 @@
 """Read-only Gate R3 thesis reporting from persisted run artifacts.
 
 Derives Markdown and JSON tables for the TFM without recomputing backtests,
-touching the holdout, or modifying original R3 search artifacts.
+reading holdout or development market data, or modifying original R3 artifacts.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from statistics import median
 from typing import Any, Literal
@@ -21,6 +23,28 @@ from perp_lab.evaluation.study_robustness import (
 )
 
 SECONDARY_ENGINE = "genetic_algorithm"
+
+R3_GATE_FAMILIES: tuple[str, ...] = (
+    "breakout",
+    "mean_reversion",
+    "volatility_breakout",
+    "funding",
+    "BTC_ETH_confirmation",
+)
+R3_EXPECTED_SYMBOLS: tuple[str, ...] = ("BTCUSDT", "ETHUSDT")
+R3_EXPECTED_SEEDS = 10
+R3_EXPECTED_UNITS_PER_FAMILY = 20
+R3_EXPECTED_TOTAL_UNITS = 100
+R3_MAJORITY_REQUIRED = 6
+HOLDOUT_START = datetime(2026, 1, 1, tzinfo=UTC)
+
+FORBIDDEN_READ_SEGMENTS = (
+    "data/raw",
+    "data/validated",
+    "data/processed",
+    "/holdout/",
+    "\\holdout\\",
+)
 
 CRITERION_LABELS: dict[str, str] = {
     "positive_total_return": "C1 positive return",
@@ -41,10 +65,11 @@ TALLY_FIELDS: dict[str, str] = {
 }
 
 Classification = Literal["primary_result", "secondary_diagnostic", "limitation"]
+VerificationLevel = Literal["reporter_verified", "documentary", "limitation"]
 
 
 class R3ReportError(Exception):
-    """Raised when required artifacts are missing or internally inconsistent."""
+    """Raised when required artifacts are missing or inputs are invalid."""
 
 
 class R3ReportConsistencyError(R3ReportError):
@@ -58,6 +83,60 @@ class R3GatePaths:
     gate_verdict: Path
     rollup: Path
     gate_report: Path | None = None
+    scientific_closure: Path | None = None
+
+
+@dataclass
+class ArtifactRead:
+    relative_path: str
+    sha256: str
+
+
+@dataclass
+class ArtifactReader:
+    """Read-only JSON loader confined to an R3 study root."""
+
+    root: Path
+    reads: list[ArtifactRead] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.root = self.root.resolve()
+
+    def read_json(self, relative_path: str | Path) -> dict[str, Any]:
+        path = self._resolve_allowed(relative_path)
+        payload = path.read_bytes()
+        digest = hashlib.sha256(payload).hexdigest()
+        rel = path.relative_to(self.root).as_posix()
+        self.reads.append(ArtifactRead(relative_path=rel, sha256=digest))
+        loaded = json.loads(payload.decode("utf-8"))
+        if not isinstance(loaded, dict):
+            raise R3ReportError(f"expected JSON object in {rel}")
+        return loaded
+
+    def manifest(self) -> list[dict[str, str]]:
+        return [
+            {"relative_path": item.relative_path, "sha256": item.sha256}
+            for item in sorted(self.reads, key=lambda r: r.relative_path)
+        ]
+
+    def _resolve_allowed(self, relative_path: str | Path) -> Path:
+        candidate = Path(relative_path)
+        path = (
+            (self.root / candidate).resolve()
+            if not candidate.is_absolute()
+            else candidate.resolve()
+        )
+        if not path.is_relative_to(self.root):
+            raise R3ReportError(f"read outside R3 root forbidden: {relative_path}")
+        rel_posix = path.relative_to(self.root).as_posix()
+        lowered = rel_posix.lower()
+        if not lowered.endswith(".json"):
+            raise R3ReportError(f"only JSON artifacts may be read: {rel_posix}")
+        if any(segment in lowered for segment in FORBIDDEN_READ_SEGMENTS):
+            raise R3ReportError(f"forbidden artifact path: {rel_posix}")
+        if not path.exists():
+            raise R3ReportError(f"required artifact missing: {rel_posix}")
+        return path
 
 
 def default_r3_root() -> Path:
@@ -67,23 +146,29 @@ def default_r3_root() -> Path:
 def resolve_r3_paths(root: Path) -> R3GatePaths:
     root = root.resolve()
     gate_report = root / "r3_gate_report.json"
+    scientific = root / "r3_scientific_closure_report.json"
     return R3GatePaths(
         root=root,
         execution=root / "r3_execution.json",
         gate_verdict=root / "r3_gate_verdict.json",
         rollup=root / "r3_family_rollup.json",
         gate_report=gate_report if gate_report.exists() else None,
+        scientific_closure=scientific if scientific.exists() else None,
     )
 
 
-def _load_json(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        raise R3ReportError(f"required artifact missing: {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+def _require_key(payload: dict[str, Any], key: str, *, context: str) -> Any:
+    if key not in payload:
+        raise R3ReportError(f"missing required field {key!r} in {context}")
+    return payload[key]
 
 
-def _rel_source(path: Path, root: Path) -> str:
-    return path.resolve().relative_to(root.resolve()).as_posix()
+def _stable_root_label(root: Path) -> str:
+    parts = root.resolve().parts
+    if "artifacts" in parts and "runs" in parts:
+        idx = parts.index("artifacts")
+        return "/".join(parts[idx:])
+    return root.name
 
 
 def _fmt_pct(value: float | None) -> str:
@@ -103,6 +188,13 @@ def _tally_cell(n_pass: int, n_seeds: int, *, required: int) -> str:
     return f"{n_pass}/{n_seeds} {status}"
 
 
+def _parse_oos_end(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value.replace(" ", "T") if "T" not in value else value)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
 def _median_strategy_sharpe(study: dict[str, Any], symbol: str, engine: str) -> float | None:
     values: list[float] = []
     for entry in study.get("per_run", {}).values():
@@ -116,56 +208,333 @@ def _median_strategy_sharpe(study: dict[str, Any], symbol: str, engine: str) -> 
     return float(median(values))
 
 
+def _trace_entry(
+    *,
+    claim: str,
+    value: Any,
+    source_file: str,
+    source_field: str,
+    classification: Classification,
+    verification_level: VerificationLevel,
+    derivation: str | None = None,
+) -> dict[str, Any]:
+    entry: dict[str, Any] = {
+        "claim": claim,
+        "value": value,
+        "source_file": source_file,
+        "source_field": source_field,
+        "classification": classification,
+        "verification_level": verification_level,
+    }
+    if derivation:
+        entry["derivation"] = derivation
+    return entry
+
+
+def _validate_output_dir(root: Path, output_dir: Path) -> Path:
+    root = root.resolve()
+    output_dir = output_dir.resolve()
+    if output_dir == root or root in output_dir.parents:
+        raise R3ReportError("output_dir must not coincide with or lie inside the R3 study root")
+    return output_dir
+
+
 def _family_order(execution: dict[str, Any]) -> list[str]:
-    order = execution.get("frozen_order") or execution.get("selected")
-    if order:
-        return list(order)
-    return sorted(execution.get("families", {}))
+    order = _require_key(execution, "frozen_order", context="r3_execution.json")
+    if not isinstance(order, list):
+        raise R3ReportError("r3_execution.json frozen_order must be a list")
+    return [str(item) for item in order]
 
 
-def _count_completed_units(root: Path, families: list[str]) -> tuple[int, int]:
+def _count_completed_units(reader: ArtifactReader, families: list[str]) -> tuple[int, int]:
     expected = 0
     completed = 0
     for family in families:
-        status_path = root / family / "status.json"
-        checkpoint_path = root / family / "checkpoint.json"
-        if not status_path.exists() or not checkpoint_path.exists():
-            raise R3ReportError(f"missing status/checkpoint for family {family!r}")
-        status = _load_json(status_path)
-        checkpoint = _load_json(checkpoint_path)
-        meta = checkpoint.get("meta", {})
-        n_symbols = len(meta.get("symbols", []))
-        n_seeds = len(meta.get("seeds", []))
-        family_expected = n_symbols * n_seeds
+        status = reader.read_json(f"{family}/status.json")
+        checkpoint = reader.read_json(f"{family}/checkpoint.json")
+        meta = _require_key(checkpoint, "meta", context=f"{family}/checkpoint.json")
+        symbols = _require_key(meta, "symbols", context=f"{family}/checkpoint.json meta")
+        seeds = _require_key(meta, "seeds", context=f"{family}/checkpoint.json meta")
+        if list(symbols) != list(R3_EXPECTED_SYMBOLS):
+            raise R3ReportConsistencyError(
+                f"{family}: expected symbols {R3_EXPECTED_SYMBOLS}, got {symbols!r}"
+            )
+        if len(seeds) != R3_EXPECTED_SEEDS:
+            raise R3ReportConsistencyError(
+                f"{family}: expected {R3_EXPECTED_SEEDS} seeds, got {len(seeds)}"
+            )
+        family_expected = len(symbols) * len(seeds)
+        if family_expected != R3_EXPECTED_UNITS_PER_FAMILY:
+            raise R3ReportConsistencyError(
+                f"{family}: expected {R3_EXPECTED_UNITS_PER_FAMILY} units, got {family_expected}"
+            )
         expected += family_expected
-        completed += int(status.get("completed", 0))
+        completed += int(_require_key(status, "completed", context=f"{family}/status.json"))
+    if expected != R3_EXPECTED_TOTAL_UNITS:
+        raise R3ReportConsistencyError(
+            f"expected {R3_EXPECTED_TOTAL_UNITS} total units, got {expected}"
+        )
     return completed, expected
 
 
-def _provenance_note(root: Path, families: list[str]) -> dict[str, Any]:
+def _load_provenance_by_family(reader: ArtifactReader, families: list[str]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
     for family in families:
-        identity_path = root / family / "run_identity.json"
-        if identity_path.exists():
-            identity = _load_json(identity_path)
-            worktree = identity.get("worktree", {})
-            return {
-                "commit_at_run": worktree.get("commit")
-                or identity.get("components", {}).get("commit"),
-                "worktree_dirty": bool(worktree.get("dirty")),
-                "diff_sha256_first_families": worktree.get("diff_sha256"),
+        identity = reader.read_json(f"{family}/run_identity.json")
+        worktree = _require_key(identity, "worktree", context=f"{family}/run_identity.json")
+        components = identity.get("components", {})
+        rows.append(
+            {
+                "family": family,
+                "commit": worktree.get("commit") or components.get("commit"),
+                "diff_sha256": worktree.get("diff_sha256") or components.get("diff_sha256"),
+                "diff_bytes": worktree.get("diff_bytes"),
+                "untracked_sha256": worktree.get("untracked_sha256")
+                or components.get("untracked_sha256"),
+                "dirty": bool(worktree.get("dirty")),
+                "provisional": bool(identity.get("provisional")),
                 "reproducible_from_commit_alone": bool(
                     worktree.get("reproducible_from_commit_alone", False)
                 ),
-                "exact_reconstruction_from_aac3357": (
-                    "not possible when the worktree was dirty and patch bytes were not retained"
-                ),
-                "methodological_validity": (
-                    "numerical integrity and CLOSED_NEGATIVE verdict remain valid from persisted "
-                    "artifacts"
-                ),
-                "source_file": _rel_source(identity_path, root),
+                "source_file": f"{family}/run_identity.json",
             }
-    raise R3ReportError("no run_identity.json found under any family study directory")
+        )
+    return rows
+
+
+def _group_provenance_states(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[Any, ...], list[str]] = {}
+    for row in rows:
+        key = (
+            row.get("commit"),
+            row.get("diff_sha256"),
+            row.get("diff_bytes"),
+            row.get("untracked_sha256"),
+            row.get("dirty"),
+            row.get("provisional"),
+            row.get("reproducible_from_commit_alone"),
+        )
+        grouped.setdefault(key, []).append(str(row["family"]))
+    states: list[dict[str, Any]] = []
+    for index, (key, families) in enumerate(
+        sorted(grouped.items(), key=lambda item: item[1]), start=1
+    ):
+        commit, diff_sha256, diff_bytes, untracked_sha256, dirty, provisional, reproducible = key
+        states.append(
+            {
+                "state_id": f"tracked_state_{index}",
+                "families": sorted(families),
+                "commit": commit,
+                "diff_sha256": diff_sha256,
+                "diff_bytes": diff_bytes,
+                "untracked_sha256": untracked_sha256,
+                "dirty": dirty,
+                "provisional": provisional,
+                "reproducible_from_commit_alone": reproducible,
+            }
+        )
+    return states
+
+
+def _validate_execution_contract(execution: dict[str, Any], families: list[str]) -> list[str]:
+    discrepancies: list[str] = []
+    if list(families) != list(R3_GATE_FAMILIES):
+        discrepancies.append(
+            f"execution frozen_order {families!r} != expected {list(R3_GATE_FAMILIES)!r}"
+        )
+    symbols = _require_key(execution, "symbols", context="r3_execution.json")
+    if list(symbols) != list(R3_EXPECTED_SYMBOLS):
+        discrepancies.append(f"execution symbols {symbols!r} != expected")
+    n_seeds = _require_key(execution, "n_seeds", context="r3_execution.json")
+    if int(n_seeds) != R3_EXPECTED_SEEDS:
+        discrepancies.append(f"execution n_seeds {n_seeds!r} != {R3_EXPECTED_SEEDS}")
+    exec_families = _require_key(execution, "families", context="r3_execution.json")
+    if set(exec_families) != set(R3_GATE_FAMILIES):
+        discrepancies.append("execution families keys mismatch expected five families")
+    for family in R3_GATE_FAMILIES:
+        meta = exec_families.get(family)
+        if meta is None:
+            discrepancies.append(f"execution missing family {family!r}")
+            continue
+        if meta.get("status") != "completed":
+            discrepancies.append(f"execution family {family!r} status != completed")
+    return discrepancies
+
+
+def _validate_verdict_contract(verdict: dict[str, Any]) -> list[str]:
+    discrepancies: list[str] = []
+    checks = {
+        "gate_status": "CLOSED_NEGATIVE",
+        "n_promoted": 0,
+        "n_rejected": 5,
+        "r4_required": False,
+    }
+    for key, expected in checks.items():
+        actual = _require_key(verdict, key, context="r3_gate_verdict.json")
+        if actual != expected:
+            discrepancies.append(f"gate_verdict {key}={actual!r}, expected {expected!r}")
+    promoted = verdict.get("promoted_families", [])
+    if promoted:
+        discrepancies.append(f"gate_verdict promoted_families must be empty, got {promoted!r}")
+    rejected = verdict.get("rejected_families", [])
+    if sorted(rejected) != sorted(R3_GATE_FAMILIES):
+        discrepancies.append("gate_verdict rejected_families mismatch expected five families")
+    return discrepancies
+
+
+def _validate_oos_temporal(study: dict[str, Any], *, family: str) -> list[str]:
+    discrepancies: list[str] = []
+    per_run = study.get("per_run", {})
+    if not per_run:
+        discrepancies.append(f"{family}: study_robustness.json has no per_run entries")
+        return discrepancies
+    for key, entry in per_run.items():
+        oos_end_raw = entry.get("oos_end")
+        if oos_end_raw is None:
+            discrepancies.append(f"{family}/{key}: missing oos_end")
+            continue
+        oos_end = _parse_oos_end(str(oos_end_raw))
+        if oos_end >= HOLDOUT_START:
+            discrepancies.append(
+                f"{family}/{key}: oos_end {oos_end.isoformat()} reaches holdout start"
+            )
+    return discrepancies
+
+
+def _validate_engine_coverage(study: dict[str, Any], *, family: str, n_seeds: int) -> list[str]:
+    discrepancies: list[str] = []
+    by_engine = study.get("by_symbol_and_engine", {})
+    for symbol in R3_EXPECTED_SYMBOLS:
+        for engine in (R3_PRIMARY_ENGINE, SECONDARY_ENGINE):
+            key = f"{symbol}|{engine}"
+            block = by_engine.get(key)
+            if block is None:
+                discrepancies.append(f"{family}: missing by_symbol_and_engine[{key!r}]")
+                continue
+            if int(block.get("n_seeds", -1)) != n_seeds:
+                discrepancies.append(
+                    f"{family}/{key}: n_seeds {block.get('n_seeds')!r} != {n_seeds}"
+                )
+    per_run = study.get("per_run", {})
+    for symbol in R3_EXPECTED_SYMBOLS:
+        for engine in (R3_PRIMARY_ENGINE, SECONDARY_ENGINE):
+            count = sum(
+                1
+                for entry in per_run.values()
+                if entry.get("symbol") == symbol and entry.get("method") == engine
+            )
+            if count != n_seeds:
+                discrepancies.append(
+                    f"{family}/{symbol}/{engine}: per_run coverage {count}/{n_seeds}"
+                )
+    return discrepancies
+
+
+def _validate_promotion_row(
+    *,
+    family: str,
+    symbol: str,
+    promo_row: dict[str, Any],
+    tally: dict[str, Any],
+    n_seeds: int,
+    majority: int,
+) -> list[str]:
+    discrepancies: list[str] = []
+    if set(promo_row.keys()) != set(PROMOTION_TESTS):
+        discrepancies.append(
+            f"{family}/{symbol}: expected exactly six promotion criteria, got {sorted(promo_row)}"
+        )
+    for name in PROMOTION_TESTS:
+        row = promo_row[name]
+        required = int(_require_key(row, "required", context=f"{family}/{symbol}/{name}"))
+        if required != majority:
+            discrepancies.append(f"{family}/{symbol}/{name}: required {required} != {majority}")
+        n_pass = int(_require_key(row, "n_pass", context=f"{family}/{symbol}/{name}"))
+        passed = bool(_require_key(row, "pass", context=f"{family}/{symbol}/{name}"))
+        if passed != (n_pass >= required):
+            discrepancies.append(
+                f"{family}/{symbol}/{name}: pass={passed} inconsistent with n_pass={n_pass}"
+            )
+        tally_val = tally.get(TALLY_FIELDS[name])
+        if tally_val != n_pass:
+            discrepancies.append(
+                f"{family}/{symbol}/{name}: tally {tally_val} != promotion n_pass {n_pass}"
+            )
+    return discrepancies
+
+
+def _validate_rollup_medians(
+    *,
+    family: str,
+    symbol: str,
+    rollup_sym: dict[str, Any],
+    tally: dict[str, Any],
+    med_sharpe: float | None,
+) -> list[str]:
+    discrepancies: list[str] = []
+    for field_name, tally_key in (
+        ("median_total_return", "median_total_return"),
+        ("median_buy_and_hold_return", "median_buy_and_hold_return"),
+    ):
+        rollup_val = rollup_sym.get(field_name)
+        tally_val = tally.get(tally_key)
+        if rollup_val is None or tally_val is None:
+            discrepancies.append(
+                f"{family}/{symbol}: missing {field_name} in rollup or study tally"
+            )
+            continue
+        if abs(float(rollup_val) - float(tally_val)) > 1e-9:
+            discrepancies.append(
+                f"{family}/{symbol}: {field_name} rollup={rollup_val} != study={tally_val}"
+            )
+    rollup_positive = rollup_sym.get("n_positive")
+    tally_positive = tally.get("n_positive")
+    if rollup_positive != tally_positive:
+        discrepancies.append(
+            f"{family}/{symbol}: rollup n_positive {rollup_positive} != study {tally_positive}"
+        )
+    if (
+        med_sharpe is not None
+        and rollup_sym.get("median_sharpe") is not None
+        and abs(float(rollup_sym["median_sharpe"]) - float(med_sharpe)) > 1e-9
+    ):
+        discrepancies.append(f"{family}/{symbol}: median_sharpe mismatch rollup vs study")
+    return discrepancies
+
+
+def _documentary_isolation_audit(
+    reader: ArtifactReader, paths: R3GatePaths
+) -> dict[str, Any] | None:
+    if paths.scientific_closure is not None:
+        payload = reader.read_json("r3_scientific_closure_report.json")
+        audit = payload.get("isolation_audit")
+        if isinstance(audit, dict):
+            return {
+                "value": (
+                    f"{audit.get('total_runs_audited', 'n/a')}/"
+                    f"{audit.get('total_runs_audited', 'n/a')} audited; "
+                    f"failures={audit.get('failures')}"
+                ),
+                "source_file": "r3_scientific_closure_report.json",
+                "source_field": "isolation_audit",
+                "verification_level": "documentary",
+                "note": (
+                    "Fold-isolation audit recorded at R3 closure; not re-executed by this reporter"
+                ),
+            }
+    if paths.gate_report is not None:
+        payload = reader.read_json("r3_gate_report.json")
+        if "isolation_audit" in payload:
+            return {
+                "value": str(payload["isolation_audit"]),
+                "source_file": "r3_gate_report.json",
+                "source_field": "isolation_audit",
+                "verification_level": "documentary",
+                "note": (
+                    "Fold-isolation audit recorded at R3 closure; not re-executed by this reporter"
+                ),
+            }
+    return None
 
 
 def _partial_signal_note(family: str, symbol: str, row: dict[str, Any]) -> str | None:
@@ -177,56 +546,71 @@ def _partial_signal_note(family: str, symbol: str, row: dict[str, Any]) -> str |
     return None
 
 
-def build_r3_thesis_report(root: Path) -> dict[str, Any]:
+def build_r3_thesis_report(root: Path, *, reader: ArtifactReader | None = None) -> dict[str, Any]:
     """Build a deterministic thesis report payload from persisted Gate R3 artifacts."""
     paths = resolve_r3_paths(root)
-    source_root_label = root.as_posix()
-    if "holdout" in str(root).lower():
-        raise R3ReportError("holdout paths must not be used as an R3 report source")
+    artifact_reader = reader or ArtifactReader(paths.root)
 
-    execution = _load_json(paths.execution)
-    verdict = _load_json(paths.gate_verdict)
-    rollup = _load_json(paths.rollup)
-    gate_report = _load_json(paths.gate_report) if paths.gate_report else None
+    execution = artifact_reader.read_json("r3_execution.json")
+    verdict = artifact_reader.read_json("r3_gate_verdict.json")
+    rollup = artifact_reader.read_json("r3_family_rollup.json")
 
     families = _family_order(execution)
-    units_completed, units_expected = _count_completed_units(paths.root, families)
-
-    if verdict.get("gate_status") != "CLOSED_NEGATIVE":
+    n_seeds = int(_require_key(execution, "n_seeds", context="r3_execution.json"))
+    if n_seeds != R3_EXPECTED_SEEDS:
+        raise R3ReportConsistencyError(f"expected n_seeds={R3_EXPECTED_SEEDS}, got {n_seeds}")
+    majority = R3_MAJORITY_REQUIRED if n_seeds == 10 else max(1, (n_seeds // 2) + 1)
+    if majority != R3_MAJORITY_REQUIRED:
         raise R3ReportConsistencyError(
-            f"expected gate_status CLOSED_NEGATIVE, got {verdict.get('gate_status')!r}"
+            f"expected majority threshold {R3_MAJORITY_REQUIRED}, got {majority}"
         )
-    if int(verdict.get("n_promoted", -1)) != 0:
-        raise R3ReportConsistencyError("expected n_promoted == 0")
-    if bool(verdict.get("r4_required")):
-        raise R3ReportConsistencyError("expected r4_required == false")
-    if rollup["summary"]["n_promoted"] != 0:
-        raise R3ReportConsistencyError("rollup summary n_promoted must be 0")
-    if any(row["analysis"]["verdict"] == "PROMOTED" for row in rollup["families"].values()):
-        raise R3ReportConsistencyError("no family may be PROMOTED in rollup")
+
+    discrepancies: list[str] = []
+    discrepancies.extend(_validate_execution_contract(execution, families))
+    discrepancies.extend(_validate_verdict_contract(verdict))
+    if set(rollup.get("families", {})) != set(R3_GATE_FAMILIES):
+        discrepancies.append("rollup families mismatch expected five families")
+    if rollup.get("summary", {}).get("n_promoted", -1) != 0:
+        discrepancies.append("rollup summary n_promoted must be 0")
+    if any(
+        row.get("analysis", {}).get("verdict") == "PROMOTED" for row in rollup["families"].values()
+    ):
+        discrepancies.append("no family may be PROMOTED in rollup")
+
+    units_completed, units_expected = _count_completed_units(artifact_reader, families)
+    if units_completed != units_expected:
+        discrepancies.append(f"units completed {units_completed} != expected {units_expected}")
+
+    provenance_rows = _load_provenance_by_family(artifact_reader, families)
+    provenance_states = _group_provenance_states(provenance_rows)
 
     primary_rows: list[dict[str, Any]] = []
     rs_ga_rows: list[dict[str, Any]] = []
     traceability: list[dict[str, Any]] = []
 
-    n_seeds = int(execution.get("n_seeds", 10))
-    majority = 6 if n_seeds == 10 else max(1, (n_seeds // 2) + 1)
-
     for family in families:
+        if family not in rollup["families"]:
+            discrepancies.append(f"rollup missing family {family!r}")
+            continue
         family_meta = rollup["families"][family]
         analysis = family_meta.get("analysis")
         if analysis is None:
-            raise R3ReportError(f"family {family!r} has no rollup analysis")
+            discrepancies.append(f"family {family!r} has no rollup analysis")
+            continue
 
-        study_path = paths.root / family / "study_robustness.json"
-        study = _load_json(study_path)
-        promo = study.get("r3_promotion", {})
+        study = artifact_reader.read_json(f"{family}/study_robustness.json")
+        promo = _require_key(study, "r3_promotion", context=f"{family}/study_robustness.json")
         if promo.get("verdict") != analysis["verdict"]:
-            raise R3ReportConsistencyError(
+            discrepancies.append(
                 f"{family}: study verdict {promo.get('verdict')!r} != rollup {analysis['verdict']!r}"
             )
         if promo.get("engine") != R3_PRIMARY_ENGINE:
-            raise R3ReportConsistencyError(f"{family}: promotion engine must be random_search")
+            discrepancies.append(f"{family}: promotion engine must be random_search")
+        if analysis["verdict"] == "PROMOTED":
+            discrepancies.append(f"{family}: rejected families cannot be PROMOTED")
+
+        discrepancies.extend(_validate_oos_temporal(study, family=family))
+        discrepancies.extend(_validate_engine_coverage(study, family=family, n_seeds=n_seeds))
 
         paired = analysis["paired_ga_minus_rs"]
         rs_ga_rows.append(
@@ -237,27 +621,63 @@ def build_r3_thesis_report(root: Path) -> dict[str, Any]:
                 "ci_high": paired.get("ci_high"),
                 "interpretation": paired.get("verdict"),
                 "ga_does_not_decide_promotion": True,
-                "source_file": _rel_source(paths.rollup, paths.root),
+                "source_file": "r3_family_rollup.json",
                 "source_field": f"families.{family}.analysis.paired_ga_minus_rs",
             }
         )
 
-        for symbol in sorted(analysis["by_symbol_rs"]):
-            rs_tally = study["by_symbol_and_engine"][f"{symbol}|{R3_PRIMARY_ENGINE}"]
+        by_symbol_rs = analysis.get("by_symbol_rs", {})
+        if sorted(by_symbol_rs) != sorted(R3_EXPECTED_SYMBOLS):
+            discrepancies.append(f"{family}: rollup by_symbol_rs symbols mismatch")
+
+        for symbol in R3_EXPECTED_SYMBOLS:
+            if symbol not in promo.get("by_symbol", {}):
+                discrepancies.append(f"{family}: missing r3_promotion.by_symbol[{symbol!r}]")
+                continue
+            if symbol not in by_symbol_rs:
+                discrepancies.append(f"{family}: missing rollup by_symbol_rs[{symbol!r}]")
+                continue
+            rs_key = f"{symbol}|{R3_PRIMARY_ENGINE}"
+            rs_tally = study["by_symbol_and_engine"][rs_key]
             symbol_promo = promo["by_symbol"][symbol]
-            if symbol_promo["majority_required"] != majority:
-                raise R3ReportConsistencyError(f"{family}/{symbol}: unexpected majority threshold")
+            if int(symbol_promo["n_seeds"]) != n_seeds:
+                discrepancies.append(f"{family}/{symbol}: symbol n_seeds mismatch")
+            if int(symbol_promo["majority_required"]) != majority:
+                discrepancies.append(f"{family}/{symbol}: unexpected majority threshold")
+
+            promo_block = symbol_promo["promotion"]
+            discrepancies.extend(
+                _validate_promotion_row(
+                    family=family,
+                    symbol=symbol,
+                    promo_row=promo_block,
+                    tally=rs_tally,
+                    n_seeds=n_seeds,
+                    majority=majority,
+                )
+            )
+
+            min_trades = symbol_promo["rejections"]["depends_on_few_trades"]
+            n_min_ok = int(rs_tally.get("n_min_oos_trades_met", 0))
+            n_below = int(min_trades.get("n_seeds_below_min_trades", 0))
+            if n_min_ok + n_below != int(symbol_promo["n_seeds"]):
+                discrepancies.append(f"{family}/{symbol}: min-trade seed counts inconsistent")
+
+            med_sharpe = _median_strategy_sharpe(study, symbol, R3_PRIMARY_ENGINE)
+            rollup_sym = by_symbol_rs[symbol]
+            discrepancies.extend(
+                _validate_rollup_medians(
+                    family=family,
+                    symbol=symbol,
+                    rollup_sym=rollup_sym,
+                    tally=rs_tally,
+                    med_sharpe=med_sharpe,
+                )
+            )
 
             criteria: dict[str, Any] = {}
             for name in PROMOTION_TESTS:
-                promo_row = symbol_promo["promotion"][name]
-                tally_key = TALLY_FIELDS[name]
-                tally_val = rs_tally.get(tally_key)
-                if tally_val != promo_row["n_pass"]:
-                    raise R3ReportConsistencyError(
-                        f"{family}/{symbol}/{name}: tally {tally_val} != promotion n_pass "
-                        f"{promo_row['n_pass']}"
-                    )
+                promo_row = promo_block[name]
                 criteria[name] = {
                     "label": CRITERION_LABELS[name],
                     "n_pass": int(promo_row["n_pass"]),
@@ -269,20 +689,10 @@ def build_r3_thesis_report(root: Path) -> dict[str, Any]:
                         int(symbol_promo["n_seeds"]),
                         required=int(promo_row["required"]),
                     ),
-                    "source_file": _rel_source(study_path, paths.root),
+                    "source_file": f"{family}/study_robustness.json",
                     "source_field": f"r3_promotion.by_symbol.{symbol}.promotion.{name}",
                 }
 
-            min_trades = symbol_promo["rejections"]["depends_on_few_trades"]
-            n_min_ok = int(rs_tally.get("n_min_oos_trades_met", 0))
-            n_below = int(min_trades.get("n_seeds_below_min_trades", 0))
-            if n_min_ok + n_below != int(symbol_promo["n_seeds"]):
-                raise R3ReportConsistencyError(
-                    f"{family}/{symbol}: min-trade seed counts inconsistent"
-                )
-            veto_triggered = bool(min_trades.get("triggered"))
-
-            med_sharpe = _median_strategy_sharpe(study, symbol, R3_PRIMARY_ENGINE)
             row = {
                 "family": family,
                 "symbol": symbol,
@@ -292,12 +702,12 @@ def build_r3_thesis_report(root: Path) -> dict[str, Any]:
                     "n_pass": n_min_ok,
                     "n_seeds": int(symbol_promo["n_seeds"]),
                     "min_trades_required": R3_MIN_OOS_TRADES,
-                    "veto_triggered": veto_triggered,
+                    "veto_triggered": bool(min_trades.get("triggered")),
                     "display": _tally_cell(
                         n_min_ok, int(symbol_promo["n_seeds"]), required=n_seeds
                     ),
                     "role": "separate veto (not a seventh promotion criterion)",
-                    "source_file": _rel_source(study_path, paths.root),
+                    "source_file": f"{family}/study_robustness.json",
                     "source_field": (
                         f"r3_promotion.by_symbol.{symbol}.rejections.depends_on_few_trades"
                     ),
@@ -313,88 +723,274 @@ def build_r3_thesis_report(root: Path) -> dict[str, Any]:
                 row["diagnostic_note"] = note
             primary_rows.append(row)
 
-            traceability.extend(
-                [
-                    {
-                        "claim": f"{family}/{symbol} {CRITERION_LABELS[name]}",
-                        "value": criteria[name]["display"],
-                        "source_file": criteria[name]["source_file"],
-                        "source_field": criteria[name]["source_field"],
-                        "classification": (
+            for name in PROMOTION_TESTS:
+                traceability.append(
+                    _trace_entry(
+                        claim=f"{family}/{symbol} {CRITERION_LABELS[name]}",
+                        value=criteria[name]["display"],
+                        source_file=criteria[name]["source_file"],
+                        source_field=criteria[name]["source_field"],
+                        classification=(
                             "secondary_diagnostic"
                             if note and name == "positive_total_return"
                             else "primary_result"
                         ),
-                    }
-                    for name in PROMOTION_TESTS
-                ]
+                        verification_level="reporter_verified",
+                    )
+                )
+            traceability.append(
+                _trace_entry(
+                    claim=f"{family}/{symbol} min_oos_trades_met veto",
+                    value=row["min_oos_trades_met"]["display"],
+                    source_file=row["min_oos_trades_met"]["source_file"],
+                    source_field=row["min_oos_trades_met"]["source_field"],
+                    classification="primary_result",
+                    verification_level="reporter_verified",
+                )
+            )
+            traceability.append(
+                _trace_entry(
+                    claim=f"{family}/{symbol} median OOS return",
+                    value=row["median_oos_return"],
+                    source_file=f"{family}/study_robustness.json",
+                    source_field=f"by_symbol_and_engine.{symbol}|random_search.median_total_return",
+                    classification="primary_result",
+                    verification_level="reporter_verified",
+                )
+            )
+            traceability.append(
+                _trace_entry(
+                    claim=f"{family}/{symbol} median OOS Sharpe",
+                    value=row["median_oos_sharpe"],
+                    source_file=f"{family}/study_robustness.json",
+                    source_field="per_run[].strategy.sharpe",
+                    derivation="median of per_run strategy.sharpe for symbol and random_search",
+                    classification="primary_result",
+                    verification_level="reporter_verified",
+                )
+            )
+            traceability.append(
+                _trace_entry(
+                    claim=f"{family}/{symbol} median buy-and-hold return",
+                    value=row["median_buy_and_hold_return"],
+                    source_file=f"{family}/study_robustness.json",
+                    source_field=(
+                        f"by_symbol_and_engine.{symbol}|random_search.median_buy_and_hold_return"
+                    ),
+                    classification="primary_result",
+                    verification_level="reporter_verified",
+                )
+            )
+            traceability.append(
+                _trace_entry(
+                    claim=f"{family}/{symbol} family verdict",
+                    value=row["verdict"],
+                    source_file="r3_family_rollup.json",
+                    source_field=f"families.{family}.analysis.verdict",
+                    classification="primary_result",
+                    verification_level="reporter_verified",
+                )
             )
 
-    provenance = _provenance_note(paths.root, families)
-    isolation_audit = (
-        gate_report.get("isolation_audit") if gate_report else f"{units_completed}/{units_expected}"
-    )
+        traceability.append(
+            _trace_entry(
+                claim=f"{family} GA-RS paired mean difference",
+                value=paired.get("mean_difference"),
+                source_file="r3_family_rollup.json",
+                source_field=f"families.{family}.analysis.paired_ga_minus_rs.mean_difference",
+                classification="secondary_diagnostic",
+                verification_level="reporter_verified",
+            )
+        )
+        traceability.append(
+            _trace_entry(
+                claim=f"{family} GA-RS 95% CI",
+                value=[paired.get("ci_low"), paired.get("ci_high")],
+                source_file="r3_family_rollup.json",
+                source_field=f"families.{family}.analysis.paired_ga_minus_rs",
+                classification="secondary_diagnostic",
+                verification_level="reporter_verified",
+            )
+        )
+
+    if discrepancies:
+        raise R3ReportConsistencyError("; ".join(discrepancies))
+
+    documentary_isolation = _documentary_isolation_audit(artifact_reader, paths)
+    documentary_claims: dict[str, Any] = {
+        "historical_holdout_status": {
+            "value": "Frozen holdout not opened during Gate R3 (documented at closure)",
+            "source_file": "docs/decisions/0015-r3-family-evaluation-negative.md",
+            "source_field": "Decision item 4",
+            "verification_level": "documentary",
+            "note": "Reporter reads only JSON under the R3 study root; no holdout market data accessed",
+        },
+        "r4_application_status": {
+            "value": "SKIPPED — zero R3 promotions; R4 confirmatory scope harmonized after R3 closure",
+            "source_file": "r3_gate_verdict.json",
+            "source_field": "r4_required",
+            "verification_level": "reporter_verified",
+            "note": (
+                "r4_required=false verified from gate verdict; promoted-only R4 rule post-dates R3 "
+                "execution and is documented in phase_gates.md after closure"
+            ),
+        },
+    }
+    if documentary_isolation is not None:
+        documentary_claims["isolation_audit_at_closure"] = documentary_isolation
+
+    provenance_limitation = {
+        "provenance_by_family": provenance_rows,
+        "provenance_states": provenance_states,
+        "patch_bytes_available": False,
+        "exact_reconstruction_from_commit": False,
+        "note": (
+            "Dirty worktree at commit aac3357; diff/untracked hashes were recorded per family but "
+            "patch bytes were not retained, so executed code cannot be reconstructed exactly from "
+            "the commit alone. Multiple tracked diff states were observed across families."
+        ),
+        "verification_level": "limitation",
+    }
 
     closure = {
-        "gate_status": verdict["gate_status"],
-        "n_promoted": verdict["n_promoted"],
-        "n_rejected": verdict["n_rejected"],
-        "units_completed": f"{units_completed}/{units_expected}",
-        "isolation_audit": isolation_audit,
-        "numerical_discrepancies": 0,
-        "r4_required": verdict["r4_required"],
-        "r4_status": "SKIPPED (zero R3 promotions; confirmatory gate only for promoted families)",
-        "holdout": "closed (not accessed)",
-        "provenance_limitation": provenance,
-        "pre_specification_note": (
-            "Gate R3 promotion criteria and R4 skip rule were pre-specified and versioned "
-            "in the repository before R3 execution"
-        ),
+        "gate_status": {
+            "value": verdict["gate_status"],
+            "verification_level": "reporter_verified",
+            "source_file": "r3_gate_verdict.json",
+            "source_field": "gate_status",
+        },
+        "n_promoted": {
+            "value": verdict["n_promoted"],
+            "verification_level": "reporter_verified",
+            "source_file": "r3_gate_verdict.json",
+            "source_field": "n_promoted",
+        },
+        "n_rejected": {
+            "value": verdict["n_rejected"],
+            "verification_level": "reporter_verified",
+            "source_file": "r3_gate_verdict.json",
+            "source_field": "n_rejected",
+        },
+        "units_completed": {
+            "value": f"{units_completed}/{units_expected}",
+            "verification_level": "reporter_verified",
+            "source_file": "*/status.json + */checkpoint.json",
+            "source_field": "status.completed vs checkpoint.meta symbols*seeds",
+            "note": "Unit completion counts only; does not substitute for fold-isolation audit",
+        },
+        "numerical_discrepancies": {
+            "value": 0,
+            "verification_level": "reporter_verified",
+            "source_file": "reporter consistency battery",
+            "source_field": "n/a",
+            "note": "Zero contradictions across execution, rollup, study_robustness and gate verdict",
+        },
+        "r4_required": {
+            "value": verdict["r4_required"],
+            "verification_level": "reporter_verified",
+            "source_file": "r3_gate_verdict.json",
+            "source_field": "r4_required",
+        },
+        "provenance_limitation": provenance_limitation,
     }
 
     traceability.extend(
         [
-            {
-                "claim": "Gate R3 status",
-                "value": verdict["gate_status"],
-                "source_file": _rel_source(paths.gate_verdict, paths.root),
-                "source_field": "gate_status",
-                "classification": "primary_result",
-            },
-            {
-                "claim": "Families promoted",
-                "value": str(verdict["n_promoted"]),
-                "source_file": _rel_source(paths.gate_verdict, paths.root),
-                "source_field": "n_promoted",
-                "classification": "primary_result",
-            },
-            {
-                "claim": "Exact reconstruction from aac3357",
-                "value": provenance["exact_reconstruction_from_aac3357"],
-                "source_file": provenance["source_file"],
-                "source_field": "worktree.reproducible_from_commit_alone",
-                "classification": "limitation",
-            },
+            _trace_entry(
+                claim="Units completed",
+                value=f"{units_completed}/{units_expected}",
+                source_file="*/status.json",
+                source_field="completed",
+                classification="primary_result",
+                verification_level="reporter_verified",
+            ),
+            _trace_entry(
+                claim="Numerical discrepancies",
+                value=0,
+                source_file="reporter consistency battery",
+                source_field="n/a",
+                derivation="cross-check execution, rollup, study_robustness, gate_verdict",
+                classification="primary_result",
+                verification_level="reporter_verified",
+            ),
+            _trace_entry(
+                claim="Gate R3 status",
+                value=verdict["gate_status"],
+                source_file="r3_gate_verdict.json",
+                source_field="gate_status",
+                classification="primary_result",
+                verification_level="reporter_verified",
+            ),
+            _trace_entry(
+                claim="Families promoted",
+                value=str(verdict["n_promoted"]),
+                source_file="r3_gate_verdict.json",
+                source_field="n_promoted",
+                classification="primary_result",
+                verification_level="reporter_verified",
+            ),
+            _trace_entry(
+                claim="R4 required",
+                value=str(verdict["r4_required"]),
+                source_file="r3_gate_verdict.json",
+                source_field="r4_required",
+                classification="primary_result",
+                verification_level="reporter_verified",
+            ),
         ]
     )
+    if documentary_isolation is not None:
+        traceability.append(
+            _trace_entry(
+                claim="Isolation audit at R3 closure",
+                value=documentary_isolation["value"],
+                source_file=documentary_isolation["source_file"],
+                source_field=documentary_isolation["source_field"],
+                classification="secondary_diagnostic",
+                verification_level="documentary",
+            )
+        )
+    traceability.append(
+        _trace_entry(
+            claim="Historical holdout status",
+            value=documentary_claims["historical_holdout_status"]["value"],
+            source_file=documentary_claims["historical_holdout_status"]["source_file"],
+            source_field=documentary_claims["historical_holdout_status"]["source_field"],
+            classification="limitation",
+            verification_level="documentary",
+        )
+    )
+    for state in provenance_states:
+        traceability.append(
+            _trace_entry(
+                claim=f"Provenance state {state['state_id']}",
+                value=state,
+                source_file="*/run_identity.json",
+                source_field="worktree.diff_sha256",
+                classification="limitation",
+                verification_level="limitation",
+            )
+        )
 
     source_timestamp = (
         verdict.get("closed_at") or rollup.get("generated_at") or execution.get("completed_at")
     )
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "gate": "R3",
-        "source_root": source_root_label,
+        "source_root": _stable_root_label(paths.root),
         "source_timestamp": source_timestamp,
+        "source_files_read": artifact_reader.manifest(),
+        "reporter_holdout_accessed": False,
         "primary_engine": R3_PRIMARY_ENGINE,
         "secondary_engine": SECONDARY_ENGINE,
         "majority_rule": f">={majority}/{n_seeds} seeds per asset on both assets",
         "closure_summary": closure,
+        "documentary_claims": documentary_claims,
         "primary_table_rs": primary_rows,
         "rs_ga_comparison": rs_ga_rows,
         "traceability": traceability,
-        "holdout_accessed": False,
     }
 
 
@@ -417,18 +1013,36 @@ def render_r3_thesis_markdown(report: dict[str, Any]) -> str:
         "n_promoted",
         "n_rejected",
         "units_completed",
-        "isolation_audit",
         "numerical_discrepancies",
         "r4_required",
-        "r4_status",
-        "holdout",
     ):
-        lines.append(f"- **{key}:** {closure[key]}")
+        block = closure[key]
+        lines.append(
+            f"- **{key}:** {block['value']} "
+            f"(*{block['verification_level']}* · `{block['source_file']}` · `{block['source_field']}`)"
+        )
+    if "isolation_audit_at_closure" in report.get("documentary_claims", {}):
+        audit = report["documentary_claims"]["isolation_audit_at_closure"]
+        lines.append(
+            f"- **isolation_audit_at_closure:** {audit['value']} "
+            f"(*documentary* · `{audit['source_file']}` · `{audit['source_field']}`)"
+        )
+    lines.append(
+        f"- **reporter_holdout_accessed:** {report['reporter_holdout_accessed']} "
+        "(*reporter_verified* · read manifest under R3 root only)"
+    )
+    holdout_doc = report["documentary_claims"]["historical_holdout_status"]
+    lines.append(
+        f"- **historical_holdout_status:** {holdout_doc['value']} "
+        f"(*documentary* · `{holdout_doc['source_file']}`)"
+    )
+    r4_doc = report["documentary_claims"]["r4_application_status"]
+    lines.append(
+        f"- **r4_application_status:** {r4_doc['value']} (*{r4_doc['verification_level']}*)"
+    )
+
     lines.extend(
         [
-            "",
-            f"- **provenance:** {closure['provenance_limitation']['exact_reconstruction_from_aac3357']}",
-            f"- **note:** {closure['pre_specification_note']}",
             "",
             "## Primary results — Random Search",
             "",
@@ -474,26 +1088,54 @@ def render_r3_thesis_markdown(report: dict[str, Any]) -> str:
             f"{row['interpretation']} | **No** |"
         )
 
+    lines.extend(["", "## Traceability", ""])
+    lines.append("| Claim | Value | Source file | Source field | Verification | Classification |")
+    lines.append("|---|---|---|---|---|---|")
+    for entry in report["traceability"]:
+        value = entry["value"]
+        if isinstance(value, (dict, list)):
+            value_repr = json.dumps(value, sort_keys=True)
+        else:
+            value_repr = str(value)
+        lines.append(
+            f"| {entry['claim']} | {value_repr} | `{entry['source_file']}` | "
+            f"`{entry['source_field']}` | {entry['verification_level']} | "
+            f"{entry['classification']} |"
+        )
+
+    prov = closure["provenance_limitation"]
     lines.extend(
         [
             "",
             "## Provenance limitation",
             "",
-            f"- Commit at run: `{closure['provenance_limitation'].get('commit_at_run')}`",
-            f"- Worktree dirty: `{closure['provenance_limitation'].get('worktree_dirty')}`",
-            f"- {closure['provenance_limitation']['exact_reconstruction_from_aac3357']}.",
-            f"- {closure['provenance_limitation']['methodological_validity']}.",
+            "Executed code cannot be reconstructed exactly from commit `aac3357` alone: the worktree "
+            "was dirty, patch bytes were not retained, and more than one tracked diff state was "
+            "observed across families.",
             "",
-            "Development-period evidence only. The frozen holdout was never opened.",
+            "| State | Families | Commit | diff_sha256 | diff_bytes | untracked_sha256 | dirty |",
+            "|---|---|---|---|---|---|:---:|",
         ]
+    )
+    for state in prov["provenance_states"]:
+        lines.append(
+            f"| {state['state_id']} | {', '.join(state['families'])} | `{state['commit']}` | "
+            f"`{state['diff_sha256']}` | {state['diff_bytes']} | `{state['untracked_sha256']}` | "
+            f"{state['dirty']} |"
+        )
+    lines.append("")
+    lines.append(
+        "Dirty-worktree provenance limits exact code reconstruction; it is distinct from the "
+        "numerical consistency checks performed by this reporter and from the persisted gate verdict."
     )
     return "\n".join(lines) + "\n"
 
 
 def write_r3_thesis_report(root: Path, output_dir: Path) -> dict[str, Path]:
     """Build and write deterministic thesis report artifacts."""
+    root = root.resolve()
+    output_dir = _validate_output_dir(root, output_dir)
     report = build_r3_thesis_report(root)
-    output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     json_path = output_dir / "thesis_report.json"
