@@ -11,8 +11,10 @@ from perp_lab.evaluation.robustness import (
     concentration_analysis,
     drop_best_trades,
     reconstruct_bar_returns,
+    regime_conditional_metrics,
     stress_costs,
     stress_execution_delay,
+    trade_return_bootstrap,
 )
 
 __all__ = [
@@ -21,6 +23,8 @@ __all__ = [
     "concentration_analysis",
     "drop_best_trades",
     "reconstruct_bar_returns",
+    "regime_conditional_metrics",
     "stress_costs",
     "stress_execution_delay",
+    "trade_return_bootstrap",
 ]

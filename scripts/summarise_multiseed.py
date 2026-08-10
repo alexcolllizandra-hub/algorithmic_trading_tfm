@@ -61,12 +61,17 @@ def main() -> int:
             )
 
     paired = analysis["paired_rs_vs_ga"]
+    # Current analyses nest the correctly collapsed calendar-fold inference in
+    # ``combined``. Superseded pre-ADR-0012 studies stored the same headline
+    # fields at the top level; retaining that read path lets this script compare
+    # old and new evidence without rewriting historical artifacts.
+    combined = paired.get("combined", paired)
     print("\nPaired GA - RS (seeds averaged within each symbol x fold cell)")
     print(f"  cells                : {paired['n_cells_symbol_seed_fold']}")
     print(f"  units of inference   : {paired['n_independent_units_used']}")
     print(f"  mean difference      : {paired['mean_difference_ga_minus_rs']:+.4f}")
-    print(f"  95% CI               : [{paired['ci_low']:+.4f}, {paired['ci_high']:+.4f}]")
-    print(f"  effect size (dz)     : {paired['effect_size_cohens_dz']:+.3f}")
+    print(f"  95% CI               : [{combined['ci_low']:+.4f}, {combined['ci_high']:+.4f}]")
+    print(f"  effect size (dz)     : {combined['effect_size_cohens_dz']:+.3f}")
     print(f"  verdict              : {paired['verdict']}")
 
     vd = analysis["variance_decomposition"]
@@ -78,6 +83,20 @@ def main() -> int:
             f"   fold sd (market) {payload['fold_level_mean']['sd']:.4f}"
             f"   ratio {vd['seed_to_fold_sd_ratio']['values'][engine]:.3f}"
         )
+
+    promo = robustness.get("r3_promotion", {})
+    if promo:
+        print(
+            f"\nGate R3 promotion ({promo.get('engine', 'random_search')}): {promo.get('verdict')}"
+        )
+        for symbol, report in sorted(promo.get("by_symbol", {}).items()):
+            passed = sum(1 for row in report["promotion"].values() if row["pass"])
+            print(
+                f"  {symbol}: {passed}/{len(report['promotion'])} criteria pass "
+                f"(need {report['majority_required']}/{report['n_seeds']})"
+            )
+        if promo.get("triggered_rejections"):
+            print("  rejections:", "; ".join(promo["triggered_rejections"]))
     return 0
 
 

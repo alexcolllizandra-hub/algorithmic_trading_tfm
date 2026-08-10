@@ -67,7 +67,31 @@ def test_ga_reports_when_it_cannot_reach_the_budget() -> None:
     out = _ga(build_env(seed=7), budget=10_000, pop=4, max_gens=3)
     assert out.counters.evaluated < 10_000
     assert out.extra["budget_reached"] is False
-    assert out.extra["termination_reason"] in {"max_generations", "population_converged"}
+    assert out.extra["termination_reason"] in {
+        "max_generations",
+        "population_converged",
+        "finite_space_exhausted",
+    }
+
+
+def test_ga_injects_random_immigrants_instead_of_stopping_at_convergence() -> None:
+    """A collapsed population must not receive less budget than Random Search."""
+    env = build_env(seed=7)
+    out = run_genetic_algorithm(
+        env.evaluator,
+        env.space,
+        population_size=4,
+        max_generations=100,
+        crossover_rate=0.0,
+        mutation_rate=0.0,
+        elitism=1,
+        tournament_size=3,
+        seed=5,
+        budget=10,
+    )
+    assert out.counters.evaluated == 10
+    assert out.extra["termination_reason"] == "budget_reached"
+    assert out.extra["random_immigrants"] > 0
 
 
 def test_ga_records_lineage_and_diversity() -> None:

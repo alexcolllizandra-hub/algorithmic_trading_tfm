@@ -14,9 +14,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-# Preregistered families for the pilot: the frozen baseline plus the three new
-# ones. Listed here so the pilot cannot silently drop a family.
-FAMILIES = ("momentum", "volatility_breakout", "funding", "BTC_ETH_confirmation")
+# Every implemented family is listed explicitly so the R3 pilot cannot silently
+# omit one. Momentum remains here as the frozen/rejected reference; R3 only needs
+# to execute families whose clean pilot is still missing.
+FAMILIES = (
+    "momentum",
+    "breakout",
+    "mean_reversion",
+    "volatility_breakout",
+    "funding",
+    "BTC_ETH_confirmation",
+)
 
 # Reduced but fixed. Both engines must land on exactly this number of unique,
 # valid, non-cached evaluations.
@@ -61,7 +69,9 @@ effective_budget: {budget}
 
 ga:
   population_size: 20
-  max_generations: 40
+  # Safety cap only: execution stops as soon as effective_budget is reached.
+  # Kept high because duplicate/cache-hit proposals do not consume budget.
+  max_generations: 200
   crossover_rate: 0.7
   mutation_rate: 0.2
   elitism: 2

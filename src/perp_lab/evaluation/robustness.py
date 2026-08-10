@@ -260,6 +260,96 @@ def concentration_analysis(trade_returns: np.ndarray) -> dict[str, float]:
     return out
 
 
+def regime_conditional_metrics(
+    ledger: pl.DataFrame,
+    *,
+    timeframe: str,
+    regime_col: str = "regime_id",
+    days_per_year: int = 365,
+) -> dict[str, Any]:
+    """Performance within each train-fitted volatility regime on the OOS ledger."""
+    if regime_col not in ledger.columns:
+        return {"available": False, "reason": f"ledger missing {regime_col!r}"}
+
+    labels = ledger[regime_col].drop_nulls().unique().sort().to_list()
+    if not labels:
+        return {"available": False, "reason": "no regime labels on ledger"}
+
+    total_bars = ledger.height
+    by_regime: dict[str, Any] = {}
+    for label in labels:
+        sub = ledger.filter(pl.col(regime_col) == label)
+        net = sub["net_return"].cast(pl.Float64).to_numpy().astype(float)
+        name = str(label)
+        if "regime" in ledger.columns:
+            names = sub["regime"].drop_nulls().unique().to_list()
+            if len(names) == 1:
+                name = str(names[0])
+        metrics = performance_metrics(
+            net,
+            timeframe=timeframe,
+            positions=sub["position"].cast(pl.Float64).to_numpy(),
+            turnover=(
+                sub["turnover"].cast(pl.Float64).to_numpy() if "turnover" in sub.columns else None
+            ),
+            days_per_year=days_per_year,
+        )
+        by_regime[name] = {
+            "regime_id": float(label) if isinstance(label, (int, float)) else None,
+            "n_bars": int(sub.height),
+            "share_of_bars": float(sub.height / total_bars) if total_bars else 0.0,
+            **metrics,
+        }
+
+    return {"available": True, "regime_col": regime_col, "by_regime": by_regime}
+
+
+def trade_return_bootstrap(
+    trade_returns: np.ndarray,
+    *,
+    n_resamples: int = 500,
+    seed: int = 42,
+    alpha: float = 0.05,
+) -> dict[str, float]:
+    """Bootstrap the compound return distribution by resampling closed trades.
+
+    This is a trade-path resample, not a bar-level block bootstrap. It answers
+    whether the aggregate result could plausibly be an artefact of which trades
+    happened to realise, under an i.i.d. trade resampling approximation.
+    """
+    t = np.asarray(trade_returns, dtype=float)
+    t = t[np.isfinite(t)]
+    n = t.size
+    if n == 0:
+        return {}
+
+    rng = np.random.default_rng(seed)
+
+    def _compound(x: np.ndarray) -> float:
+        return float(np.prod(1.0 + x) - 1.0)
+
+    samples = np.empty(n_resamples, dtype=float)
+    for i in range(n_resamples):
+        draw = t[rng.integers(0, n, size=n)]
+        samples[i] = _compound(draw)
+
+    finite = samples[np.isfinite(samples)]
+    if finite.size == 0:
+        return {}
+    point = _compound(t)
+    return {
+        "point_total_return": point,
+        "ci_low": float(np.quantile(finite, alpha / 2)),
+        "ci_high": float(np.quantile(finite, 1 - alpha / 2)),
+        "bootstrap_mean": float(finite.mean()),
+        "bootstrap_std": float(finite.std(ddof=1)) if finite.size > 1 else 0.0,
+        "n_trades": float(n),
+        "n_resamples": float(finite.size),
+        "alpha": alpha,
+        "share_non_positive": float(np.mean(finite <= 0.0)),
+    }
+
+
 @dataclass
 class RobustnessBattery:
     """Run the standard scenario set over one concatenated OOS ledger."""

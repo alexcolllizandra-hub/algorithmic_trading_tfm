@@ -19,8 +19,10 @@ from perp_lab.evaluation.robustness import (
     concentration_analysis,
     drop_best_trades,
     reconstruct_bar_returns,
+    regime_conditional_metrics,
     stress_costs,
     stress_execution_delay,
+    trade_return_bootstrap,
 )
 
 
@@ -156,3 +158,33 @@ def test_battery_produces_one_report_per_scenario() -> None:
     assert scenarios.count("cost_stress") == 3  # 2 cost multipliers + 1 slippage-only
     assert scenarios.count("execution_delay") == 1
     assert all(isinstance(r.to_dict(), dict) for r in reports)
+
+
+def test_regime_conditional_metrics_split_by_regime() -> None:
+    ledger = _run().with_columns(
+        pl.when(pl.arange(0, pl.len()) % 3 == 0)
+        .then(pl.lit(0))
+        .when(pl.arange(0, pl.len()) % 3 == 1)
+        .then(pl.lit(1))
+        .otherwise(pl.lit(2))
+        .alias("regime_id"),
+        pl.when(pl.arange(0, pl.len()) % 3 == 0)
+        .then(pl.lit("low"))
+        .when(pl.arange(0, pl.len()) % 3 == 1)
+        .then(pl.lit("medium"))
+        .otherwise(pl.lit("high"))
+        .alias("regime"),
+    )
+    out = regime_conditional_metrics(ledger, timeframe="1h")
+    assert out["available"] is True
+    assert set(out["by_regime"]) == {"low", "medium", "high"}
+    assert sum(row["n_bars"] for row in out["by_regime"].values()) == ledger.height
+
+
+def test_trade_return_bootstrap_is_deterministic_under_fixed_seed() -> None:
+    trades = np.array([0.02, -0.01, 0.03, 0.01, -0.005, 0.015])
+    a = trade_return_bootstrap(trades, n_resamples=200, seed=7)
+    b = trade_return_bootstrap(trades, n_resamples=200, seed=7)
+    assert a == b
+    assert a["point_total_return"] == pytest.approx(float(np.prod(1.0 + trades) - 1.0))
+    assert a["ci_low"] <= a["ci_high"]

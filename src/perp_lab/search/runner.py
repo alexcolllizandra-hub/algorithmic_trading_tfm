@@ -84,6 +84,10 @@ ENGINE_NAMES = ("random_search", "genetic_algorithm")
 _TEST_METRIC_KEYS = ("sharpe", "total_return", "max_drawdown", "n_trades", "ann_return")
 
 
+class SearchSpaceBudgetError(ValueError):
+    """The declared unique-evaluation budget exceeds a finite strategy space."""
+
+
 def _synthetic_funding(frame: pl.DataFrame, seed: int, *, interval_hours: int = 8) -> pl.DataFrame:
     """Deterministic, explicitly-labelled synthetic funding fixture (NOT real).
 
@@ -457,6 +461,15 @@ def run_search(
     paths = paths or Paths()
     exp = load_experiment_config(cfg.experiment_config)
     contract = load_data_contract(cfg.data_contract)
+    space = build_search_space(exp, cfg.family, cfg.symbol)
+    cardinality = space.finite_cardinality()
+    if cardinality is not None and cfg.budget > cardinality:
+        raise SearchSpaceBudgetError(
+            f"effective_budget={cfg.budget} exceeds the exact finite cardinality "
+            f"{cardinality} of family {cfg.family!r}. No engine can spend this budget. "
+            "Lower the common study budget explicitly in an ADR or widen the "
+            "pre-registered parameter space; refusing to start before loading data."
+        )
     seed = cfg.seed if cfg.seed is not None else exp.random_seed
     set_global_seed(seed)
     # Independent streams per asset / fold / engine, all reconstructible from the
@@ -504,7 +517,6 @@ def run_search(
         reference_bars=reference_bars,
         reference_symbol=exp.strategies.families.cross_asset.reference_symbol.get(cfg.symbol),
     )
-    space = build_search_space(exp, cfg.family, cfg.symbol)
     overrides = cfg.objective.as_overrides() if cfg.objective else None
     objective_cfg = ObjectiveConfig.from_experiment(
         exp, require_funding=cfg.require_funding, overrides=overrides

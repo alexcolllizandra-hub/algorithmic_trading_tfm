@@ -1,0 +1,42 @@
+# =====================================================================
+# R2 CLEAN RE-BASELINE — momentum, real development data.
+#
+# Pre-registered in ADR 0012 and docs/roadmap/phase_gates.md:
+#   * 2 assets x 10 derived seeds x 15 outer folds
+#   * independent search inside every outer fold
+#   * effective_budget = 300 per fold and engine
+#   * winner frozen on validation before one test evaluation
+#
+# This config changes no experimental quantity from the frozen baseline.
+# `ga.max_generations` is only a safety cap: the GA stops as soon as it spends
+# exactly `effective_budget`. A cap of 40 proved insufficient in the first R2
+# attempt because duplicates/cache hits left one fold at 299/300; raising the
+# cap preserves the 300-evaluation contract rather than lowering the budget.
+#
+# The frozen holdout [2026-01-01, 2026-07-01) is NEVER loaded.
+# =====================================================================
+
+experiment_config: configs/experiment.yaml
+data_contract: configs/data_contract.yaml
+
+family: momentum
+algorithm: comparison
+symbol: BTCUSDT
+timeframe: "1h"
+seed: 42
+regime_model: threshold
+
+require_funding: true
+synthetic: false
+label: r2_momentum_clean_rebaseline_EXPLORATORY_not_holdout
+
+# Unique, valid, non-cached evaluations spent by EVERY engine in EVERY fold.
+effective_budget: 300
+
+ga:
+  population_size: 30
+  max_generations: 200
+  crossover_rate: 0.7
+  mutation_rate: 0.2
+  elitism: 3
+  tournament_size: 3

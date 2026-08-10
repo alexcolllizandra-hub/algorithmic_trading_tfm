@@ -58,9 +58,9 @@ or overfitting.
 |---|---|---|---|
 | F | Foundation | **Complete** | — |
 | R1 | Restore temporal validity | **Complete (2026-08-09)** | — |
-| **R2** | **Re-baseline momentum + RS/GA** | **Next, not started** | R3 |
-| R3 | Evaluate implemented families | Not started | R4 |
-| R4 | Robustness coverage | Not started | S1 |
+| R2 | Re-baseline momentum + RS/GA | **Complete (2026-08-09)** | — |
+| **R3** | **Evaluate implemented families** | **Complete (2026-08-10, negative)** | — |
+| R4 | Robustness coverage | **Skipped** (no R3 survivors); code implemented | S1 |
 | S1 | Controlled strategy expansion | Specified | M1 |
 | S2 | Advanced statistical strategies | Specified | — |
 | M1 | Labeling + meta-labeling | Specified | M2 |
@@ -146,7 +146,7 @@ Evidence: [ADR 0012](../decisions/0012-outer-fold-contamination-in-candidate-sea
 
 ---
 
-## Phase R2 — Re-baseline momentum and the engine comparison
+## Phase R2 — Re-baseline momentum and the engine comparison — **COMPLETE (2026-08-09)**
 
 **Objective.** Re-establish the two frozen results under the corrected protocol.
 
@@ -172,30 +172,41 @@ parity per fold, and the outcome is documented whichever way it falls.
 records with a note that they predate the correction. They are **not** deleted
 and **not** restated more favourably.
 
+**Outcome.** Study `multiseed_momentum_r2_clean_v2` completed all 20 units with
+300 evaluations per engine inside every one of 15 folds. All 40
+asset-seed-engine combinations lost money; none beat buy-and-hold, survived
+doubled costs or had a bootstrap Sharpe interval excluding zero. Momentum is
+**rejected** and must not be retuned. The paired GA - RS estimate is -0.061,
+95% CI [-0.399, +0.277], Cohen's dz -0.100: no engine advantage. Full evidence
+and the old-vs-new qualification are in
+[ADR 0013](../decisions/0013-clean-momentum-rebaseline.md).
+
 ---
 
-## Phase R3 — Evaluate the implemented families
+## Phase R3 — Evaluate the implemented families — **COMPLETE (2026-08-10, negative)**
 
 **Objective.** Give every implemented family a fair, comparable hearing.
 
 **Question.** Does any of breakout, mean reversion, volatility breakout, funding
 or cross-asset confirmation show an effect that survives multiple seeds?
 
+**Answer.** **No.** All five families are `REJECTED` under the pre-registered
+promotion criteria. Evidence:
+[ADR 0015](../decisions/0015-r3-family-evaluation-negative.md),
+`artifacts/runs/r3_full_budget100_ga21/r3_gate_verdict.json`.
+
 **Depends on:** R1, R2.
 
-Families enter at different points because their current maturity differs:
-
-| Family | Current | Entry point |
+| Family | Verdict | Strongest RS signal |
 |---|---|---|
-| Breakout | `NOT EVALUATED` | pilot → multi-seed |
-| Mean Reversion | `NOT EVALUATED` | pilot → multi-seed |
-| Volatility Breakout | `PILOTED` (contaminated) | re-pilot → multi-seed |
-| Funding | `PILOTED` (contaminated) | re-pilot → multi-seed |
-| BTC-ETH Confirmation | `PILOTED` (contaminated) | re-pilot → multi-seed |
+| Breakout | REJECTED | 0/10 positive seeds both assets |
+| Mean reversion | REJECTED | 0/10 positive seeds both assets |
+| Volatility breakout | REJECTED | BTC 6/10 positive; CI bootstrap never >0 |
+| Funding | REJECTED | 0/10 BTC; 1/10 ETH |
+| BTC-ETH confirmation | REJECTED | 1/10 BTC; 0/10 ETH |
 
-**Progression per family.** Pilot (1 seed, reduced budget, pipeline correctness
-only) → multi-seed (≥10 derived seeds, full geometry, both assets) → robustness
-battery → promote or reject.
+**Progression completed.** Pilot → multi-seed (10 seeds, budget 100/fold/engine)
+→ robustness + promotion gate → reject. No family is retuned.
 
 **Promotion criterion for a family.** Stated fully in
 [phase_gates.md](phase_gates.md#gate-r3--family-evaluation). In summary: a
@@ -203,16 +214,15 @@ majority of seeds positive on both assets, a bootstrap Sharpe CI excluding zero,
 survival of doubled costs, and no dependence on a handful of trades.
 
 **Rejection criterion.** Any family failing these is recorded as `REJECTED` with
-its evidence and **is not retuned to pass**. Rejecting four of five families is
-an acceptable and reportable outcome.
+its evidence and **is not retuned to pass**. Rejecting all five families is the
+observed, reportable outcome.
 
-**Budget discipline.** Each family is evaluated at the same effective budget per
-fold. No family gets extra search because it looked promising — that is how
-selection bias enters through the back door.
+**Budget discipline.** Common budget 100 per fold and engine
+([ADR 0014](../decisions/0014-r3-budget-bounded-by-search-space.md)).
 
 ---
 
-## Phase R4 — Robustness coverage
+## Phase R4 — Robustness coverage — **SKIPPED as promotion gate**
 
 **Objective.** Close the gap between the robustness this project claims and the
 robustness it implements.
@@ -512,10 +522,20 @@ mixed by accident.
 
 ## Next executable phase
 
-**Phase R2 — re-baseline momentum and the RS/GA comparison.** R1 is complete, so
-the protocol is now trustworthy but every *number* is not. The first experiment
-to repeat is the momentum multi-seed study (2 assets × 10 seeds × 15 folds,
-geometry and budget unchanged), because it is what FR-1 and FR-2 rest on and its
-outcome is pre-registered: momentum should stay negative or worsen, and the
-GA − RS estimate should move toward zero. No new family is evaluated before that
-re-baseline exists.
+**Gates R1–R3 are complete; R4 experimental application is skipped.** No
+searchable family demonstrated a robust development-period edge. Momentum (R2)
+and all five R3 families are `REJECTED` with recorded evidence
+([ADR 0013](../decisions/0013-clean-momentum-rebaseline.md),
+[ADR 0015](../decisions/0015-r3-family-evaluation-negative.md)).
+
+The holdout remains closed. There is no promoted strategy to evaluate on it.
+
+The next *methodological* work, if the thesis scope expands, is **S1 — controlled
+strategy expansion**: new families only where EDA supplies a mechanism, with
+degrees of freedom and search-space expansion quantified **before** any code.
+Meta-labeling (M1), portfolio (P1) and simulation (P3) remain blocked without a
+robust base strategy.
+
+For the current experimental arc, the defensible thesis outcome is a **rigorous
+negative result** under corrected temporal isolation, equal budget discipline and
+explicit promotion criteria — not a holdout performance claim.

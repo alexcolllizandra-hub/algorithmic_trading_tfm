@@ -8,7 +8,9 @@ import numpy as np
 import pytest
 
 from perp_lab.config import load_experiment_config
+from perp_lab.search.config import GASettings, SearchRunConfig
 from perp_lab.search.registry import build_search_space
+from perp_lab.search.runner import SearchSpaceBudgetError, run_search
 from perp_lab.search.space import (
     BoolParam,
     CategoricalParam,
@@ -143,6 +145,36 @@ def test_candidate_hash_stable_and_duplicate_detection() -> None:
     # Re-hashing the same values is stable.
     v = space.sample(_rng(5))
     assert space.candidate_hash(v) == space.candidate_hash(dict(v))
+
+
+def test_finite_cardinality_collapses_inactive_and_repaired_duplicates() -> None:
+    exp = load_experiment_config("configs/experiment.yaml")
+    # The raw breakout product has 162 tuples, but inactive regime choices
+    # collapse to 108 distinct candidate identities.
+    assert build_search_space(exp, "breakout").finite_cardinality() == 108
+    assert build_search_space(exp, "momentum").finite_cardinality() == 540
+
+
+def test_continuous_space_has_no_finite_cardinality() -> None:
+    space = SearchSpace(
+        "continuous",
+        "1",
+        (FloatParam("x", 0.0, 1.0),),
+        lambda values: values,
+        lambda values: values,
+        lambda values: (True, None),
+    )
+    assert space.finite_cardinality() is None
+
+
+def test_impossible_budget_fails_before_loading_market_data() -> None:
+    cfg = SearchRunConfig(
+        family="breakout",
+        effective_budget=109,
+        ga=GASettings(population_size=30, max_generations=200, elitism=3),
+    )
+    with pytest.raises(SearchSpaceBudgetError, match="finite cardinality 108"):
+        run_search(cfg, write_artifacts=False)
 
 
 def test_build_constructs_working_strategy() -> None:

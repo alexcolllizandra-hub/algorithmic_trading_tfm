@@ -1,6 +1,6 @@
 # ADR 0011 -- Multi-seed baseline for the momentum family
 
-- **Status:** accepted, **qualified by ADR 0012**
+- **Status:** superseded as evidence by ADR 0013; retained for traceability
 - **Date:** 2026-08-05
 - **Supersedes:** nothing. Extends ADR 0009 (fair RS/GA comparison) and ADR 0010
   (OOS evaluation, baselines and robustness).
@@ -18,6 +18,13 @@
 > **documentary only**: no artifact in `artifacts/` reproduces those bounds, and
 > this ADR itself states that pre-scheduler runs are not poolable with this study.
 > It must not be cited as a result.
+>
+> **Resolution (2026-08-09).** The pre-registered clean re-baseline is complete.
+> See [ADR 0013](0013-clean-momentum-rebaseline.md). Momentum is uniformly
+> negative across both assets and engines; the paired GA - RS estimate moves
+> from `+0.183` to `-0.061` with a 95% interval of `[-0.399, +0.277]`.
+> This document and its artifacts remain unchanged as the record of the
+> superseded experiment.
 
 ## Context
 

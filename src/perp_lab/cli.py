@@ -321,6 +321,12 @@ def cmd_multi_seed(args: argparse.Namespace) -> int:
 
     paired = analysis["paired_rs_vs_ga"]
     if paired and "mean_difference_ga_minus_rs" in paired:
+        # Inference is nested: seeds are averaged inside symbol-by-fold cells,
+        # then the two correlated assets are averaged inside each calendar fold.
+        # Headline interval/count fields therefore live in ``combined``; keeping
+        # only the mean at the top level avoids presenting 30 correlated
+        # symbol-fold cells as 30 independent market periods.
+        combined = paired["combined"]
         print("\nPaired GA - RS comparison")
         print("-" * 92)
         print(f"  cells (symbol x seed x fold) : {paired['n_cells_symbol_seed_fold']}")
@@ -329,15 +335,15 @@ def cmd_multi_seed(args: argparse.Namespace) -> int:
             f"({paired['unit_of_inference']})"
         )
         print(f"  mean difference              : {paired['mean_difference_ga_minus_rs']:.4f}")
-        if "ci_low" in paired:
+        if "ci_low" in combined:
             print(
                 f"  95% CI                       : "
-                f"[{paired['ci_low']:.4f}, {paired['ci_high']:.4f}]"
+                f"[{combined['ci_low']:.4f}, {combined['ci_high']:.4f}]"
             )
-            print(f"  effect size (Cohen's dz)     : {paired['effect_size_cohens_dz']:.3f}")
+            print(f"  effect size (Cohen's dz)     : {combined['effect_size_cohens_dz']:.3f}")
         print(
-            f"  folds favouring GA / RS      : {paired['n_folds_favouring_ga']} / "
-            f"{paired['n_folds_favouring_rs']}"
+            f"  folds favouring GA / RS      : {combined['n_units_favouring_ga']} / "
+            f"{combined['n_units_favouring_rs']}"
         )
         print(f"\n  VERDICT: {paired['verdict']}")
 
@@ -391,8 +397,47 @@ def cmd_study_robustness(args: argparse.Namespace) -> int:
             f"{_num(row['median_total_return'], 12)}"
             f"{_num(row['median_buy_and_hold_return'], 11)}"
         )
+
+    promo = payload.get("r3_promotion", {})
+    if promo:
+        print(
+            f"\nGate R3 promotion ({promo.get('engine', 'random_search')}): {promo.get('verdict')}"
+        )
+        for symbol, report in sorted(promo.get("by_symbol", {}).items()):
+            passed = sum(1 for row in report["promotion"].values() if row["pass"])
+            print(
+                f"  {symbol}: {passed}/{len(report['promotion'])} promotion criteria "
+                f"(majority={report['majority_required']}/{report['n_seeds']})"
+            )
+        if promo.get("triggered_rejections"):
+            print("  rejections:", "; ".join(promo["triggered_rejections"][:5]))
+        if promo.get("failed_promotion_criteria"):
+            print("  failed:", "; ".join(promo["failed_promotion_criteria"][:5]))
+
     print(f"\n{payload['method_note']}")
     print(f"\nWritten: {study_dir / 'study_robustness.json'}")
+    return 0
+
+
+def cmd_parameter_perturbation(args: argparse.Namespace) -> int:
+    """Re-score frozen fold winners under parameter perturbations on test only."""
+    from perp_lab.evaluation.parameter_perturbation import analyse_parameter_perturbation
+    from perp_lab.tracking.journal import atomic_write_json
+
+    run_dir = Path(args.run_dir)
+    payload = analyse_parameter_perturbation(
+        run_dir,
+        args.method,
+        search_config=args.config,
+        perturbation_pcts=tuple(args.pct),
+    )
+    out = run_dir / f"{args.method}_parameter_perturbation.json"
+    atomic_write_json(out, payload)
+    print(
+        f"\nParameter perturbation: {payload['family']} {payload['symbol']} "
+        f"({payload['n_folds']} folds, method={args.method})"
+    )
+    print(f"Written: {out}")
     return 0
 
 
@@ -769,6 +814,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_sr.add_argument("--experiment-config", default="configs/experiment.yaml", type=Path)
     p_sr.add_argument("--resamples", default=500, type=int)
     p_sr.set_defaults(func=cmd_study_robustness)
+
+    p_pp = sub.add_parser(
+        "parameter-perturbation",
+        parents=[common],
+        help="Re-score frozen fold winners under parameter perturbations (test only).",
+    )
+    p_pp.add_argument("run_dir", type=Path)
+    p_pp.add_argument("--config", required=True, type=Path)
+    p_pp.add_argument(
+        "--method", default="random_search", choices=("random_search", "genetic_algorithm")
+    )
+    p_pp.add_argument("--pct", nargs="+", type=float, default=[0.05, 0.10, 0.20])
+    p_pp.set_defaults(func=cmd_parameter_perturbation)
 
     p_st = sub.add_parser(
         "study-status", parents=[common], help="Show progress of a multi-seed study."

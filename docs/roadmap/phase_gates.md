@@ -127,7 +127,7 @@ protocol was invalid, and which frozen results it affects.
 
 ---
 
-## Gate R2 — Re-baseline momentum and the engine comparison
+## Gate R2 — Re-baseline momentum and the engine comparison — **PASSED 2026-08-09**
 
 **Objective.** Re-establish the frozen results under the corrected protocol.
 
@@ -160,9 +160,15 @@ plainly whether the correction changed them.
 
 **Promotion criteria.**
 
-- [ ] Study completes at full seed coverage with parity per fold.
-- [ ] The comparison against FR-1/FR-2 is documented **whichever way it falls.**
-- [ ] Superseded results are marked as superseded, not deleted.
+- [x] Study completes at full seed coverage with parity per fold — 20/20
+      asset-seed units; both engines spent 300 evaluations in every one of 15
+      folds (`scripts/audit_study_isolation.py`: 20 runs, 0 failures).
+- [x] The comparison against FR-1/FR-2 is documented **whichever way it falls** —
+      [ADR 0013](../decisions/0013-clean-momentum-rebaseline.md). Momentum
+      worsened to 0/40 profitable combinations; GA - RS moved from +0.183 to
+      -0.061, 95% CI [-0.399, +0.277].
+- [x] Superseded results are marked as superseded, not deleted — ADR 0011 and
+      `multiseed_momentum_baseline/` remain intact with `SUPERSEDED.json`.
 
 **Rejection criteria.** None — this gate cannot "fail" scientifically. A result
 that contradicts the old conclusion is the point of running it. The gate fails
@@ -172,9 +178,17 @@ only on process grounds: incomplete seeds, broken parity or missing provenance.
 the GA − RS point estimate is expected to move toward zero. Recording this before
 the run is what makes it a test rather than a narrative.
 
+**Outcome.** Both directional expectations were met. Momentum is now
+**rejected**, not retuned. There remains no evidence of GA superiority.
+
+**Execution note.** The first R2 launch stopped at 299/300 GA evaluations in one
+fold when the 40-generation safety cap was exhausted. Parity failed closed; no
+unit/result from that attempt was used. Raising only the safety cap to 200
+allowed every fold to reach the unchanged 300-evaluation budget.
+
 ---
 
-## Gate R3 — Family evaluation
+## Gate R3 — Family evaluation — **CLOSED 2026-08-10 (negative)**
 
 **Objective.** Give every implemented family a fair, comparable hearing.
 
@@ -200,8 +214,23 @@ invariance, correct lag, next-bar execution, warm-up handling.
 **A pilot never produces performance evidence.** Its Sharpe values are recorded
 for diagnostics and must not be quoted as results.
 
-**Artifacts.** One study directory per family, with a rollup comparing families
-at identical budget and geometry.
+**Pilot stage completed 2026-08-09.** Breakout, mean reversion, volatility
+breakout, funding and BTC-ETH confirmation each completed 2 assets × 1 seed ×
+15 folds at 60 evaluations per fold and engine. All 10 runs passed
+`scripts/audit_study_isolation.py`: exact per-fold parity, fingerprinted winners
+and within-fold dispersion. All five advance to the multi-seed experiment
+stage on process grounds only; pilot performance was not used for selection or
+ordering.
+
+**Multi-seed stage completed 2026-08-10.** All five families completed 2 assets
+× 10 seeds × 15 folds at budget 100 per fold and engine under
+`artifacts/runs/r3_full_budget100_ga21/`. All 100 runs passed the isolation audit.
+**Verdict: 0 promoted, 5 rejected** ([ADR 0015](../decisions/0015-r3-family-evaluation-negative.md)).
+Strongest partial signal: volatility_breakout BTC 6/10 positive seeds (RS), but
+0/10 bootstrap Sharpe CIs excluding zero on either asset.
+
+**Artifacts.** One study directory per family, rollup
+(`r3_family_rollup.md`), gate verdict (`r3_gate_verdict.json`).
 
 **Statistical evaluation.** As Gate R2, per family.
 
@@ -232,9 +261,18 @@ Rejecting most families is an expected, reportable outcome.
 **Budget discipline.** Identical effective budget per fold for every family. No
 family receives extra search because it looked promising.
 
+**Budget renegotiation (ADR 0014, 2026-08-10).** The first full run proved the
+declared budget 300 impossible: breakout has exactly 108 unique candidate
+identities. Parity failed closed at RS=108 / GA=106 and no result was accepted.
+R3 therefore uses a common budget of **100 per fold and engine** for all five
+families (92.6% of the smallest space, with headroom for stochastic engines).
+Spaces were not widened and pilot metrics did not influence this decision.
+`run_search()` now rejects a budget above finite cardinality before loading
+market data.
+
 ---
 
-## Gate R4 — Robustness coverage
+## Gate R4 — Robustness coverage — **SKIPPED (no R3 survivors)**
 
 **Objective.** Close the gap between claimed and implemented robustness.
 
@@ -243,6 +281,11 @@ across regimes?
 
 **Dependencies.** Gate R3 with at least one surviving family. **If no family
 survives R3, this gate is skipped** and the thesis reports a negative result.
+
+**Status 2026-08-10.** Skipped as a promotion gate: R3 promoted zero families.
+The extended checks (regime-conditional metrics, trade-path bootstrap, parameter
+perturbation replay) are implemented in `evaluation/` for methodology completeness
+but were not required to pass a surviving candidate.
 
 **Implementation deliverables.** Parameter perturbation (neighbourhood sampling
 around a fold winner); regime-conditional evaluation reusing the existing regime

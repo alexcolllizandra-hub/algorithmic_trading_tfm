@@ -1,6 +1,6 @@
 # Current state inventory
 
-**Audit date:** 2026-08-08 · **Updated:** 2026-08-09 (Gate R1 closed)
+**Audit date:** 2026-08-08 · **Updated:** 2026-08-10 (Gates R1, R2 and R3 closed)
 **Audited branch:** `feat/multi-seed-and-strategy-families` (commit `2393eb6`);
 R1 implemented on `docs/roadmap-consolidation`
 **Method:** direct inspection of source, tests, configs, ADRs and local `artifacts/`.
@@ -50,18 +50,24 @@ component anywhere in this repository is `PROMOTED`.
    a robustness battery and a FastAPI + Next.js dashboard are all implemented and
    tested.
 
-2. **No strategy family has demonstrated an edge.** The momentum multi-seed study
-   is the only completed multi-seed experiment and it is **negative to
-   inconclusive**. Zero of 40 run/engine combinations produced a bootstrap Sharpe
-   confidence interval excluding zero.
+2. **No strategy family has demonstrated a robust edge.** Momentum (R2) and all
+   five R3 families are **`REJECTED`** with multi-seed evidence. The strongest
+   partial signal was volatility_breakout on BTC (6/10 RS seeds positive), but
+   **0/10** seeds had a bootstrap Sharpe CI excluding zero on either asset. See
+   [ADR 0013](../decisions/0013-clean-momentum-rebaseline.md) and
+   [ADR 0015](../decisions/0015-r3-family-evaluation-negative.md).
 
-3. **A confirmed outer-fold contamination affected every result produced up to
+3. **Gate R3 closed 2026-08-10.** Full studies under
+   `artifacts/runs/r3_full_budget100_ga21/`: 5 families × 20 units × 15 folds,
+   budget 100/fold/engine, 100/100 isolation audits passed, **0 promoted**.
+
+4. **A confirmed outer-fold contamination affected every result produced up to
    2026-08-08.** Candidate search optimised a fitness pooled across *all*
    walk-forward folds, including folds chronologically later than the fold being
    scored. See
    [Inconsistency 1](#inconsistency-1-outer-fold-contamination-in-candidate-search).
 
-4. **That contamination is fixed as of 2026-08-09 (Gate R1).** Search now runs
+5. **That contamination is fixed as of 2026-08-09 (Gate R1).** Search now runs
    independently inside each outer fold, each fold's winner is fingerprinted on
    validation before its test slice is scored, and budget parity is enforced per
    fold. Verified by a real 15-fold pilot and by
@@ -69,9 +75,11 @@ component anywhere in this repository is `PROMOTED`.
    number remains invalid as inference** and is marked `SUPERSEDED.json` on disk;
    nothing has been deleted.
 
----
+6. **Gate R2 is complete.** The clean paired GA - RS estimate is -0.061, 95% CI
+   [-0.399, +0.277], versus the superseded +0.183. There is still no evidence of
+   engine superiority. See [ADR 0013](../decisions/0013-clean-momentum-rebaseline.md).
 
-## Branch state
+---
 
 | Branch | Head | Relationship | Contains |
 |---|---|---|---|
@@ -143,21 +151,22 @@ will consume. `label_time` is currently always null — **no labeling exists.**
 |---|---|
 | **Purpose** | SMA crossover trend-following baseline |
 | **Implementation** | `TESTED` — `MomentumCrossover` in `src/perp_lab/strategies/momentum.py` |
-| **Validation maturity** | **`MULTI-SEED` — evidence is negative to inconclusive** |
-| **Evidence** | `artifacts/runs/multiseed_momentum_baseline/` — 2 assets × 10 seeds × 15 folds, OOS 2022-03-31 … 2025-12-09; [ADR 0011](../decisions/0011-multi-seed-baseline.md) |
-| **Limitations** | Produced under the contaminated search protocol (Inconsistency 1) |
-| **Next action** | Do **not** retune. Re-run under the leakage-safe protocol before any further claim. |
+| **Validation maturity** | **`REJECTED`** — failed under the clean R2 multi-seed protocol |
+| **Evidence** | `artifacts/runs/multiseed_momentum_r2_clean_v2/` — 2 assets × 10 seeds × 15 isolated folds, OOS 2022-03-31 … 2025-12-09; [ADR 0013](../decisions/0013-clean-momentum-rebaseline.md) |
+| **Limitations** | Development-period result, not final-holdout evidence. The study identity is marked provisional because its dedicated config was untracked at launch; exact config/hash are recorded |
+| **Next action** | **Do not retune.** Retain as the rejected baseline and proceed to R3 families |
 
-Recorded result (frozen, see [Frozen results](#frozen-scientific-results)):
+Current clean result:
 
 | Symbol / engine | Seeds with positive mean test Sharpe | Median OOS total return | Buy-and-hold |
 |---|---|---|---|
-| BTCUSDT / RS | 0 / 10 | −0.472 | +0.784 |
-| BTCUSDT / GA | 0 / 10 | −0.345 | +0.785 |
-| ETHUSDT / RS | 5 / 10 | +0.007 | −0.111 |
-| ETHUSDT / GA | 7 / 10 | +0.060 | −0.117 |
+| BTCUSDT / RS | 0 / 10 | −0.350 | +0.523 |
+| BTCUSDT / GA | 0 / 10 | −0.455 | +0.523 |
+| ETHUSDT / RS | 0 / 10 | −0.475 | −0.219 |
+| ETHUSDT / GA | 0 / 10 | −0.507 | −0.219 |
 
-Bootstrap Sharpe CI excluded zero in **0 of 40** run/engine combinations.
+Bootstrap Sharpe CI excluded zero in **0 of 40** run/engine combinations; all
+40 lose money and none beats buy-and-hold or survives doubled costs.
 
 ### Strategy: Breakout
 
@@ -165,10 +174,10 @@ Bootstrap Sharpe CI excluded zero in **0 of 40** run/engine combinations.
 |---|---|
 | **Purpose** | Donchian channel breakout with confirmation |
 | **Implementation** | `TESTED` — `Breakout` in `src/perp_lab/strategies/breakout.py` |
-| **Validation maturity** | **`NOT EVALUATED`** |
-| **Evidence** | `tests/unit/test_strategies_extended.py`, `tests/unit/test_family_registry.py`. Channel built from `shift(1)` — prior bars only |
-| **Limitations** | Never run as a real-data experiment; not in the four-family pilot |
-| **Next action** | Pilot under the leakage-safe protocol |
+| **Validation maturity** | **`REJECTED`** — Gate R3 multi-seed (2026-08-10) |
+| **Evidence** | `artifacts/runs/r3_full_budget100_ga21/breakout/`: 0/10 RS seeds positive on BTC and ETH; median OOS return −15.8% / −25.5%; isolation audit passed 20/20 |
+| **Limitations** | No bootstrap Sharpe CI excluding zero on any seed |
+| **Next action** | **Do not retune.** Recorded as rejected |
 
 ### Strategy: Mean Reversion
 
@@ -176,10 +185,10 @@ Bootstrap Sharpe CI excluded zero in **0 of 40** run/engine combinations.
 |---|---|
 | **Purpose** | Fade trailing price z-score |
 | **Implementation** | `TESTED` — `MeanReversion` in `src/perp_lab/strategies/mean_reversion.py` |
-| **Validation maturity** | **`NOT EVALUATED` on real data** |
-| **Evidence** | `tests/unit/test_strategies_extended.py`; ~20 `search_mean_reversion_*` run directories exist but are **multi-seed orchestration test artifacts**, not a reported study |
-| **Limitations** | The existing runs are infrastructure smoke output and must not be cited as results |
-| **Next action** | Pilot under the leakage-safe protocol |
+| **Validation maturity** | **`REJECTED`** — Gate R3 multi-seed (2026-08-10) |
+| **Evidence** | `artifacts/runs/r3_full_budget100_ga21/mean_reversion/`: 0/10 RS seeds positive both assets; median OOS return −60.0% / −79.9% |
+| **Limitations** | Worst median performance of the five families |
+| **Next action** | **Do not retune.** Recorded as rejected |
 
 ### Strategy: Volatility Breakout
 
@@ -187,10 +196,10 @@ Bootstrap Sharpe CI excluded zero in **0 of 40** run/engine combinations.
 |---|---|
 | **Purpose** | ATR-scaled breakout of prior range with explicit exit modes |
 | **Implementation** | `TESTED` — `VolatilityBreakout` in `src/perp_lab/strategies/volatility_breakout.py` |
-| **Validation maturity** | **`PILOTED`** (1 seed, budget 60) |
-| **Evidence** | `artifacts/runs/pilot/volatility_breakout/`; BTCUSDT run `search_volatility_breakout_20260807T174854Z_2bed59` — RS Sharpe −0.310, GA +0.195 |
-| **Limitations** | Single seed, reduced budget, contaminated protocol. **Pipeline evidence only, not performance evidence.** |
-| **Next action** | Multi-seed under the leakage-safe protocol |
+| **Validation maturity** | **`REJECTED`** — Gate R3 multi-seed (2026-08-10) |
+| **Evidence** | `artifacts/runs/r3_full_budget100_ga21/volatility_breakout/`: BTC 6/10 RS seeds positive but 0/10 CI bootstrap >0; median +6.5% BTC / −73.5% ETH |
+| **Limitations** | Strongest partial BTC signal; fails robustness and ETH criteria |
+| **Next action** | **Do not retune.** Recorded as rejected |
 
 ### Strategy: Funding
 
@@ -198,10 +207,10 @@ Bootstrap Sharpe CI excluded zero in **0 of 40** run/engine combinations.
 |---|---|
 | **Purpose** | Trade the funding-rate z-score (fade or follow) |
 | **Implementation** | `TESTED` — `FundingTilt` in `src/perp_lab/strategies/funding.py` |
-| **Validation maturity** | **`PILOTED`** (1 seed, budget 60) |
-| **Evidence** | `artifacts/runs/pilot/funding/`; BTCUSDT run `search_funding_20260807T175023Z_84b4ed` — RS Sharpe −1.086, GA −0.911 |
-| **Limitations** | Signal only; funding cashflow is applied by the backtester, never by the strategy |
-| **Next action** | Multi-seed under the leakage-safe protocol |
+| **Validation maturity** | **`REJECTED`** — Gate R3 multi-seed (2026-08-10) |
+| **Evidence** | `artifacts/runs/r3_full_budget100_ga21/funding/`: 0/10 BTC RS positive; 1/10 ETH RS positive; median −40.9% / −59.9% |
+| **Limitations** | Signal only; funding cashflow applied by backtester |
+| **Next action** | **Do not retune.** Recorded as rejected |
 
 ### Strategy: BTC-ETH Confirmation (cross-asset)
 
@@ -209,10 +218,10 @@ Bootstrap Sharpe CI excluded zero in **0 of 40** run/engine combinations.
 |---|---|
 | **Purpose** | Use the other asset's lagged move as confirmation, lead-lag or divergence signal |
 | **Implementation** | `TESTED` — `CrossAssetConfirmation` in `src/perp_lab/strategies/cross_asset.py` |
-| **Validation maturity** | **`PILOTED`** (1 seed, budget 60) |
-| **Evidence** | `artifacts/runs/pilot/BTC_ETH_confirmation/`; BTCUSDT run `search_BTC_ETH_confirmation_20260807T175144Z_01af8e` — RS Sharpe +0.067, GA −1.127 |
-| **Limitations** | `MIN_REFERENCE_LAG = 1` enforced; reference resolution comes from config |
-| **Next action** | Multi-seed under the leakage-safe protocol |
+| **Validation maturity** | **`REJECTED`** — Gate R3 multi-seed (2026-08-10) |
+| **Evidence** | `artifacts/runs/r3_full_budget100_ga21/BTC_ETH_confirmation/`: 1/10 BTC RS positive; 0/10 ETH RS positive; median −65.8% / −68.3% |
+| **Limitations** | Cross-asset reference causal; no robust multi-seed edge |
+| **Next action** | **Do not retune.** Recorded as rejected |
 
 ### Baselines (fixed references)
 
@@ -264,9 +273,9 @@ fails closed.
 | **Purpose** | Unbiased search baseline against which the GA must justify itself |
 | **Implementation** | `TESTED` — `src/perp_lab/search/random_search.py` |
 | **Validation maturity** | `MULTI-SEED` (as part of the momentum study) |
-| **Evidence** | `tests/unit/test_search_random.py`; multi-seed study artifacts |
-| **Limitations** | The recorded multi-seed evidence predates the R1 fix and is superseded; the engine itself now searches per fold |
-| **Next action** | Re-run the momentum baseline under the corrected protocol (Gate R2) |
+| **Evidence** | `tests/unit/test_search_random.py`; clean R2 study and [ADR 0013](../decisions/0013-clean-momentum-rebaseline.md) |
+| **Limitations** | Search instability is material in R2 (seed/fold SD ratio 0.401); multiple seeds remain mandatory |
+| **Next action** | Remains the default search baseline for R3 |
 
 ### Genetic Algorithm
 
@@ -275,9 +284,9 @@ fails closed.
 | **Purpose** | Evolutionary search over the same space, evaluator and budget |
 | **Implementation** | `TESTED` — `src/perp_lab/search/genetic_algorithm.py` |
 | **Validation maturity** | `MULTI-SEED` — **no evidence of superiority over Random Search** |
-| **Evidence** | Paired fold-level comparison, n = 30 units: mean GA − RS = **+0.183**, 95 % CI **[−0.053, +0.419]**, Cohen's dz = 0.289 → CI includes zero |
-| **Limitations** | **The recorded comparison is confounded**: the GA's population evolved on a fitness that pooled future folds' validation, an advantage Random Search's fitness-independent sampling never received. Fixed in the code as of R1; the *numbers* remain confounded |
-| **Next action** | Re-run the comparison under per-fold search before drawing any RS-vs-GA conclusion (Gate R2) |
+| **Evidence** | Clean paired comparison over 15 calendar folds: mean GA − RS = **−0.061**, 95% CI **[−0.399, +0.277]**, Cohen's dz = −0.100 |
+| **Limitations** | Has not justified its additional complexity; the interval spans plausible advantages for either engine |
+| **Next action** | Keep only as an equal-budget comparator where R3 requires it; do not prefer it over RS |
 
 ### Budget parity
 
@@ -286,7 +295,7 @@ fails closed.
 | **Purpose** | Guarantee both engines spend an identical number of objective evaluations |
 | **Implementation** | `TESTED` |
 | **Files** | `src/perp_lab/search/config.py` (`effective_budget`, `reachable_evaluations`), `src/perp_lab/config/experiment.py` (`ga_unique_evaluations`), `_assert_budget_parity` / `_budget_report` in `src/perp_lab/search/runner.py` |
-| **Evidence** | `BudgetParityError` raised when an engine falls short, naming the offending fold; `budget_parity.per_engine[*].per_fold` recorded in every run summary; pilot audit confirms 60 evaluations per engine in each of 15 folds |
+| **Evidence** | `BudgetParityError` raised when an engine falls short, naming the offending fold; first R2 attempt aborted at GA 299/300; successful R2 audit confirms 300 evaluations per engine in every fold of all 20 units |
 | **Limitations** | None known. Parity is now asserted **inside every outer fold**, since a matching run-level total can still hide an unevenly searched fold |
 | **Next action** | None |
 
@@ -404,7 +413,35 @@ layers. They stay documented until the phase that implements them.
 
 ---
 
-## Frozen scientific results
+## Current clean scientific results
+
+### CR-1 — Momentum is rejected
+
+**Source:** `artifacts/runs/multiseed_momentum_r2_clean_v2/`,
+[ADR 0013](../decisions/0013-clean-momentum-rebaseline.md).
+**Design:** 2 assets × 10 derived seeds × 15 isolated outer folds; 300 unique
+evaluations per engine and fold; OOS 2022-03-31 … 2025-12-09.
+
+All 40 asset-seed-engine combinations lose money. Zero beat buy-and-hold, zero
+survive doubled costs and zero have a one-week-block bootstrap Sharpe interval
+excluding zero. **Status: rejected. Do not retune.**
+
+### CR-2 — No evidence that the GA beats Random Search
+
+Paired over 15 calendar folds after averaging seeds and correlated assets:
+mean GA − RS = **−0.061**, 95% CI **[−0.399, +0.277]**, Cohen's dz =
+**−0.100**. Five folds favour GA, nine favour RS and one ties. **Status: no
+difference demonstrated; Random Search remains the default baseline.**
+
+### CR-3 — Seed instability remains material, but is engine-dependent
+
+Seed-to-fold SD ratio **0.401 (RS)** / **0.049 (GA)**. The clean fold-local GA
+is considerably less seed-sensitive in this study, but that stability does not
+translate into better OOS performance.
+
+---
+
+## Frozen superseded scientific results
 
 These results are **frozen**. They may be superseded by a re-run under a
 corrected protocol, but they must never be quietly deleted, retuned or restated
@@ -415,7 +452,8 @@ more favourably.
 > traceability. Their run directories carry a `SUPERSEDED.json` marker recording
 > the reason and the original provenance (run id, git commit, seeds, budget,
 > config fingerprint), written by `scripts/mark_superseded_runs.py`; 64
-> directories were marked and none deleted. The corrected re-run is Gate R2.
+> directories were marked and none deleted. Gate R2 has now replaced FR-1/FR-2
+> with CR-1/CR-2 above; the text below remains verbatim historical context.
 
 ### FR-1 — Momentum has no demonstrated edge
 
@@ -543,11 +581,12 @@ itself states pre-scheduler runs are not poolable with the study, so the figure 
 
 ### Inconsistency 6 — Advertised robustness exceeds implemented robustness
 
-`docs/methodology/validation_protocol.md` describes a broader battery than
-`evaluation/robustness.py` implements. Parameter perturbation, regime-conditional
-evaluation and Monte Carlo path simulation do not exist. In particular, the
-circular block bootstrap must **not** be described as a Monte Carlo account
-simulator.
+`docs/methodology/validation_protocol.md` describes a broader battery than was
+required for the R3 negative outcome. Regime-conditional metrics, trade-path
+bootstrap and parameter-perturbation replay are implemented in `evaluation/` as
+of 2026-08-10; Gate R4 experimental application was skipped because no family
+survived R3. The circular block bootstrap must **not** be described as a Monte
+Carlo account simulator.
 
 ### Inconsistency 7 — Orchestration smoke runs look like results
 
@@ -564,21 +603,21 @@ orchestration test output, not a mean-reversion study. Mean reversion is
 | Data | `TESTED` | n/a | Manifests, provenance audit | None |
 | EDA | `TESTED` | n/a | 59 metadata sidecars | Feeds hypotheses |
 | Features | `TESTED` | n/a | Leakage tests pass | None |
-| Momentum | `TESTED` | `MULTI-SEED` — negative | FR-1 | Re-run leakage-safe; do not retune |
-| Breakout | `TESTED` | `NOT EVALUATED` | Unit tests only | Pilot |
-| Mean Reversion | `TESTED` | `NOT EVALUATED` | Unit tests only | Pilot |
-| Volatility Breakout | `TESTED` | `PILOTED` | FR-4 | Multi-seed |
-| Funding | `TESTED` | `PILOTED` | FR-4 | Multi-seed |
-| BTC-ETH Confirmation | `TESTED` | `PILOTED` | FR-4 | Multi-seed |
+| Momentum | `TESTED` | **`REJECTED`** | CR-1, ADR 0013 | Do not retune |
+| Breakout | `TESTED` | **`REJECTED`** | ADR 0015, R3 rollup | Do not retune |
+| Mean Reversion | `TESTED` | **`REJECTED`** | ADR 0015, R3 rollup | Do not retune |
+| Volatility Breakout | `TESTED` | **`REJECTED`** | ADR 0015, R3 rollup | Do not retune |
+| Funding | `TESTED` | **`REJECTED`** | ADR 0015, R3 rollup | Do not retune |
+| BTC-ETH Confirmation | `TESTED` | **`REJECTED`** | ADR 0015, R3 rollup | Do not retune |
 | Baselines | `TESTED` | n/a | 6 fixed references | None |
 | Backtester | `TESTED` | n/a | Next-bar tests | None |
 | Walk-forward | `TESTED` | n/a | 15 folds, guards fail closed | None |
-| Random Search | `TESTED` | `MULTI-SEED` — superseded | FR-2 | Re-run (R2) |
-| Genetic Algorithm | `TESTED` | `MULTI-SEED` — superseded, no advantage | FR-2 | Re-run (R2) |
-| Budget parity | `TESTED` | n/a | Per-fold parity, pilot-audited | None |
-| Fold isolation (R1) | `TESTED` | verified on a real pilot | ADR 0012, `test_search_fold_isolation.py`, `audit_fold_isolation.py` | None |
-| Multi-seed | `TESTED` | applied once | FR-1, FR-3 | Extend to other families |
-| Robustness | `TESTED` | applied once | Battery partial | Add perturbation, regimes |
+| Random Search | `TESTED` | `MULTI-SEED` — clean baseline | CR-2 | Default R3 search baseline |
+| Genetic Algorithm | `TESTED` | `MULTI-SEED` — no advantage | CR-2 | Equal-budget comparator only |
+| Budget parity | `TESTED` | n/a | R3: 100/fold/engine across 100 runs | None |
+| Fold isolation (R1) | `TESTED` | verified | ADR 0012, 100/100 R3 audits | None |
+| Multi-seed | `TESTED` | R2 + R3 complete | CR-1, ADR 0015 | None |
+| Robustness | `TESTED` | R3 studies complete | Bootstrap, cost stress, promotion gate; R4 code added | R4 gate skipped |
 | Tracking | `TESTED` | n/a | Run identity | None |
 | Dashboard | `TESTED` | n/a | API + Playwright | Add maturity surface |
 | ML / meta-labeling | `SPECIFIED` | — | None | Blocked on a robust base |
