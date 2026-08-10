@@ -584,8 +584,8 @@ itself states pre-scheduler runs are not poolable with the study, so the figure 
 `docs/methodology/validation_protocol.md` describes a broader battery than was
 required for the R3 negative outcome. Regime-conditional metrics, trade-path
 bootstrap and parameter-perturbation replay are implemented in `evaluation/` as
-of 2026-08-10; Gate R4 experimental application was skipped because no family
-survived R3. The circular block bootstrap must **not** be described as a Monte
+of 2026-08-10; Gate R4 experimental application was skipped because no family was
+promoted in R3. The circular block bootstrap must **not** be described as a Monte
 Carlo account simulator.
 
 ### Inconsistency 7 — Orchestration smoke runs look like results

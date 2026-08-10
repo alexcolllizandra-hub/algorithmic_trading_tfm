@@ -60,7 +60,7 @@ or overfitting.
 | R1 | Restore temporal validity | **Complete (2026-08-09)** | — |
 | R2 | Re-baseline momentum + RS/GA | **Complete (2026-08-09)** | — |
 | **R3** | **Evaluate implemented families** | **Complete (2026-08-10, negative)** | — |
-| R4 | Robustness coverage | **Skipped** (no R3 survivors); code implemented | S1 |
+| R4 | Robustness coverage | **Skipped** (zero R3 promotions); code implemented | S1 |
 | S1 | Controlled strategy expansion | Specified | M1 |
 | S2 | Advanced statistical strategies | Specified | — |
 | M1 | Labeling + meta-labeling | Specified | M2 |
@@ -227,7 +227,11 @@ observed, reportable outcome.
 **Objective.** Close the gap between the robustness this project claims and the
 robustness it implements.
 
-**Depends on:** R3 (needs at least one family worth stressing).
+**Depends on:** Gate R3 with at least one **promoted** family. Completing the
+multi-seed study in R3 is necessary but not sufficient. **If no family is promoted
+in R3, this gate is skipped** as a confirmatory phase. Families **rejected** in R3
+cannot use R4 as a rescue path; any analysis of rejected families after R3 closure
+is **exploratory** and **cannot alter** the recorded `CLOSED_NEGATIVE` verdict.
 
 **Missing today.**
 
@@ -242,7 +246,7 @@ robustness it implements.
 belongs to Phase P3 and requires an account model that does not yet exist.
 
 **Promotion criterion.** Each new check has unit tests, is wired into the study
-report, and is applied to every family that reached multi-seed.
+report, and is applied only to families **promoted** in Gate R3.
 
 ---
 

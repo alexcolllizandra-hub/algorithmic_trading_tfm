@@ -16,6 +16,7 @@ import pytest
 
 from perp_lab.evaluation.study_robustness import (
     BLOCK_SIZES,
+    PROMOTION_TESTS,
     R3_DROP_TOP_K,
     analyse_fold_locality,
     analyse_run,
@@ -292,6 +293,56 @@ def test_evaluate_r3_promotion_requires_majority_on_both_symbols() -> None:
     verdict = evaluate_r3_promotion(mixed)
     assert verdict["verdict"] == "REJECTED"
     assert any("ETHUSDT" in item for item in verdict["failed_promotion_criteria"])
+
+
+def test_evaluate_r3_promotion_rejects_when_min_oos_trades_veto_fails() -> None:
+    """One seed below min OOS trades vetoes promotion even if six criteria pass majority."""
+
+    def _entry(
+        symbol: str, seed: int, *, pass_promotion: bool, min_trades_ok: bool
+    ) -> dict[str, object]:
+        return {
+            "symbol": symbol,
+            "seed": seed,
+            "method": "random_search",
+            "tests": {
+                "positive_total_return": pass_promotion,
+                "bootstrap_sharpe_ci_excludes_zero": pass_promotion,
+                "survives_double_costs": pass_promotion,
+                "beats_buy_and_hold": pass_promotion,
+                "survives_drop_top_trades": pass_promotion,
+                "not_confined_to_one_fold": pass_promotion,
+                "min_oos_trades_met": min_trades_ok,
+            },
+        }
+
+    per_run: dict[str, dict[str, object]] = {}
+    for seed in range(7):
+        per_run[f"BTCUSDT|seed={seed}|random_search"] = _entry(
+            "BTCUSDT", seed, pass_promotion=True, min_trades_ok=True
+        )
+    per_run["BTCUSDT|seed=7|random_search"] = _entry(
+        "BTCUSDT", 7, pass_promotion=True, min_trades_ok=False
+    )
+    for seed in range(8, 10):
+        per_run[f"BTCUSDT|seed={seed}|random_search"] = _entry(
+            "BTCUSDT", seed, pass_promotion=False, min_trades_ok=True
+        )
+    for seed in range(10):
+        per_run[f"ETHUSDT|seed={seed}|random_search"] = _entry(
+            "ETHUSDT", seed, pass_promotion=True, min_trades_ok=True
+        )
+
+    verdict = evaluate_r3_promotion({"per_run": per_run, "by_symbol_and_engine": {}})
+
+    assert verdict["verdict"] == "REJECTED"
+    assert "BTCUSDT: depends_on_few_trades" in verdict["triggered_rejections"]
+    assert verdict["failed_promotion_criteria"] == []
+    for symbol in ("BTCUSDT", "ETHUSDT"):
+        promotion = verdict["by_symbol"][symbol]["promotion"]
+        for name in PROMOTION_TESTS:
+            assert promotion[name]["pass"] is True, f"{symbol}: {name} should pass majority"
+            assert promotion[name]["n_pass"] >= promotion[name]["required"]
 
 
 def test_analyse_study_robustness_includes_r3_promotion(tmp_path: Path) -> None:

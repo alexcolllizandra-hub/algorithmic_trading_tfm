@@ -1,4 +1,4 @@
-# ADR 0015 — Gate R3 closes with no surviving family
+# ADR 0015 — Gate R3 closes with zero promotions
 
 - **Status:** accepted
 - **Date:** 2026-08-10
@@ -61,11 +61,11 @@ and was not one of the five R3 competitors.
    family show an effect surviving multiple seeds? — is answered **no**, with
    recorded evidence. This is a valid thesis outcome.
 2. **All five families are `REJECTED`.** They are not retuned to pass.
-3. **Gate R4 experimental application is skipped.** No family reached multi-seed
-   promotion, so the extended robustness battery is not applied as a promotion
-   gate. The R4 *machinery* (regime-conditional metrics, trade-path bootstrap,
-   parameter perturbation replay) remains implemented for methodology and future
-   work.
+3. **Gate R4 experimental application is skipped.** All five families completed the
+   multi-seed evaluation, but **none met the promotion criteria**, so the extended
+   robustness battery is not applied as a promotion gate. The R4 *machinery*
+   (regime-conditional metrics, trade-path bootstrap, parameter perturbation replay)
+   remains implemented for methodology and future work.
 4. **The holdout stays closed.** With no promoted strategy, there is no candidate
    to freeze for a final holdout evaluation in this experimental arc.
 5. Failed process roots (`r3_full/`, `r3_full_budget100/`) and the successful root

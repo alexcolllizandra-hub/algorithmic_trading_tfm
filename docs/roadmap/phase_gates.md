@@ -272,20 +272,23 @@ market data.
 
 ---
 
-## Gate R4 — Robustness coverage — **SKIPPED (no R3 survivors)**
+## Gate R4 — Robustness coverage — **SKIPPED (zero R3 promotions)**
 
 **Objective.** Close the gap between claimed and implemented robustness.
 
-**Question.** Are surviving results stable under parameter perturbation and
+**Question.** Are promoted families' results stable under parameter perturbation and
 across regimes?
 
-**Dependencies.** Gate R3 with at least one surviving family. **If no family
-survives R3, this gate is skipped** and the thesis reports a negative result.
+**Dependencies.** Gate R3 with at least one **promoted** family. **If no family is
+promoted in R3, this gate is skipped** as a confirmatory phase and the thesis
+reports a negative result. Families **rejected** in R3 cannot use R4 as a rescue
+path. Any diagnostic run after R3 closure must be labeled **exploratory** and
+**cannot alter** the recorded R3 verdict.
 
 **Status 2026-08-10.** Skipped as a promotion gate: R3 promoted zero families.
 The extended checks (regime-conditional metrics, trade-path bootstrap, parameter
 perturbation replay) are implemented in `evaluation/` for methodology completeness
-but were not required to pass a surviving candidate.
+but were not required to pass a promoted candidate.
 
 **Implementation deliverables.** Parameter perturbation (neighbourhood sampling
 around a fold winner); regime-conditional evaluation reusing the existing regime
@@ -293,10 +296,11 @@ models; trade-path resampling for equity-path distributions.
 
 **Tests.** Unit tests for each new check; determinism under a fixed seed.
 
-**Experiment required.** Apply the extended battery to every family that reached
-multi-seed.
+**Experiment required.** Apply the extended battery only to families **promoted**
+in Gate R3. Completing the multi-seed study in R3 is necessary but not
+sufficient; rejected families are out of scope.
 
-**Artifacts.** An extended robustness report per study.
+**Artifacts.** An extended robustness report per promoted family.
 
 **Statistical evaluation.** Performance degradation as a function of parameter
 distance; per-regime metrics with sample sizes; the equity-path distribution with
@@ -309,7 +313,7 @@ simulator.
 **Promotion criteria.**
 
 - [ ] Each new check is implemented, tested and wired into the report.
-- [ ] Surviving families keep their result under perturbation.
+- [ ] Promoted families keep their result under perturbation.
 - [ ] Regime dependence is measured and reported.
 
 **Rejection criteria.** A family whose result exists only at a knife-edge
