@@ -41,6 +41,9 @@ class Candidate:
     fitness: float | None = None
     fold_metrics: list[dict[str, float]] = field(default_factory=list)
     eval_seconds: float | None = None
+    # The outer fold whose isolated search produced this candidate. Fitness is
+    # only comparable to other candidates carrying the same value.
+    fold_index: int | None = None
 
     @classmethod
     def create(
@@ -79,6 +82,7 @@ class Candidate:
             "fitness": self.fitness,
             "fold_metrics": self.fold_metrics,
             "eval_seconds": self.eval_seconds,
+            "fold_index": self.fold_index,
         }
 
     def ledger_row(self) -> dict[str, Any]:
@@ -87,6 +91,7 @@ class Candidate:
         return {
             "candidate_id": self.candidate_id,
             "family": self.family,
+            "fold_index": self.fold_index,
             "status": self.status.value,
             "fitness": self.fitness,
             "failure_reason": self.failure_reason,

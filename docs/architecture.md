@@ -9,6 +9,14 @@ This document describes the **intended end-to-end pipeline** and the
 responsibility of each module. Modules already implemented (Phase 1 / EDA) are
 marked ✅; modules specified for Chapter 5 but not yet implemented are marked 🟡.
 
+> **The 🟡 markers below are out of date.** A repository audit on 2026-08-08
+> established that `features/`, `strategies/`, `backtesting/`, walk-forward
+> validation, `search/`, `evaluation/` and `tracking/` are implemented and tested.
+> Only `labeling/` and `models/` remain unimplemented. For the audited status of
+> every module, and for the boundaries of the layers that do not yet exist, see
+> [`docs/roadmap/current_state.md`](roadmap/current_state.md) and
+> [`docs/roadmap/future_architecture.md`](roadmap/future_architecture.md).
+
 ## Pipeline overview
 
 ```mermaid

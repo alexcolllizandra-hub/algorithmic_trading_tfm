@@ -21,9 +21,12 @@ label: development_pilot_ETHUSDT_EXPLORATORY_not_holdout
 
 max_folds: 3
 
+# Unique, valid, non-cached objective evaluations EVERY engine must spend.
+effective_budget: 12
+
 ga:
   population_size: 4
-  generations: 3
+  max_generations: 20
   crossover_rate: 0.7
   mutation_rate: 0.3
   elitism: 1

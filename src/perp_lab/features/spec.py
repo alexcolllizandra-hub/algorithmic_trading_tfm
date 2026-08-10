@@ -18,6 +18,7 @@ The registry is deliberately small; it is not a feature-store framework.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
@@ -39,6 +40,13 @@ class KindDef:
     availability: str
     consumers: tuple[str, ...]
     leakage_risk: str
+    # Overfitting control: a search is configured with a set of packs, never with
+    # "every registered kind". See :data:`PACKS`.
+    pack: str = "core"
+    # Set for measures that approximate an unobserved quantity (e.g. liquidity
+    # without an order book). Such features must never be reported as observed.
+    is_proxy: bool = False
+    proxy_note: str = ""
     requires_window: bool = False
     requires_window_slow: bool = False
     requires_lag: bool = False
@@ -177,6 +185,7 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="close t",
         consumers=("BS", "GA", "ML"),
         leakage_risk="low (ratio to trailing mean; mean=0 -> null)",
+        pack="extended",
         requires_window=True,
         allowed_sources=("volume", "quote_volume"),
     ),
@@ -186,6 +195,7 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="close t",
         consumers=("GA", "ML", "RG"),
         leakage_risk="low (trailing mean/std; std=0 -> null)",
+        pack="extended",
         requires_window=True,
         allowed_sources=("volume", "quote_volume"),
     ),
@@ -195,6 +205,7 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="open t (known ex-ante)",
         consumers=("ML", "RG"),
         leakage_risk="none (calendar clock, known in advance)",
+        pack="extended",
         inf_policy="not applicable (bounded sine/cosine)",
     ),
     "dow_cyclical": KindDef(
@@ -203,6 +214,7 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="open t (known ex-ante)",
         consumers=("ML", "RG"),
         leakage_risk="none (calendar clock, known in advance)",
+        pack="extended",
         inf_policy="not applicable (bounded sine/cosine)",
     ),
     "taker_buy_ratio": KindDef(
@@ -211,6 +223,12 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="close t (contextual microstructure)",
         consumers=("ML", "RG"),
         leakage_risk="high if contemporaneous -> must be lagged >= 1 bar",
+        pack="experimental",
+        is_proxy=True,
+        proxy_note=(
+            "aggressor-flow share derived from aggregated trade data; it is not an "
+            "order-book imbalance and must not be reported as one"
+        ),
         requires_lag=True,
     ),
     "taker_buy_imbalance": KindDef(
@@ -219,6 +237,12 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="close t (contextual microstructure)",
         consumers=("ML",),
         leakage_risk="high if contemporaneous -> must be lagged >= 1 bar",
+        pack="experimental",
+        is_proxy=True,
+        proxy_note=(
+            "signed aggressor-flow proxy from aggregated trades; no order book is "
+            "available at this data tier"
+        ),
         requires_lag=True,
     ),
     # -- Derivatives (need an auxiliary stream; backward as-of aligned) ------ #
@@ -228,9 +252,10 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="as-of past (funding known before it is charged)",
         consumers=("ML", "RG", "RK"),
         leakage_risk="low (backward as-of join; never forward)",
+        pack="extended",
         requires_context=True,
         context_kind="funding",
-        null_policy="null before the first funding observation",
+        null_policy="null before the first funding observation (never filled with 0)",
     ),
     "basis": KindDef(
         family="derivatives",
@@ -238,6 +263,12 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="close t (mark/index aligned to bar grid)",
         consumers=("ML", "RG"),
         leakage_risk="low (contemporaneous mark vs index; scale-free)",
+        pack="extended",
+        is_proxy=True,
+        proxy_note=(
+            "relative deviation between the mark price and the exchange index, not a "
+            "spot basis: no independent spot price is ingested at this data tier"
+        ),
         requires_context=True,
         context_kind="mark_index",
     ),
@@ -247,6 +278,7 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="as-of past (open interest snapshot <= open_time)",
         consumers=("ML", "RG"),
         leakage_risk="low (backward as-of join + past-only difference)",
+        pack="extended",
         requires_window=True,
         requires_context=True,
         context_kind="open_interest",
@@ -258,6 +290,7 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="close t (peer bar closes simultaneously)",
         consumers=("ML", "RG"),
         leakage_risk="low (exact join; peer bar closes with own bar)",
+        pack="extended",
         requires_context=True,
         context_kind="peer",
         asset_dependency="pair",
@@ -268,6 +301,7 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="close t (peer bar closes simultaneously)",
         consumers=("ML", "RG"),
         leakage_risk="low (exact join; past-only momentum difference)",
+        pack="extended",
         requires_window=True,
         requires_context=True,
         context_kind="peer",
@@ -279,6 +313,7 @@ KIND_REGISTRY: dict[str, KindDef] = {
         availability="close t (peer bar closes simultaneously)",
         consumers=("ML", "RG", "RK"),
         leakage_risk="low (trailing correlation of past returns)",
+        pack="extended",
         requires_window=True,
         requires_context=True,
         context_kind="peer",
@@ -287,9 +322,85 @@ KIND_REGISTRY: dict[str, KindDef] = {
 }
 
 
+# Ordered from least to most speculative. A pack implies the ones before it, so
+# requesting "extended" means core + extended.
+PACKS: tuple[str, ...] = ("core", "extended", "experimental")
+
+
 def known_kinds() -> tuple[str, ...]:
     """Sorted tuple of every registered feature kind."""
     return tuple(sorted(KIND_REGISTRY))
+
+
+def validate_packs(packs: Sequence[str]) -> tuple[str, ...]:
+    """Reject unknown pack names instead of silently returning an empty set."""
+    unknown = [p for p in packs if p not in PACKS]
+    if unknown:
+        raise ValueError(f"Unknown feature pack(s) {unknown}; known packs: {list(PACKS)}.")
+    return tuple(packs)
+
+
+def kinds_in_packs(packs: Sequence[str]) -> tuple[str, ...]:
+    """Every feature kind admitted by the requested packs (cumulative).
+
+    Packs are the primary defence against searching a space so wide that some
+    parameterisation is bound to look good by chance. A run declares the packs it
+    is allowed to use; anything outside them is not merely unused, it is
+    unavailable.
+    """
+    validate_packs(packs)
+    allowed = set()
+    for pack in packs:
+        allowed.update(PACKS[: PACKS.index(pack) + 1])
+    return tuple(sorted(k for k, kd in KIND_REGISTRY.items() if kd.pack in allowed))
+
+
+def catalogue() -> list[dict[str, object]]:
+    """The full registry as serialisable rows, for artifacts and the dashboard."""
+    return [
+        {
+            "kind": kind,
+            "family": kd.family,
+            "pack": kd.pack,
+            "inputs": list(kd.inputs),
+            "availability": kd.availability,
+            "leakage_risk": kd.leakage_risk,
+            "consumers": list(kd.consumers),
+            "asset_dependency": kd.asset_dependency,
+            "timeframe_dependency": kd.timeframe_dependency,
+            "requires_context": kd.requires_context,
+            "context_kind": kd.context_kind,
+            "is_proxy": kd.is_proxy,
+            "proxy_note": kd.proxy_note,
+            "parameterised": kd.requires_window or kd.requires_window_slow or kd.requires_lag,
+            "impl_version": IMPL_VERSION,
+        }
+        for kind, kd in sorted(KIND_REGISTRY.items())
+    ]
+
+
+def catalogue_counts() -> dict[str, dict[str, int]]:
+    """Counts of registered *kinds* by family and by pack.
+
+    These count distinct information sources, not columns: one parameterised kind
+    can produce many columns, and reporting the column count as if it were the
+    number of independent signals would overstate the breadth of the study.
+    """
+    by_family: dict[str, int] = {}
+    by_pack: dict[str, int] = {}
+    for kd in KIND_REGISTRY.values():
+        by_family[kd.family] = by_family.get(kd.family, 0) + 1
+        by_pack[kd.pack] = by_pack.get(kd.pack, 0) + 1
+    return {
+        "by_family": dict(sorted(by_family.items())),
+        "by_pack": {p: by_pack.get(p, 0) for p in PACKS},
+        "total_kinds": {"kinds": len(KIND_REGISTRY)},
+    }
+
+
+def proxy_kinds() -> tuple[str, ...]:
+    """Kinds that approximate an unobserved quantity and must be labelled as such."""
+    return tuple(sorted(k for k, kd in KIND_REGISTRY.items() if kd.is_proxy))
 
 
 def validate_feature_item(
@@ -439,6 +550,9 @@ class FeatureSpec:
     output_dtype: str = "Float64"
     requires_context: bool = False
     context_kind: str = ""
+    pack: str = "core"
+    is_proxy: bool = False
+    proxy_note: str = ""
     impl_version: str = IMPL_VERSION
 
     def to_dict(self) -> dict[str, object]:
@@ -463,6 +577,9 @@ class FeatureSpec:
             "output_dtype": self.output_dtype,
             "requires_context": self.requires_context,
             "context_kind": self.context_kind,
+            "pack": self.pack,
+            "is_proxy": self.is_proxy,
+            "proxy_note": self.proxy_note,
             "impl_version": self.impl_version,
         }
 
@@ -517,6 +634,9 @@ def resolve_spec(
         output_dtype=kd.output_dtype,
         requires_context=kd.requires_context,
         context_kind=kd.context_kind,
+        pack=kd.pack,
+        is_proxy=kd.is_proxy,
+        proxy_note=kd.proxy_note,
     )
 
 

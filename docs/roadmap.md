@@ -1,9 +1,23 @@
-# Roadmap
+# Roadmap (superseded)
 
-The project is built in phases. Only **Phase 1** is implemented. Later phases
-are listed so scope is explicit; do not implement them yet.
+> **This file is out of date and kept for history only.**
+>
+> It states that only Phase 1 is implemented. A repository audit on 2026-08-08
+> established that the strategy framework, backtester, walk-forward validation,
+> Random Search, the Genetic Algorithm, multi-seed orchestration, the evaluation
+> layer and the research dashboard are all implemented and tested — that is, most
+> of what this file calls Phases 2, 3 and 5.
+>
+> **The current roadmap lives in [`docs/roadmap/`](roadmap/README.md):**
+>
+> - [Current state inventory](roadmap/current_state.md) — what exists and what has
+>   actually been demonstrated
+> - [Master roadmap](roadmap/master_roadmap.md) — phase ordering
+> - [Phase gates](roadmap/phase_gates.md) — promotion and rejection criteria
+> - [Scientific questions](roadmap/scientific_questions.md) — why each strategy exists
+> - [Future architecture](roadmap/future_architecture.md) — layer boundaries
 
-## Phase 1 - Foundation, Data Contract and EDA (current)
+## Phase 1 - Foundation, Data Contract and EDA (historical)
 
 Deliverables:
 - Reproducible environment (uv, Python 3.12), quality gate (Ruff, Pyright, pytest).

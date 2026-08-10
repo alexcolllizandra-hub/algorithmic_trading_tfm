@@ -18,10 +18,15 @@ require_funding: false
 synthetic: false
 label: research
 
-# population_size * generations == evaluation budget (fair-budget parity).
+# Unique evaluations = population + (generations - 1) * (population - elitism)
+# = 100 + 20 * 95 = 2000, matching experiment.yaml's evaluation_budget so Random
+# Search and the GA spend exactly the same budget.
+# Unique, valid, non-cached objective evaluations EVERY engine must spend.
+effective_budget: 2000
+
 ga:
   population_size: 100
-  generations: 20
+  max_generations: 60
   crossover_rate: 0.7
   mutation_rate: 0.2
   elitism: 5

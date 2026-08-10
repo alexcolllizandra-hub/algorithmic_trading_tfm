@@ -15,6 +15,8 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from perp_lab.config.experiment import ga_unique_evaluations
+
 
 class _Strict(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -22,7 +24,10 @@ class _Strict(BaseModel):
 
 class GASettings(_Strict):
     population_size: int = Field(default=100, ge=2)
-    generations: int = Field(default=20, ge=1)
+    # A safety cap, NOT the target. The GA evolves until the effective budget is
+    # spent; a fixed generation count would consume a seed-dependent number of
+    # unique evaluations and make the units of a multi-seed study incomparable.
+    max_generations: int = Field(default=100, ge=1)
     crossover_rate: float = Field(default=0.7, ge=0, le=1)
     mutation_rate: float = Field(default=0.2, ge=0, le=1)
     elitism: int = Field(default=1, ge=0)
@@ -34,9 +39,14 @@ class GASettings(_Strict):
             raise ValueError("ga.elitism must be smaller than ga.population_size.")
         return self
 
-    @property
-    def budget(self) -> int:
-        return self.population_size * self.generations
+    def reachable_evaluations(self) -> int:
+        """Upper bound on unique evaluations within ``max_generations``.
+
+        Generation 0 evaluates a full population; every later generation carries
+        ``elitism`` elites forward with cached fitness and can add at most
+        ``population_size - elitism`` new genotypes.
+        """
+        return ga_unique_evaluations(self.population_size, self.max_generations, self.elitism)
 
 
 class WalkForwardOverride(_Strict):
@@ -59,6 +69,7 @@ class ObjectiveOverride(_Strict):
     min_trades_total: int | None = Field(default=None, ge=0)
     min_trades_per_fold: int | None = Field(default=None, ge=0)
     max_drawdown_limit: float | None = Field(default=None, gt=0)
+    stability_blocks: int | None = Field(default=None, ge=2)
 
     def as_overrides(self) -> dict[str, Any]:
         return {k: v for k, v in self.model_dump().items() if v is not None}
@@ -69,7 +80,14 @@ class SearchRunConfig(_Strict):
 
     experiment_config: Path = Path("configs/experiment.yaml")
     data_contract: Path = Path("configs/data_contract.yaml")
-    family: Literal["momentum", "breakout", "mean_reversion"]
+    family: Literal[
+        "momentum",
+        "breakout",
+        "mean_reversion",
+        "volatility_breakout",
+        "funding",
+        "BTC_ETH_confirmation",
+    ]
     algorithm: Literal["random_search", "genetic_algorithm", "comparison"] = "comparison"
     symbol: str = "BTCUSDT"
     timeframe: str = "1h"
@@ -80,6 +98,10 @@ class SearchRunConfig(_Strict):
     synthetic_bars: int = Field(default=1500, ge=200)
     label: str = "research"
     max_folds: int | None = Field(default=None, ge=1)
+    # The fixed number of unique, valid, non-cached objective evaluations EVERY
+    # engine must spend. Declared in configuration, never inferred from whatever
+    # one engine happened to consume.
+    effective_budget: int = Field(default=2000, ge=1)
     ga: GASettings = GASettings()
     walk_forward_override: WalkForwardOverride | None = None
     objective: ObjectiveOverride | None = None
@@ -111,9 +133,28 @@ class SearchRunConfig(_Strict):
                 )
         return self
 
+    @model_validator(mode="after")
+    def _budget_must_be_reachable(self) -> SearchRunConfig:
+        """Refuse a budget the GA provably cannot spend within its generation cap.
+
+        Failing here is far better than discovering mid-study that the GA stopped
+        short and the two engines were never compared at equal budget.
+        """
+        reachable = self.ga.reachable_evaluations()
+        if reachable < self.effective_budget:
+            raise ValueError(
+                f"effective_budget={self.effective_budget} is unreachable: with "
+                f"population_size={self.ga.population_size}, elitism={self.ga.elitism} "
+                f"and max_generations={self.ga.max_generations} the genetic algorithm "
+                f"can perform at most {reachable} unique evaluations. Raise "
+                "ga.max_generations or ga.population_size, or lower effective_budget."
+            )
+        return self
+
     @property
     def budget(self) -> int:
-        return self.ga.budget
+        """The shared, fixed target both engines must reach exactly."""
+        return self.effective_budget
 
 
 def load_search_config(path: str | Path) -> SearchRunConfig:

@@ -248,10 +248,137 @@ class MeanReversionFamily(_Strict):
         return self
 
 
+class VolatilityBreakoutFamily(_Strict):
+    """Breakout thresholds scaled by recent true-range volatility."""
+
+    level_window: _PosIntTuple = (24, 48, 96)
+    atr_window: _PosIntTuple = (14, 24, 48)
+    entry_atr: tuple[float, ...] = (0.25, 0.5, 1.0)
+    exit_atr: tuple[float, ...] = (0.1, 0.25, 0.5)
+    exit_mode: tuple[str, ...] = ("reenter_level", "opposite_break", "volatility_stop")
+    min_atr_pct: tuple[float, ...] = (0.25, 0.5)
+
+    @field_validator("level_window", "atr_window")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "volatility-breakout windows")
+
+    @field_validator("entry_atr", "exit_atr")
+    @classmethod
+    def _multiples_positive(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(x <= 0 for x in v):
+            raise ValueError("volatility-breakout ATR multiples must be strictly positive.")
+        return v
+
+    @field_validator("min_atr_pct")
+    @classmethod
+    def _quantiles(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not 0.0 <= x < 1.0 for x in v):
+            raise ValueError("min_atr_pct entries are quantiles and must lie in [0, 1).")
+        return v
+
+    @model_validator(mode="after")
+    def _an_exit_below_an_entry_must_exist(self) -> VolatilityBreakoutFamily:
+        # A volatility stop at or beyond the entry threshold closes the position on
+        # the bar that opened it, so at least one admissible pair must exist.
+        if min(self.exit_atr) >= max(self.entry_atr):
+            raise ValueError(
+                "No admissible (entry_atr, exit_atr) pair: every exit multiple is at or "
+                "beyond every entry multiple, so the volatility stop can never be valid."
+            )
+        return self
+
+
+class FundingFamily(_Strict):
+    """Trades the published funding rate as a signal, never as a cashflow."""
+
+    signal_window: _PosIntTuple = (24, 48, 168)
+    entry_z: tuple[float, ...] = (1.0, 1.5, 2.0)
+    exit_z: tuple[float, ...] = (0.0, 0.25, 0.5)
+    stance: tuple[str, ...] = ("fade", "follow")
+    min_abs_rate: tuple[float, ...] = (0.0, 0.00005)
+
+    @field_validator("signal_window")
+    @classmethod
+    def _windows(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        if any(w <= 1 for w in v):
+            raise ValueError("funding signal_window must exceed 1 bar for a deviation to exist.")
+        return v
+
+    @field_validator("entry_z")
+    @classmethod
+    def _entry_positive(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(x <= 0 for x in v):
+            raise ValueError("funding entry_z must be strictly positive.")
+        return v
+
+    @model_validator(mode="after")
+    def _an_exit_inside_an_entry_must_exist(self) -> FundingFamily:
+        if min(self.exit_z) >= max(self.entry_z):
+            raise ValueError(
+                "No admissible (entry_z, exit_z) pair: every exit band is at or outside "
+                "every entry band, so a position would close on the bar that opened it."
+            )
+        return self
+
+
+class CrossAssetFamily(_Strict):
+    """One asset traded only when the other confirms, with a causal alignment lag."""
+
+    lookback: _PosIntTuple = (6, 12, 24, 48)
+    entry_threshold: tuple[float, ...] = (0.003, 0.005, 0.01)
+    reference_threshold: tuple[float, ...] = (0.0, 0.002, 0.005)
+    exit_threshold: tuple[float, ...] = (0.0, 0.001)
+    reference_lag: _PosIntTuple = (1, 2, 4)
+    mode: tuple[str, ...] = ("agree", "lead_lag", "divergence")
+    reference_symbol: dict[str, str] = {"BTCUSDT": "ETHUSDT", "ETHUSDT": "BTCUSDT"}
+
+    @field_validator("lookback")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "cross-asset lookback")
+
+    @field_validator("reference_lag")
+    @classmethod
+    def _lag_at_least_one_bar(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        # Bars are labelled by open time and left-closed, so the reference bar
+        # sharing the decision bar's timestamp is still being formed.
+        if any(lag < 1 for lag in v):
+            raise ValueError(
+                "cross-asset reference_lag must be >= 1 bar; a zero lag lets an "
+                "incomplete reference bar confirm a decision taken at the same time."
+            )
+        return v
+
+    @field_validator("entry_threshold")
+    @classmethod
+    def _entry_positive(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(x <= 0 for x in v):
+            raise ValueError("cross-asset entry_threshold must be strictly positive.")
+        return v
+
+    @model_validator(mode="after")
+    def _reference_is_never_the_target(self) -> CrossAssetFamily:
+        for target, reference in self.reference_symbol.items():
+            if target == reference:
+                raise ValueError(
+                    f"{target} cannot be its own reference; that is a single-asset "
+                    "strategy wearing a cross-asset label."
+                )
+        if min(self.exit_threshold) >= max(self.entry_threshold):
+            raise ValueError(
+                "No admissible (entry_threshold, exit_threshold) pair for the cross-asset family."
+            )
+        return self
+
+
 class Families(_Strict):
     momentum: MomentumFamily = MomentumFamily()
     breakout: BreakoutFamily = BreakoutFamily()
     mean_reversion: MeanReversionFamily = MeanReversionFamily()
+    volatility_breakout: VolatilityBreakoutFamily = VolatilityBreakoutFamily()
+    funding: FundingFamily = FundingFamily()
+    cross_asset: CrossAssetFamily = CrossAssetFamily()
 
 
 class VolatilityFilter(_Strict):
@@ -405,13 +532,31 @@ class Costs(_Strict):
         return self.taker_fee_bps if self.fee_model == "taker" else self.maker_fee_bps
 
 
+def ga_unique_evaluations(population_size: int, generations: int, elitism: int) -> int:
+    """Upper bound on unique objective evaluations within ``generations``.
+
+    Generation 0 evaluates a full population. Every later generation carries the
+    ``elitism`` best individuals over with cached fitness, so it can add at most
+    ``population_size - elitism`` new genotypes. ``population_size * generations``
+    therefore overstates the count whenever ``elitism > 0``.
+
+    This is a *bound*, not a prediction: offspring frequently rediscover genotypes
+    scored in earlier generations, which hit the evaluator cache and consume no
+    budget. That is precisely why the budget must drive the loop rather than the
+    generation count -- the shortfall varies with the seed.
+    """
+    return population_size + (generations - 1) * (population_size - elitism)
+
+
 class RandomSearch(_Strict):
     sampler: str = "uniform_over_space"
 
 
 class GeneticAlgorithm(_Strict):
     population_size: int = Field(default=100, ge=2)
-    generations: int = Field(default=20, ge=1)
+    # A safety cap, not the target: the GA evolves until evaluation_budget unique
+    # evaluations are spent. 100 + (60 - 1) * (100 - 5) = 5705 reachable >= 2000.
+    max_generations: int = Field(default=60, ge=1)
     crossover_rate: float = Field(default=0.7, ge=0, le=1)
     mutation_rate: float = Field(default=0.2, ge=0, le=1)
     elitism: int = Field(default=5, ge=0)
@@ -428,17 +573,25 @@ class Search(_Strict):
 
     @model_validator(mode="after")
     def _budget_parity(self) -> Search:
+        """The budget is the target; the GA's cap must be able to reach it.
+
+        Both engines run until they have spent exactly ``evaluation_budget`` unique,
+        valid, non-cached objective evaluations. The genetic algorithm can only do
+        that if its generation cap allows enough new genotypes, so an unreachable
+        combination is rejected here rather than discovered mid-study.
+        """
         ga = self.genetic_algorithm
-        ga_evals = ga.population_size * ga.generations
-        if ga_evals != self.evaluation_budget:
-            raise ValueError(
-                "Search-budget parity violated: genetic_algorithm.population_size * "
-                f"generations = {ga_evals} must equal evaluation_budget = "
-                f"{self.evaluation_budget} so Random Search and the GA are compared "
-                "at an identical number of candidate evaluations."
-            )
         if ga.elitism >= ga.population_size:
             raise ValueError("genetic_algorithm.elitism must be smaller than population_size.")
+        reachable = ga_unique_evaluations(ga.population_size, ga.max_generations, ga.elitism)
+        if reachable < self.evaluation_budget:
+            raise ValueError(
+                f"evaluation_budget={self.evaluation_budget} is unreachable: with "
+                f"population_size={ga.population_size}, elitism={ga.elitism} and "
+                f"max_generations={ga.max_generations} the genetic algorithm can "
+                f"perform at most {reachable} unique evaluations. Raise "
+                "max_generations or population_size, or lower evaluation_budget."
+            )
         return self
 
 
@@ -460,6 +613,11 @@ class Fitness(_Strict):
     primary_objective: str = "walk_forward_sharpe"
     weights: FitnessWeights = FitnessWeights()
     constraints: FitnessConstraints = FitnessConstraints()
+    # Contiguous sub-blocks each fold's validation window is cut into to measure
+    # within-fold stability. Under the per-outer-fold protocol (ADR 0012) this
+    # replaces the across-fold spread, which a single fold cannot observe without
+    # reading later folds.
+    stability_blocks: int = Field(default=4, ge=2)
     provisional: bool = True
 
 

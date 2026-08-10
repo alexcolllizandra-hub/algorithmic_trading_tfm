@@ -35,7 +35,8 @@ def _smoke_cfg(**over: object) -> SearchRunConfig:
         "synthetic": True,
         "synthetic_bars": 1000,
         "label": "test_smoke",
-        "ga": GASettings(population_size=5, generations=2, elitism=1, tournament_size=3),
+        "effective_budget": 9,
+        "ga": GASettings(population_size=5, max_generations=20, elitism=1, tournament_size=3),
         "walk_forward_override": WalkForwardOverride(
             initial_train_days=25, validation_days=7, test_days=7, step_days=7, max_folds=2
         ),
@@ -53,20 +54,105 @@ def test_run_search_comparison_end_to_end(tmp_path) -> None:
     res = run_search(cfg, paths=paths, write_artifacts=True)
 
     assert set(res.outcomes) == {"random_search", "genetic_algorithm"}
-    # Fair budget: both capped at the same number of unique evaluations.
-    for outcome in res.outcomes.values():
-        assert outcome.counters.evaluated <= cfg.budget
     # Artifacts exist and reload.
     assert res.run_dir is not None
     summary = json.loads((res.run_dir / "comparison_summary.json").read_text())
+    n_folds = summary["n_folds"]
+    # Fair budget: the target is spent in full inside EVERY outer fold, so the
+    # run-level total is the per-fold budget times the number of folds.
+    for outcome in res.outcomes.values():
+        assert outcome.counters.evaluated == cfg.budget * n_folds
     assert summary["comparison_metric"].startswith("aggregate out-of-sample")
     assert "EXPLORATORY" in summary["warning"]
     # Feature manifest + search space + objective all written.
-    for name in ("feature_manifest.json", "search_space.json", "objective.json", "folds.json"):
+    for name in (
+        "feature_manifest.json",
+        "search_space.json",
+        "objective.json",
+        "folds.json",
+        "search_protocol.json",
+    ):
         assert (res.run_dir / name).exists()
     # Fold winners were scored on test.
     fw = json.loads((res.run_dir / "genetic_algorithm_fold_winners.json").read_text())
     assert isinstance(fw, list) and len(fw) == summary["n_folds"]
+
+
+def test_both_methods_spend_exactly_the_configured_budget(tmp_path) -> None:
+    """Each engine must land on the configured target inside EVERY outer fold.
+
+    A run-level total can match while the per-fold spends differ, and the fold is
+    where selection happens: an engine that searched less in fold 3 did not earn
+    fold 3's winner on equal terms.
+    """
+    cfg = _smoke_cfg()
+    res = run_search(cfg, write_artifacts=False)
+    n_folds = res.summary["n_folds"]
+    evaluated = {name: o.counters.evaluated for name, o in res.outcomes.items()}
+    assert evaluated["random_search"] == evaluated["genetic_algorithm"] == cfg.budget * n_folds
+
+    parity = res.summary["budget_parity"]
+    assert parity["effective_budget_per_fold"] == cfg.budget
+    assert parity["n_folds"] == n_folds
+    assert parity["parity_level"] == "per outer fold"
+    assert parity["equal_effective_budget"] is True
+    assert parity["all_engines_reached_target"] is True
+    assert parity["total_evaluations_per_engine"] == evaluated
+
+    for engine in ("random_search", "genetic_algorithm"):
+        per_fold = parity["per_engine"][engine]["per_fold"]
+        assert len(per_fold) == n_folds
+        assert all(f["consumed"] == cfg.budget for f in per_fold.values())
+
+
+def test_budget_accounting_is_persisted_for_every_engine(tmp_path) -> None:
+    """Duplicates, invalids and cache hits must be visible, per fold, not just totalled."""
+    res = run_search(_smoke_cfg(), write_artifacts=False)
+    for engine, payload in res.summary["budget_parity"]["per_engine"].items():
+        assert payload["reached_target_in_every_fold"] is True, engine
+        for fold, entry in payload["per_fold"].items():
+            for key in ("target", "consumed", "proposed", "invalid", "duplicate", "cached"):
+                assert key in entry, f"{engine} fold {fold} is missing {key}"
+            assert entry["termination_reason"] == "budget_reached"
+            # Nothing but a genuine evaluation may consume budget.
+            assert entry["consumed"] == entry["target"]
+            assert entry["proposed"] >= entry["consumed"]
+
+
+def test_a_budget_the_ga_cannot_reach_is_rejected_at_config_time() -> None:
+    """Better to fail before the run than to discover unequal budgets after it."""
+    with pytest.raises(ValueError, match="unreachable"):
+        _smoke_cfg(
+            effective_budget=500,
+            ga=GASettings(population_size=5, max_generations=2, elitism=1, tournament_size=3),
+        )
+
+
+def test_out_of_sample_artifacts_are_written_for_every_method(tmp_path) -> None:
+    """Both methods persist per-fold OOS test series, not only the winning one.
+
+    Without this the concatenated walk-forward OOS evidence can be rebuilt for a
+    single method and the RS-vs-GA comparison stops being auditable.
+    """
+    cfg = _smoke_cfg()
+    paths = Paths(artifacts_root=tmp_path / "artifacts")
+    res = run_search(cfg, paths=paths, write_artifacts=True)
+    assert res.run_dir is not None
+    for method in ("random_search", "genetic_algorithm"):
+        scored = [w for w in res.fold_winners[method] if w.get("winner") is not None]
+        equities = sorted(res.run_dir.glob(f"{method}_fold*_test_equity.parquet"))
+        assert len(equities) == len(scored), f"{method} is missing per-fold OOS equity"
+
+
+def test_summary_records_walk_forward_coverage(tmp_path) -> None:
+    """The summary must state the OOS span, so one window cannot look complete."""
+    cfg = _smoke_cfg()
+    res = run_search(cfg, write_artifacts=False)
+    cov = res.summary["walk_forward_coverage"]
+    assert cov["n_folds"] == res.summary["n_folds"]
+    assert cov["oos_test_days"] == cov["n_folds"] * cov["test_days"]
+    assert cov["max_folds_cap"] == 2
+    assert cov["oos_test_start"] < cov["oos_test_end"]
 
 
 def test_run_search_is_reproducible(tmp_path) -> None:
@@ -76,8 +162,10 @@ def test_run_search_is_reproducible(tmp_path) -> None:
     for name in r1.outcomes:
         o1, o2 = r1.outcomes[name], r2.outcomes[name]
         assert [c.candidate_id for c in o1.candidates] == [c.candidate_id for c in o2.candidates]
-        assert o1.convergence == o2.convergence
+        assert o1.extra["convergence_per_fold"] == o2.extra["convergence_per_fold"]
+        assert o1.extra["seed_per_fold"] == o2.extra["seed_per_fold"]
     assert r1.summary["methods"].keys() == r2.summary["methods"].keys()
+    assert r1.fold_winners == r2.fold_winners
 
 
 def test_require_funding_uses_labelled_synthetic_fixture(tmp_path) -> None:
@@ -123,9 +211,10 @@ def test_cli_search_and_summary(tmp_path, monkeypatch) -> None:
                 "synthetic: true",
                 "synthetic_bars: 900",
                 "label: cli_smoke",
+                "effective_budget: 7",
                 "ga:",
                 "  population_size: 4",
-                "  generations: 2",
+                "  max_generations: 20",
                 "  elitism: 1",
                 "  tournament_size: 3",
                 "walk_forward_override:",

@@ -3,7 +3,7 @@
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { ConvergenceChart } from "@/components/charts/ConvergenceChart";
+import { ConvergencePanel } from "@/components/ConvergencePanel";
 import { ComparisonBars } from "@/components/charts/ComparisonBars";
 import { DiversityChart } from "@/components/charts/DiversityChart";
 import { HowToRead } from "@/components/education/HowToRead";
@@ -500,14 +500,14 @@ function AnalyticsTab({ runId }: { runId: string | null }) {
 
   return (
     <>
-      <Card>
-        <CardHeader title="Convergencia" subtitle="Mejor fitness tras cada evaluación única" />
-        {Object.keys(data.convergence).length === 0 ? (
-          <EmptyState title="Sin historial de convergencia" />
-        ) : (
-          <ConvergenceChart series={data.convergence} />
-        )}
-      </Card>
+      <ConvergencePanel
+        series={data.convergence}
+        folds={data.convergence_folds}
+        title="Convergencia"
+        subtitle="Mejor fitness tras cada evaluación única dentro de un fold. Cada fold se busca de forma independiente, así que las trazas no son comparables entre folds."
+        emptyTitle="Sin historial de convergencia"
+        foldLabel="Fold externo"
+      />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader title="Diversidad GA" />

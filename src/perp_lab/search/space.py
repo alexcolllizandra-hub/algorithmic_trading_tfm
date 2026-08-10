@@ -27,6 +27,7 @@ from global RNG state.
 from __future__ import annotations
 
 import hashlib
+import itertools
 import json
 import math
 from abc import ABC, abstractmethod
@@ -316,6 +317,41 @@ class SearchSpace:
     def candidate_hash(self, values: Mapping[str, ParamValue]) -> str:
         digest = hashlib.sha1(f"{self.family}|{self.version}|{self.canonical(values)}".encode())
         return f"{self.family}-{digest.hexdigest()[:16]}"
+
+    def finite_cardinality(self, *, max_raw_combinations: int = 1_000_000) -> int | None:
+        """Exact number of unique valid candidate identities, when finite.
+
+        Conditional parameters, family repair and inactive values make a raw
+        Cartesian product an over-count. Enumeration therefore passes every raw
+        tuple through the same repair, validation and canonical-hash path used by
+        the engines. ``None`` means the space contains a continuous parameter or
+        is too large to enumerate safely.
+        """
+        grids: list[tuple[ParamValue, ...]] = []
+        raw_size = 1
+        for param in self.params:
+            if isinstance(param, BoolParam):
+                grid: tuple[ParamValue, ...] = (False, True)
+            elif isinstance(param, CategoricalParam):
+                grid = param.choices
+            elif isinstance(param, IntParam):
+                grid = tuple(param._grid())
+            else:
+                # FloatParam is continuous; future parameter classes are unknown.
+                return None
+            raw_size *= len(grid)
+            if raw_size > max_raw_combinations:
+                return None
+            grids.append(grid)
+
+        identities: set[str] = set()
+        for combination in itertools.product(*grids):
+            raw = {param.name: value for param, value in zip(self.params, combination, strict=True)}
+            repaired = self.repair(raw)
+            valid, _ = self.is_valid(repaired)
+            if valid:
+                identities.add(self.candidate_hash(repaired))
+        return len(identities)
 
     def build(self, values: Mapping[str, ParamValue]) -> object:
         return self.build_fn(self.active_params(values))

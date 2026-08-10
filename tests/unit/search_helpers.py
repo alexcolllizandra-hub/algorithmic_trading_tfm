@@ -36,6 +36,7 @@ def build_env(
     seed: int = 11,
     timeframe: str = "1h",
     regime_model: str = "threshold",
+    max_folds: int = 3,
 ) -> Env:
     exp = load_experiment_config("configs/experiment.yaml")
     frame = synthetic_klines(n_bars, seed=seed, timeframe=timeframe)
@@ -55,7 +56,7 @@ def build_env(
         embargo=exp.embargo_bars * step,
         purge_bars=exp.purge_bars,
         embargo_bars=exp.embargo_bars,
-        max_folds=3,
+        max_folds=max_folds,
     )
     bundle = build_folds_data(
         frame,

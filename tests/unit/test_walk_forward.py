@@ -59,7 +59,7 @@ def test_expanding_training_grows_each_fold() -> None:
 def test_test_windows_are_non_overlapping() -> None:
     folds = _folds()
     for a, b in pairwise(folds):
-        assert a.test_end <= b.test_start + timedelta(days=1)  # step == test_days
+        assert a.test_end <= b.test_start  # strictly no OOS overlap
 
 
 def test_folds_never_reach_holdout() -> None:

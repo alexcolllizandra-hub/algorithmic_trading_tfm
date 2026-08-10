@@ -2,8 +2,8 @@
 
 import { Suspense } from "react";
 
-import { ConvergenceChart } from "@/components/charts/ConvergenceChart";
 import { DiversityChart } from "@/components/charts/DiversityChart";
+import { ConvergencePanel } from "@/components/ConvergencePanel";
 import { PageShell } from "@/components/layout/PageShell";
 import { RunPicker, useSelectedRun } from "@/components/RunPicker";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -30,17 +30,14 @@ function AnalyticsInner() {
         <EmptyState title="No analytics artifact" />
       ) : (
         <>
-          <Card>
-            <CardHeader
-              title="Convergence"
-              subtitle="Best fitness discovered after each unique evaluation (step curve)."
-            />
-            {Object.keys(data.convergence).length === 0 ? (
-              <EmptyState title="No convergence history" />
-            ) : (
-              <ConvergenceChart series={data.convergence} />
-            )}
-          </Card>
+          <ConvergencePanel
+            series={data.convergence}
+            folds={data.convergence_folds}
+            title="Convergence"
+            subtitle="Best fitness after each unique evaluation, within one outer fold. Each fold is searched independently, so traces are not comparable across folds."
+            emptyTitle="No convergence history"
+            foldLabel="Outer fold"
+          />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>

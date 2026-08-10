@@ -178,7 +178,13 @@ search:
     sampler: "uniform_over_space"
   genetic_algorithm:
     population_size: 100
-    generations: 20 # population * generations = 2000 = budget
+    # A SAFETY CAP, not the target. The GA evolves until it has spent exactly
+    # `evaluation_budget` unique, valid, non-cached evaluations. Offspring that
+    # rediscover an already-scored genotype hit the cache and consume no budget,
+    # and how often that happens varies with the seed -- so a fixed generation
+    # count would give each unit of a multi-seed study a different budget.
+    # Reachable bound: 100 + (60 - 1) * (100 - 5) = 5705 >= 2000.
+    max_generations: 60
     crossover_rate: 0.7
     mutation_rate: 0.2
     elitism: 5

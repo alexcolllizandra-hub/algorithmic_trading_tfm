@@ -43,6 +43,8 @@ def list_run_summaries(settings: ApiSettings) -> list[m.RunSummaryModel]:
             n_folds=r.n_folds,
             best_method=r.best_method,
             has_comparison=r.has_comparison,
+            protocol=r.protocol,
+            contaminated=r.protocol != loader.CURRENT_SEARCH_PROTOCOL,
         )
         for r in runs
     ]
@@ -88,9 +90,16 @@ def comparison(run_dir: Path) -> m.ComparisonResponse:
         comparison_metric=s.get("comparison_metric"),
         best_out_of_sample_method=s.get("best_out_of_sample_method"),
         warning=s.get("warning"),
+        search_protocol=art.protocol,
+        contaminated=art.contaminated,
         methods=methods,
         fair_budget=m.FairBudget(
-            budget=fb["budget"], definition=fb["definition"], ok=bool(fb["ok"]), rows=rows
+            budget=fb["budget"],
+            n_folds=fb["n_folds"],
+            parity_level=fb["parity_level"],
+            definition=fb["definition"],
+            ok=bool(fb["ok"]),
+            rows=rows,
         ),
     )
 
@@ -122,6 +131,7 @@ def candidate_models(run_dir: Path, method: str) -> list[m.CandidateModel]:
             m.CandidateModel(
                 candidate_id=str(row.get("candidate_id")),
                 family=row.get("family"),
+                fold_index=row.get("fold_index"),
                 status=row.get("status"),
                 fitness=row.get("fitness"),
                 failure_reason=row.get("failure_reason"),
@@ -172,15 +182,19 @@ def folds(run_dir: Path) -> m.FoldsResponse:
 def search_analytics(run_dir: Path) -> m.SearchAnalyticsResponse:
     art = loader.load_run(run_dir)
     convergence: dict[str, list[m.ConvergencePoint]] = {}
+    fold_ids: set[int] = set()
     for method in loader.METHODS:
         cf = loader.convergence_frame(run_dir, method)
         if not cf.is_empty():
             convergence[method] = [m.ConvergencePoint(**r) for r in cf.to_dicts()]
+            fold_ids.update(int(v) for v in cf["fold"].to_list())
     div = loader.diversity_frame(art)
     diversity = [m.GaGenerationDiversity(**r) for r in div.to_dicts()] if not div.is_empty() else []
     gb = loader.generation_best_frame(art)
     return m.SearchAnalyticsResponse(
         run_id=run_dir.name,
+        search_protocol=art.protocol,
+        convergence_folds=sorted(fold_ids),
         convergence=convergence,
         ga_diversity=diversity,
         ga_generation_best=gb.to_dicts() if not gb.is_empty() else [],

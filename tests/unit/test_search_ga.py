@@ -17,12 +17,12 @@ from perp_lab.search.genetic_algorithm import (
 from perp_lab.search.random_search import run_random_search
 
 
-def _ga(env, *, budget=18, seed=5, pop=6, gens=3):
+def _ga(env, *, budget=18, seed=5, pop=6, max_gens=30):
     return run_genetic_algorithm(
         env.evaluator,
         env.space,
         population_size=pop,
-        generations=gens,
+        max_generations=max_gens,
         crossover_rate=0.7,
         mutation_rate=0.3,
         elitism=1,
@@ -42,10 +42,56 @@ def test_ga_deterministic() -> None:
     assert out1.extra["generation_best"] == out2.extra["generation_best"]
 
 
-def test_ga_never_exceeds_budget() -> None:
+def test_ga_spends_exactly_the_budget_and_never_more() -> None:
     env = build_env(seed=7)
-    out = _ga(env, budget=10, pop=5, gens=4)
-    assert out.counters.evaluated <= 10
+    out = _ga(env, budget=10, pop=5)
+    assert out.counters.evaluated == 10
+    assert out.extra["termination_reason"] == "budget_reached"
+    assert out.extra["budget_reached"] is True
+
+
+def test_ga_keeps_evolving_past_a_generation_count_to_reach_its_budget() -> None:
+    """The loop is driven by the budget; a fixed generation count would fall short.
+
+    With population 5 and elitism 1, four generations can add at most 5 + 3*4 = 17
+    new genotypes, and cross-generation duplicates usually make it fewer. Asking
+    for 30 must simply run more generations.
+    """
+    out = _ga(build_env(seed=7), budget=30, pop=5)
+    assert out.counters.evaluated == 30
+    assert out.extra["generations_run"] > 4
+
+
+def test_ga_reports_when_it_cannot_reach_the_budget() -> None:
+    """Stopping short must be visible, never reported as a completed run."""
+    out = _ga(build_env(seed=7), budget=10_000, pop=4, max_gens=3)
+    assert out.counters.evaluated < 10_000
+    assert out.extra["budget_reached"] is False
+    assert out.extra["termination_reason"] in {
+        "max_generations",
+        "population_converged",
+        "finite_space_exhausted",
+    }
+
+
+def test_ga_injects_random_immigrants_instead_of_stopping_at_convergence() -> None:
+    """A collapsed population must not receive less budget than Random Search."""
+    env = build_env(seed=7)
+    out = run_genetic_algorithm(
+        env.evaluator,
+        env.space,
+        population_size=4,
+        max_generations=100,
+        crossover_rate=0.0,
+        mutation_rate=0.0,
+        elitism=1,
+        tournament_size=3,
+        seed=5,
+        budget=10,
+    )
+    assert out.counters.evaluated == 10
+    assert out.extra["termination_reason"] == "budget_reached"
+    assert out.extra["random_immigrants"] > 0
 
 
 def test_ga_records_lineage_and_diversity() -> None:
@@ -69,14 +115,25 @@ def test_ga_elitism_preserves_best_across_generations() -> None:
         assert b >= a - 1e-9
 
 
-def test_ga_fair_budget_matches_random_search_cap() -> None:
-    env_ga = build_env(seed=6)
-    env_rs = build_env(seed=6)
+def test_both_engines_land_on_the_identical_budget() -> None:
+    """Neither engine is capped at the other's spend; both hit the declared target."""
     budget = 12
-    ga = _ga(env_ga, budget=budget, pop=4, gens=3)
+    ga = _ga(build_env(seed=6), budget=budget, pop=4)
+    env_rs = build_env(seed=6)
     rs = run_random_search(env_rs.evaluator, env_rs.space, budget=budget, seed=5)
-    assert ga.counters.evaluated <= budget
-    assert rs.counters.evaluated <= budget
+    assert ga.counters.evaluated == rs.counters.evaluated == budget
+
+
+def test_cached_duplicate_and_invalid_proposals_never_consume_budget() -> None:
+    env = build_env(seed=4)
+    out = _ga(env, budget=15, pop=5)
+    counters = out.counters
+    assert counters.evaluated == 15
+    # Everything the GA proposed beyond its 15 paid evaluations was free.
+    assert counters.proposed >= counters.evaluated
+    assert counters.duplicate + counters.invalid + counters.cached == (
+        counters.proposed - counters.evaluated
+    )
 
 
 def _mk_candidate(env, values, fitness) -> Candidate:

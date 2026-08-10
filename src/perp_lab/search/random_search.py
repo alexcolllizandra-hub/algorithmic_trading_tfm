@@ -67,6 +67,7 @@ def run_random_search(
             best_so_far = max(best_so_far, candidate.fitness)
         convergence.append(best_so_far)
 
+    termination = "budget_reached" if counters.evaluated >= budget else "max_attempts"
     return SearchOutcome(
         algorithm=ALGORITHM,
         version=VERSION,
@@ -76,5 +77,11 @@ def run_random_search(
         counters=counters,
         convergence=convergence,
         best=_best(candidates),
-        extra={"attempts": attempts, "space_exhausted": attempts >= max_attempts},
+        extra={
+            "attempts": attempts,
+            "max_attempts": max_attempts,
+            "termination_reason": termination,
+            "budget_reached": counters.evaluated == budget,
+            "space_exhausted": attempts >= max_attempts,
+        },
     )

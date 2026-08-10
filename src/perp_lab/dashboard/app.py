@@ -145,23 +145,33 @@ def _tab_data(art: loader.RunArtifacts) -> None:
 
 def _tab_convergence(art: loader.RunArtifacts, methods: list[str]) -> None:
     st.subheader("Convergence (best fitness after each evaluation)")
-    frames = []
-    for m in methods:
-        cf = loader.convergence_frame(art.run_dir, m)
-        if not cf.is_empty():
-            frames.append(cf.with_columns(pl.lit(m).alias("method")))
-    if frames:
-        combined = pl.concat(frames)
-        chart = combined.pivot(values="best_fitness", index="evaluation", on="method")
-        st.line_chart(chart.to_pandas(), x="evaluation")
-    else:
+    st.caption(
+        "Search runs independently inside each outer fold, so every fold has its own "
+        "trace. Fitness is measured on that fold's validation window and is not "
+        "comparable across folds."
+    )
+    available = sorted({f for m in methods for f in loader.convergence_folds(art.run_dir, m)})
+    if not available:
         st.info("No convergence history available.")
+    else:
+        fold = st.selectbox("Outer fold", available, key="convergence_fold")
+        frames = []
+        for m in methods:
+            cf = loader.convergence_frame(art.run_dir, m, fold=fold)
+            if not cf.is_empty():
+                frames.append(cf.with_columns(pl.lit(m).alias("method")))
+        if frames:
+            combined = pl.concat(frames)
+            chart = combined.pivot(values="best_fitness", index="evaluation", on="method")
+            st.line_chart(chart.to_pandas(), x="evaluation")
 
     st.subheader("Genetic Algorithm diversity")
     div = loader.diversity_frame(art)
     if div.is_empty():
         st.info("No GA diversity recorded (run had no genetic algorithm).")
     else:
+        if "fold" in div.columns:
+            div = div.filter(pl.col("fold") == div["fold"].min())
         st.line_chart(div.to_pandas(), x="generation")
         _show_frame(loader.generation_best_frame(art))
         if art.ga_lineage:

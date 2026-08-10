@@ -17,6 +17,14 @@ Temporal protocol (per walk-forward fold, all built in
 5. The chosen fold winner is scored **once** on that fold's ``test`` slice
    (:meth:`CandidateEvaluator.evaluate_on_test`) -- never used to guide search.
 
+**Fold isolation (ADR 0012).** An evaluator sees exactly the folds inside the
+bundle it was constructed with. The search runner builds one evaluator per outer
+fold from :func:`single_fold_bundle`, so a candidate's fitness is physically
+incapable of depending on a chronologically later fold: the later fold's frames
+are not reachable from the object. Asking an evaluator for a fold it does not
+hold raises :class:`FoldIsolationError` rather than silently resolving to a
+neighbour.
+
 The frozen holdout is excluded up front and never materialised here.
 """
 
@@ -27,10 +35,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
+import numpy as np
 import polars as pl
 
 from perp_lab.backtesting.engine import BacktestResult, run_backtest
+from perp_lab.backtesting.metrics import bars_per_year
 from perp_lab.config.experiment import ExperimentConfig
+from perp_lab.features.context import FeatureContext
 from perp_lab.features.manifest import build_feature_manifest
 from perp_lab.features.registry import build_feature_frame, feature_columns, resolve_feature_set
 from perp_lab.features.spec import FeatureItemLike, FeatureSpec
@@ -40,11 +51,22 @@ from perp_lab.search.objective import ObjectiveConfig, aggregate_objective
 from perp_lab.search.registry import _FeatureItem, build_search_space
 from perp_lab.search.space import SearchSpace
 from perp_lab.strategies.base import Strategy
+from perp_lab.utils.seeds import SeedScheduler
 from perp_lab.validation.walk_forward import (
     WalkForwardFold,
     assert_folds_exclude_holdout,
     split_fold,
 )
+
+
+class FoldIsolationError(RuntimeError):
+    """An evaluator was asked for a fold outside the bundle it was built with.
+
+    Under the per-outer-fold search protocol this is the signature of leakage:
+    something is trying to read a fold whose data that search environment is not
+    entitled to see.
+    """
+
 
 _VOLATILITY_PREFIXES = ("rvol_", "roll_std_", "atr_")
 _REGIME_PRIORITY: tuple[tuple[str, ...], ...] = (
@@ -101,6 +123,30 @@ class FoldsBundle:
     timeframe: str
 
 
+def single_fold_bundle(bundle: FoldsBundle, fold_index: int) -> FoldsBundle:
+    """A bundle holding exactly one outer fold, for an isolated search environment.
+
+    Restricting the data rather than trusting the caller to index correctly is
+    what makes fold isolation verifiable: an evaluator built from this bundle has
+    no reference to any other fold's train, validation or test frames, so no
+    amount of downstream indexing can reach them.
+    """
+    match = [fd for fd in bundle.folds if fd.index == fold_index]
+    if not match:
+        raise FoldIsolationError(
+            f"Fold {fold_index} is not in this bundle (holds {[f.index for f in bundle.folds]})."
+        )
+    return FoldsBundle(
+        folds=match,
+        feature_specs=bundle.feature_specs,
+        feature_manifest=bundle.feature_manifest,
+        regime_inputs=bundle.regime_inputs,
+        funding=bundle.funding,
+        symbol=bundle.symbol,
+        timeframe=bundle.timeframe,
+    )
+
+
 def _regime_feature_items(exp: ExperimentConfig) -> list[_FeatureItem]:
     f = exp.features
     return [
@@ -123,16 +169,32 @@ def build_folds_data(
     seed: int,
     funding: pl.DataFrame | None,
     holdout_start: datetime,
+    seeds: SeedScheduler | None = None,
+    reference_bars: pl.DataFrame | None = None,
+    reference_symbol: str | None = None,
 ) -> FoldsBundle:
-    """Build the causal feature frame once and pre-split leakage-safe folds."""
+    """Build the causal feature frame once and pre-split leakage-safe folds.
+
+    When ``seeds`` is given, each fold's regime model is fitted from its own
+    stream keyed by symbol and fold index, so a stochastic regime model (k-means,
+    GMM) cannot make one fold's initialisation depend on another's. Without it the
+    single ``seed`` is reused for every fold, which is only adequate for the
+    deterministic threshold model.
+    """
     if not folds:
         raise ValueError("build_folds_data received no walk-forward folds.")
     assert_folds_exclude_holdout(folds, holdout_start)
 
-    space = build_search_space(exp, family)
+    space = build_search_space(exp, family, symbol)
     requested: list[FeatureItemLike] = [*space.feature_items, *_regime_feature_items(exp)]
     specs = resolve_feature_set(requested)
-    feats, resolved = build_feature_frame(dev_frame, specs, holdout_start=holdout_start)
+    # A family that declares a feature must actually receive it. Building the
+    # frame without the auxiliary inputs would leave the funding family, for
+    # instance, signalling on a column that was never attached.
+    context = FeatureContext(funding=funding, peer=reference_bars, peer_symbol=reference_symbol)
+    feats, resolved = build_feature_frame(
+        dev_frame, specs, holdout_start=holdout_start, context=context
+    )
     names = feature_columns(resolved)
     manifest = build_feature_manifest(
         resolved, symbol=symbol, timeframe=timeframe, dataset_id=symbol
@@ -147,7 +209,12 @@ def build_folds_data(
     for fold in folds:
         parts = split_fold(feats, fold)
         train = parts["train"]
-        model = _make_regime_model(regime_model, input_tuple, seed)
+        fold_seed = (
+            seeds.stream("regime", symbol=symbol, timeframe=timeframe, fold=fold.index)
+            if seeds is not None
+            else seed
+        )
+        model = _make_regime_model(regime_model, input_tuple, fold_seed)
         model.fit(train)
         fold_data.append(
             FoldData(
@@ -184,7 +251,9 @@ class CandidateEvaluator:
 
     Instances are bound to one :class:`FoldsBundle` + cost/objective settings, so
     the internal cache is never shared across incompatible datasets, folds,
-    feature manifests or configurations.
+    feature manifests or configurations. The search runner binds one evaluator per
+    outer fold, which is what makes a candidate's fitness independent of every
+    other fold.
     """
 
     def __init__(
@@ -198,6 +267,7 @@ class CandidateEvaluator:
         days_per_year: int,
         require_funding: bool,
         objective_cfg: ObjectiveConfig,
+        reference_bars: pl.DataFrame | None = None,
     ) -> None:
         self.bundle = bundle
         self.space = space
@@ -207,6 +277,10 @@ class CandidateEvaluator:
         self.days_per_year = days_per_year
         self.require_funding = require_funding
         self.objective_cfg = objective_cfg
+        # Only the cross-asset family consumes this. It is passed explicitly rather
+        # than merged into the feature frame so the dependency stays visible in the
+        # specification instead of becoming an anonymous column.
+        self.reference_bars = reference_bars
         self._cache: dict[
             str, tuple[list[dict[str, float]], dict[str, float], float, str | None, bool]
         ] = {}
@@ -215,8 +289,67 @@ class CandidateEvaluator:
         strat = self.space.build(candidate.params)
         return strat  # type: ignore[return-value]
 
+    def _signals(self, strategy: Strategy, frame: pl.DataFrame) -> pl.DataFrame:
+        """Generate signals, supplying the reference asset when one is declared.
+
+        A strategy that names a ``reference_symbol`` must receive that asset's bars.
+        Falling back to a single-asset call would turn a cross-asset strategy into a
+        different, unlabelled strategy that still reports the cross-asset family.
+        """
+        reference_symbol = getattr(strategy, "reference_symbol", None)
+        if reference_symbol is None:
+            return strategy.signals(frame)
+        if self.reference_bars is None:
+            raise ValueError(
+                f"{type(strategy).__name__} declares reference_symbol={reference_symbol!r} "
+                "but the evaluator was built without reference bars. Load the reference "
+                "asset for this fold; this family cannot be evaluated without it."
+            )
+        # Slice the reference to the fold's own window. Handing over the whole
+        # history would let a fold read reference bars from beyond its own end.
+        window = self.reference_bars.filter(
+            pl.col("open_time") <= frame["open_time"].max()  # type: ignore[operator]
+        )
+        return strategy.signals(frame, reference=window)  # type: ignore[call-arg]
+
+    @property
+    def fold_indices(self) -> list[int]:
+        """Global indices of the folds this evaluator is entitled to touch."""
+        return [fd.index for fd in self.bundle.folds]
+
+    def _fold_by_index(self, fold_index: int) -> FoldData:
+        for fd in self.bundle.folds:
+            if fd.index == fold_index:
+                return fd
+        raise FoldIsolationError(
+            f"This evaluator holds folds {self.fold_indices} and was asked for fold "
+            f"{fold_index}. Under the per-outer-fold protocol a search environment may "
+            "only read its own fold."
+        )
+
+    def _block_sharpes(self, result: BacktestResult) -> list[float] | None:
+        """Annualised Sharpe of contiguous sub-blocks of one validation window.
+
+        Computed from the ledger the backtest already produced, so the stability
+        term costs no extra backtests. Returns ``None`` when the window is too
+        short to split into blocks that still carry a meaningful variance.
+        """
+        blocks = self.objective_cfg.stability_blocks
+        if result.ledger.height == 0 or "net_return" not in result.ledger.columns:
+            return None
+        r = result.ledger["net_return"].to_numpy()
+        # Each block needs at least two observations for a standard deviation.
+        if r.size < blocks * 2:
+            return None
+        bpy = bars_per_year(self.timeframe, self.days_per_year)
+        out: list[float] = []
+        for chunk in np.array_split(r, blocks):
+            std = float(np.std(chunk, ddof=1)) if chunk.size > 1 else 0.0
+            out.append(float(np.mean(chunk) / std * np.sqrt(bpy)) if std > 0 else 0.0)
+        return out
+
     def _backtest(self, strategy: Strategy, frame: pl.DataFrame) -> BacktestResult:
-        signals = strategy.signals(frame)
+        signals = self._signals(strategy, frame)
         return run_backtest(
             signals,
             frame,
@@ -255,16 +388,22 @@ class CandidateEvaluator:
 
         fold_metrics: list[dict[str, float]] = []
         funding_applied_all = True
+        stability: list[float] | None = None
         for fold in self.bundle.folds:
             result = self._backtest(strategy, fold.val)
             fold_metrics.append(_fold_metrics(result))
             funding_applied_all = funding_applied_all and result.funding_applied
+            # Cross-fold dispersion is unobservable inside an isolated fold, so a
+            # single-fold evaluator measures fragility within its own window.
+            if len(self.bundle.folds) == 1:
+                stability = self._block_sharpes(result)
 
         obj = aggregate_objective(
             fold_metrics,
             n_active_params=len(candidate.active_params),
             cfg=self.objective_cfg,
             funding_applied=funding_applied_all,
+            stability_sharpes=stability,
         )
         candidate.fold_metrics = fold_metrics
         candidate.objective_components = obj.components
@@ -282,7 +421,11 @@ class CandidateEvaluator:
         return False
 
     def evaluate_on_test(self, candidate: Candidate, fold_index: int) -> BacktestResult:
-        """Score a fold winner **once** on that fold's test slice (OOS)."""
+        """Score an already-frozen fold winner **once** on that fold's test slice.
+
+        ``fold_index`` is the *global* walk-forward index, resolved against the
+        folds this evaluator holds rather than used as a list position, so a
+        mismatch raises instead of silently scoring the wrong window.
+        """
         strategy = self._build_strategy(candidate)
-        fold = self.bundle.folds[fold_index]
-        return self._backtest(strategy, fold.test)
+        return self._backtest(strategy, self._fold_by_index(fold_index).test)

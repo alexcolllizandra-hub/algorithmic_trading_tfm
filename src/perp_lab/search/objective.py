@@ -7,8 +7,16 @@ candidate into an explicit *failure* with a deterministic penalty -- invalid,
 non-finite or under-traded candidates are never silently converted into an
 attractive score.
 
-The objective is computed on per-fold **validation** metrics only. Test/holdout
-metrics are never passed here.
+The objective is computed on **validation** metrics only. Test/holdout metrics
+are never passed here.
+
+Under the per-outer-fold search protocol (ADR 0012) a candidate is scored on the
+validation slice of exactly *one* fold, so ``fold_val_metrics`` holds a single
+entry and the dispersion term cannot be a spread across folds -- that quantity is
+unknowable inside a fold without reading later folds. ``stability_sharpes``
+supplies the replacement: the Sharpe of contiguous sub-blocks *within* that
+fold's own validation window, which measures the same fragility using only
+information the fold is allowed to see.
 """
 
 from __future__ import annotations
@@ -36,6 +44,9 @@ class ObjectiveConfig:
     min_trades_per_fold: int
     max_drawdown_limit: float | None  # e.g. 0.6 => reject candidates worse than -60%
     require_funding: bool
+    # Contiguous sub-blocks a fold's validation window is cut into to measure
+    # within-fold stability. Only used when the caller supplies block Sharpes.
+    stability_blocks: int = 4
 
     @classmethod
     def from_experiment(
@@ -59,6 +70,7 @@ class ObjectiveConfig:
             min_trades_per_fold=int(o.get("min_trades_per_fold", c.min_trades_per_fold)),
             max_drawdown_limit=o.get("max_drawdown_limit", max_drawdown_limit),
             require_funding=require_funding,
+            stability_blocks=int(o.get("stability_blocks", exp.fitness.stability_blocks)),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -76,6 +88,7 @@ class ObjectiveConfig:
                 "max_drawdown_limit": self.max_drawdown_limit,
                 "require_funding": self.require_funding,
             },
+            "stability_blocks": self.stability_blocks,
             "failure_penalty": FAILURE_PENALTY,
         }
 
@@ -105,8 +118,14 @@ def aggregate_objective(
     n_active_params: int,
     cfg: ObjectiveConfig,
     funding_applied: bool,
+    stability_sharpes: list[float] | None = None,
 ) -> ObjectiveResult:
-    """Aggregate per-fold validation metrics into a scalar fitness + components.
+    """Aggregate validation metrics into a scalar fitness + components.
+
+    ``stability_sharpes`` overrides the source of the dispersion penalty. The
+    per-outer-fold protocol passes the Sharpe of contiguous sub-blocks of the
+    fold's own validation window, because a single fold has no cross-fold spread
+    to measure and reading other folds' validation would be look-ahead.
 
     Returns an infeasible result (fitness = :data:`FAILURE_PENALTY`) when a hard
     constraint is violated, recording the reason.
@@ -154,7 +173,10 @@ def aggregate_objective(
         )
 
     mean_sharpe = _mean(sharpes)
-    instability = _std(sharpes)
+    if stability_sharpes is not None and any(not math.isfinite(x) for x in stability_sharpes):
+        return ObjectiveResult(FAILURE_PENALTY, {}, False, "non-finite validation metric")
+    dispersion_source = sharpes if stability_sharpes is None else stability_sharpes
+    instability = _std(dispersion_source)
     mean_dd = _mean(drawdowns)
     mean_turnover = _mean(turnovers_pb)
     # Complexity: number of active parameters beyond the family's minimum (2).
@@ -167,6 +189,9 @@ def aggregate_objective(
         "mean_val_turnover_per_bar": mean_turnover,
         "complexity": float(complexity),
         "total_val_trades": total_trades,
+        "n_dispersion_samples": float(len(dispersion_source)),
+        # 1.0 = within-fold sub-blocks (per-outer-fold protocol), 0.0 = across folds.
+        "dispersion_within_fold": 0.0 if stability_sharpes is None else 1.0,
     }
     fitness = (
         cfg.w_sharpe * mean_sharpe

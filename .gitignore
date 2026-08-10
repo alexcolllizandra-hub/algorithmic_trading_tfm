@@ -16,6 +16,12 @@ dist/
 /Include/
 /share/
 /pyvenv.cfg
+# Git is case-insensitive on Windows/macOS, so the `/Scripts/` rule above also
+# swallowed the project's own `scripts/` directory and silently kept the EDA and
+# audit helpers out of the repository. Re-include it explicitly.
+!/scripts/
+!/scripts/**
+/scripts/__pycache__/
 
 # --- Environment / secrets ---
 .env

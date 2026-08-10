@@ -20,9 +20,12 @@ synthetic: true
 synthetic_bars: 1600
 label: smoke_synthetic_NOT_a_research_result
 
+# Unique, valid, non-cached objective evaluations EVERY engine must spend.
+effective_budget: 16
+
 ga:
   population_size: 6
-  generations: 3
+  max_generations: 20
   crossover_rate: 0.7
   mutation_rate: 0.3
   elitism: 1
