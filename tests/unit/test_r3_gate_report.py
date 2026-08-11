@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -25,6 +26,21 @@ OOS_END_OK = "2025-12-09 22:00:00+00:00"
 OOS_END_HOLDOUT = "2026-01-15 00:00:00+00:00"
 DIFF_A = "4073dba60103de8d7a4ea99a901296fab9f1a4b7d6c4228d65037e6a984f2e9b"
 DIFF_B = "0378645e31c35f0b988d1a57eefb6dcbed9517e513d6d50cf739c1e8d89534de"
+REAL_SEEDS = [
+    891022,
+    341110,
+    693857,
+    683778,
+    765570,
+    692467,
+    605142,
+    671194,
+    707014,
+    278037,
+]
+DEFAULT_DIFF_BY_FAMILY = {
+    family: DIFF_A for family in R3_GATE_FAMILIES if family != "BTC_ETH_confirmation"
+} | {"BTC_ETH_confirmation": DIFF_B}
 
 
 def _promotion_block(*, n_pass: int, n_seeds: int = 10, required: int = 6) -> dict:
@@ -76,14 +92,18 @@ def _tally_block(*, n_pass: int, n_seeds: int = 10, symbol: str = "BTCUSDT") -> 
     }
 
 
-def _per_run_entries(*, family: str, oos_end: str = OOS_END_OK) -> dict:
+def _per_run_entries(
+    *, family: str, oos_end: str = OOS_END_OK, seeds: list[int] | None = None
+) -> dict:
+    seed_list = seeds or REAL_SEEDS
     per_run: dict = {}
     for symbol in ("BTCUSDT", "ETHUSDT"):
-        for seed in range(10):
+        for seed in seed_list:
             for method in ("random_search", "genetic_algorithm"):
                 key = f"{symbol}|seed={seed}|{method}"
                 per_run[key] = {
                     "symbol": symbol,
+                    "seed": seed,
                     "method": method,
                     "oos_end": oos_end,
                     "strategy": {"sharpe": -0.5, "total_return": -0.1},
@@ -125,7 +145,7 @@ def _rollup_family(*, family: str, n_pass: int = 0) -> dict:
 
 
 def _checkpoint_units(*, seeds: list[int] | None = None) -> dict:
-    seed_list = seeds or list(range(10))
+    seed_list = seeds or REAL_SEEDS
     units: dict = {}
     for symbol in ("BTCUSDT", "ETHUSDT"):
         for seed in seed_list:
@@ -166,7 +186,7 @@ def _write_full_r3_root(
     root = tmp_path / "r3_full"
     root.mkdir(parents=True)
     families = list(families or R3_GATE_FAMILIES)
-    diff_by_family = diff_by_family or dict.fromkeys(families, DIFF_A)
+    diff_by_family = diff_by_family or dict(DEFAULT_DIFF_BY_FAMILY)
     diff_bytes_by_family = diff_bytes_by_family or {
         family: 45647 if diff_by_family[family] == DIFF_A else 66986 for family in families
     }
@@ -201,7 +221,7 @@ def _write_full_r3_root(
                 "generated_at": "2026-08-10T17:41:53+00:00",
                 "primary_engine": R3_PRIMARY_ENGINE,
                 "families": rollup_families,
-                "summary": {"n_promoted": 0, "n_rejected": len(families)},
+                "summary": {"n_promoted": 0, "n_rejected": 5},
             }
         ),
         encoding="utf-8",
@@ -248,9 +268,9 @@ def _write_full_r3_root(
                 {
                     "meta": {
                         "symbols": ["BTCUSDT", "ETHUSDT"],
-                        "seeds": list(range(10)),
+                        "seeds": REAL_SEEDS,
                     },
-                    "units": _checkpoint_units(),
+                    "units": _checkpoint_units(seeds=REAL_SEEDS),
                 }
             ),
             encoding="utf-8",
@@ -341,7 +361,11 @@ def test_r4_evidence_is_split_between_reporter_and_documentary(tmp_path: Path) -
     assert report["documentary_claims"]["r4_application_status"]["verification_level"] == (
         "documentary"
     )
-    assert report["closure_summary"]["r4_required"]["verification_level"] == "reporter_verified"
+    assert report["documentary_claims"]["r4_promoted_only_scope"]["verification_level"] == (
+        "documentary"
+    )
+    assert "r4_required" not in report["closure_summary"]
+    assert "SKIPPED" in report["documentary_claims"]["r4_application_status"]["value"]
 
 
 def test_rejects_missing_closure_report(tmp_path: Path) -> None:
@@ -353,7 +377,16 @@ def test_rejects_missing_closure_report(tmp_path: Path) -> None:
 def test_rejects_isolation_audit_failures(tmp_path: Path) -> None:
     root = _write_full_r3_root(tmp_path)
     (root / "r3_scientific_closure_report.json").write_text(
-        json.dumps({"isolation_audit": {"total_runs_audited": 100, "failures": 1}}),
+        json.dumps(
+            {
+                "isolation_audit": {
+                    "total_runs_audited": 100,
+                    "failures": 1,
+                    "families": 5,
+                    "per_family_runs": 20,
+                }
+            }
+        ),
         encoding="utf-8",
     )
     with pytest.raises(R3ReportConsistencyError, match="failures"):
@@ -382,9 +415,12 @@ def test_provenance_note_is_derived_not_hardcoded(tmp_path: Path) -> None:
     root = _write_full_r3_root(tmp_path)
     report = build_r3_thesis_report(root)
     prov = report["closure_summary"]["provenance_limitation"]
-    assert prov["distinct_tracked_states"] == 1
-    assert "aac3357" not in prov["note"]
+    assert prov["distinct_tracked_states"] == 2
+    assert prov["distinct_commits"][0] in prov["note"]
     assert prov["patch_bytes_available"] is False
+    assert prov["exact_reconstruction_from_commit_alone"] is False
+    md = render_r3_thesis_markdown(report)
+    assert "multiple tracked states" not in md.lower()
 
 
 def test_determinism_across_two_absolute_roots(tmp_path: Path) -> None:
@@ -451,17 +487,23 @@ def test_reader_only_opens_json_under_root(tmp_path: Path, monkeypatch: pytest.M
     root = _write_full_r3_root(tmp_path)
     reader = ArtifactReader(root, allowlist=build_read_allowlist(list(R3_GATE_FAMILIES)))
     original_read_bytes = Path.read_bytes
+    original_open = Path.open
     allowed = {root.resolve()}
 
     def tracked_read_bytes(self: Path) -> bytes:
         resolved = self.resolve()
-        if self.suffix == ".json" and not any(
-            resolved == base or base in resolved.parents for base in allowed
-        ):
+        if not any(resolved == base or base in resolved.parents for base in allowed):
             raise AssertionError(f"unexpected read outside root: {self}")
         return original_read_bytes(self)
 
+    def tracked_open(self: Path, *args: Any, **kwargs: Any) -> Any:
+        resolved = self.resolve()
+        if not any(resolved == base or base in resolved.parents for base in allowed):
+            raise AssertionError(f"unexpected open outside root: {self}")
+        return original_open(self, *args, **kwargs)
+
     monkeypatch.setattr(Path, "read_bytes", tracked_read_bytes)
+    monkeypatch.setattr(Path, "open", tracked_open)
     build_r3_thesis_report(root, reader=reader)
     assert reader.reads
     allowlist = build_read_allowlist(list(R3_GATE_FAMILIES))
@@ -503,3 +545,216 @@ def test_real_r3_artifacts_report_consistency() -> None:
     assert all(r["verdict"] == "REJECTED" for r in report["primary_table_rs"])
     states = report["closure_summary"]["provenance_limitation"]["provenance_states"]
     assert len(states) == 2
+    assert report["reporter_holdout_accessed"] is False
+
+
+def test_rejects_status_total_incorrect(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    (root / "breakout/status.json").write_text(
+        json.dumps({"completed": 20, "total": 19}), encoding="utf-8"
+    )
+    with pytest.raises(R3ReportConsistencyError, match=r"status\.total"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_duplicate_checkpoint_seed(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    checkpoint = json.loads((root / "breakout/checkpoint.json").read_text(encoding="utf-8"))
+    dup_seeds = [*REAL_SEEDS[:9], REAL_SEEDS[0]]
+    checkpoint["meta"]["seeds"] = dup_seeds
+    checkpoint["units"] = _checkpoint_units(seeds=dup_seeds)
+    (root / "breakout/checkpoint.json").write_text(json.dumps(checkpoint), encoding="utf-8")
+    with pytest.raises(R3ReportConsistencyError, match="duplicates"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_cross_family_seed_mismatch(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    checkpoint = json.loads((root / "funding/checkpoint.json").read_text(encoding="utf-8"))
+    alt_seeds = [*REAL_SEEDS[1:], 999999]
+    checkpoint["meta"]["seeds"] = alt_seeds
+    checkpoint["units"] = _checkpoint_units(seeds=alt_seeds)
+    (root / "funding/checkpoint.json").write_text(json.dumps(checkpoint), encoding="utf-8")
+    with pytest.raises(R3ReportConsistencyError, match="seeds differ"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_invalid_n_pass_range(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    study = json.loads((root / "breakout/study_robustness.json").read_text(encoding="utf-8"))
+    study["r3_promotion"]["by_symbol"]["BTCUSDT"]["promotion"]["positive_total_return"][
+        "n_pass"
+    ] = 11
+    (root / "breakout/study_robustness.json").write_text(json.dumps(study), encoding="utf-8")
+    with pytest.raises(R3ReportConsistencyError, match="not in"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_contradictory_veto_triggered(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    study = json.loads((root / "breakout/study_robustness.json").read_text(encoding="utf-8"))
+    veto = study["r3_promotion"]["by_symbol"]["BTCUSDT"]["rejections"]["depends_on_few_trades"]
+    veto["triggered"] = True
+    veto["n_seeds_below_min_trades"] = 0
+    (root / "breakout/study_robustness.json").write_text(json.dumps(study), encoding="utf-8")
+    with pytest.raises(R3ReportConsistencyError, match="triggered"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_verdict_when_all_criteria_and_veto_pass(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path, n_pass=10)
+    study = json.loads((root / "breakout/study_robustness.json").read_text(encoding="utf-8"))
+    for symbol in ("BTCUSDT", "ETHUSDT"):
+        block = study["r3_promotion"]["by_symbol"][symbol]
+        for name in PROMOTION_TESTS:
+            block["promotion"][name]["n_pass"] = 10
+            block["promotion"][name]["pass"] = True
+        block["rejections"]["depends_on_few_trades"]["triggered"] = False
+        block["rejections"]["depends_on_few_trades"]["n_seeds_below_min_trades"] = 0
+    study["by_symbol_and_engine"] = _by_symbol_and_engine(n_pass=10)
+    for key in study["by_symbol_and_engine"]:
+        study["by_symbol_and_engine"][key]["n_min_oos_trades_met"] = 10
+    study["r3_promotion"]["triggered_rejections"] = []
+    (root / "breakout/study_robustness.json").write_text(json.dumps(study), encoding="utf-8")
+    with pytest.raises(R3ReportConsistencyError, match="veto cleared"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_audit_total_not_100(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    (root / "r3_scientific_closure_report.json").write_text(
+        json.dumps(
+            {
+                "isolation_audit": {
+                    "per_family_runs": 20,
+                    "families": 5,
+                    "total_runs_audited": 99,
+                    "failures": 0,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(R3ReportConsistencyError, match="total_runs_audited"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_missing_isolation_audit_families_field(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    (root / "r3_scientific_closure_report.json").write_text(
+        json.dumps(
+            {"isolation_audit": {"per_family_runs": 20, "total_runs_audited": 100, "failures": 0}}
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(R3ReportError, match="families"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_incorrect_primary_engine(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    rollup = json.loads((root / "r3_family_rollup.json").read_text(encoding="utf-8"))
+    rollup["primary_engine"] = "genetic_algorithm"
+    (root / "r3_family_rollup.json").write_text(json.dumps(rollup), encoding="utf-8")
+    with pytest.raises(R3ReportConsistencyError, match="primary_engine"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_incorrect_summary_n_rejected(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    rollup = json.loads((root / "r3_family_rollup.json").read_text(encoding="utf-8"))
+    rollup["summary"]["n_rejected"] = 4
+    (root / "r3_family_rollup.json").write_text(json.dumps(rollup), encoding="utf-8")
+    with pytest.raises(R3ReportConsistencyError, match="n_rejected"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_missing_ga_rs_statistics(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    rollup = json.loads((root / "r3_family_rollup.json").read_text(encoding="utf-8"))
+    del rollup["families"]["breakout"]["analysis"]["paired_ga_minus_rs"]["mean_difference"]
+    (root / "r3_family_rollup.json").write_text(json.dumps(rollup), encoding="utf-8")
+    with pytest.raises(R3ReportConsistencyError, match="mean_difference"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_invalid_ga_rs_ci_order(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    rollup = json.loads((root / "r3_family_rollup.json").read_text(encoding="utf-8"))
+    paired = rollup["families"]["breakout"]["analysis"]["paired_ga_minus_rs"]
+    paired["ci_low"], paired["ci_high"] = 0.5, -0.5
+    (root / "r3_family_rollup.json").write_text(json.dumps(rollup), encoding="utf-8")
+    with pytest.raises(R3ReportConsistencyError, match="CI low > high"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_missing_provenance_field(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    identity = json.loads((root / "breakout/run_identity.json").read_text(encoding="utf-8"))
+    del identity["worktree"]["reproducible_from_commit_alone"]
+    (root / "breakout/run_identity.json").write_text(json.dumps(identity), encoding="utf-8")
+    with pytest.raises(R3ReportError, match="reproducible_from_commit_alone"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_reader_root_mismatch(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    other_root = tmp_path / "other"
+    other_root.mkdir()
+    reader = ArtifactReader(other_root, allowlist=build_read_allowlist(list(R3_GATE_FAMILIES)))
+    with pytest.raises(R3ReportError, match="ArtifactReader root"):
+        build_r3_thesis_report(root, reader=reader)
+
+
+def test_rejects_study_root_under_forbidden_data_path(tmp_path: Path) -> None:
+    root = tmp_path / "data" / "processed" / "r3_full"
+    root.mkdir(parents=True)
+    with pytest.raises(R3ReportError, match="forbidden"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_non_json_read(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    reader = ArtifactReader(root, allowlist=build_read_allowlist(list(R3_GATE_FAMILIES)))
+    with pytest.raises(R3ReportError, match="only JSON"):
+        reader.read_json("breakout/status.txt")
+
+
+def test_source_artifacts_unchanged_after_report_generation(tmp_path: Path) -> None:
+    import hashlib
+
+    root = _write_full_r3_root(tmp_path)
+    allowlist = build_read_allowlist(list(R3_GATE_FAMILIES))
+    paths = sorted(root / rel for rel in allowlist if (root / rel).exists())
+
+    def digest(path: Path) -> str:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    before = {path.relative_to(root).as_posix(): digest(path) for path in paths}
+    out_dir = tmp_path / "reports_out"
+    write_r3_thesis_report(root, out_dir)
+    after = {path.relative_to(root).as_posix(): digest(path) for path in paths}
+    assert before == after
+
+
+def test_portability_byte_identical_outputs(tmp_path: Path) -> None:
+    import hashlib
+    import shutil
+
+    source = _write_full_r3_root(tmp_path)
+    study_name = "r3_full_budget100_ga21"
+    root_a = tmp_path / "abs_a" / study_name
+    root_b = tmp_path / "abs_b" / study_name
+    shutil.copytree(source, root_a)
+    shutil.copytree(source, root_b)
+    out_a = tmp_path / "out_a"
+    out_b = tmp_path / "out_b"
+    write_r3_thesis_report(root_a, out_a)
+    write_r3_thesis_report(root_b, out_b)
+    json_a = (out_a / "thesis_report.json").read_bytes()
+    json_b = (out_b / "thesis_report.json").read_bytes()
+    md_a = (out_a / "thesis_report.md").read_bytes()
+    md_b = (out_b / "thesis_report.md").read_bytes()
+    assert json_a == json_b
+    assert md_a == md_b
+    assert hashlib.sha256(json_a).hexdigest() == hashlib.sha256(json_b).hexdigest()

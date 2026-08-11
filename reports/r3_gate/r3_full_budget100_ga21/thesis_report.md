@@ -11,12 +11,12 @@ Random Search is the **confirmatory** promotion engine. Genetic Algorithm result
 - **n_rejected:** 5 (*reporter_verified* · `r3_gate_verdict.json` · `n_rejected`)
 - **units_completed:** 100/100 (*reporter_verified* · `*/status.json + */checkpoint.json` · `status.completed vs checkpoint.meta symbols*seeds`)
 - **numerical_discrepancies:** 0 (*reporter_verified* · `reporter consistency battery` · `n/a`)
-- **r4_required:** False (*reporter_verified* · `r3_gate_verdict.json` · `r4_required`)
 - **isolation_audit_at_closure:** 100/100 audited; failures=0 (*documentary* · `r3_scientific_closure_report.json` · `isolation_audit`)
 - **reporter_holdout_accessed:** False (*reporter_verified* · read manifest under R3 root only)
 - **historical_holdout_status:** Frozen holdout not opened during Gate R3 (documented at closure) (*documentary* · `docs/decisions/0015-r3-family-evaluation-negative.md`)
 - **r4_required_at_closure:** False (*reporter_verified* · `r3_gate_verdict.json`)
-- **r4_application_status:** SKIPPED (zero R3 promotions at closure) (*documentary*)
+- **r4_application_status:** SKIPPED (R4 not executed; zero R3 promotions at closure) (*documentary*)
+- **r4_promoted_only_scope:** Promoted-only confirmatory scope harmonized in documentation after R3 closure (*documentary* · `docs/roadmap/phase_gates.md`)
 
 ## Primary results — Random Search
 
@@ -175,14 +175,15 @@ Random Search is the **confirmatory** promotion engine. Genetic Algorithm result
 | Families promoted | 0 | `r3_gate_verdict.json` | `n_promoted` | reporter_verified | primary_result |
 | Isolation audit at R3 closure | 100/100 audited; failures=0 | `r3_scientific_closure_report.json` | `isolation_audit` | documentary | secondary_diagnostic |
 | R4 required at closure | False | `r3_gate_verdict.json` | `r4_required` | reporter_verified | primary_result |
-| R4 application status | SKIPPED (zero R3 promotions at closure) | `docs/decisions/0015-r3-family-evaluation-negative.md` | `Decision item 3` | documentary | secondary_diagnostic |
+| R4 application status | SKIPPED (R4 not executed; zero R3 promotions at closure) | `docs/decisions/0015-r3-family-evaluation-negative.md` | `Decision item 3` | documentary | secondary_diagnostic |
+| R4 promoted-only scope (post-closure documentation) | Promoted-only confirmatory scope harmonized in documentation after R3 closure | `docs/roadmap/phase_gates.md` | `R4 scope definition` | documentary | secondary_diagnostic |
 | Historical holdout status | Frozen holdout not opened during Gate R3 (documented at closure) | `docs/decisions/0015-r3-family-evaluation-negative.md` | `Decision item 4` | documentary | limitation |
 | Provenance state tracked_state_1 | {"commit": "aac33577c14cba08f349381ce3566eca0c587299", "diff_bytes": 66986, "diff_sha256": "0378645e31c35f0b988d1a57eefb6dcbed9517e513d6d50cf739c1e8d89534de", "dirty": true, "families": ["BTC_ETH_confirmation"], "provisional": true, "reproducible_from_commit_alone": false, "state_id": "tracked_state_1", "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"} | `*/run_identity.json` | `worktree.diff_sha256` | limitation | limitation |
 | Provenance state tracked_state_2 | {"commit": "aac33577c14cba08f349381ce3566eca0c587299", "diff_bytes": 45647, "diff_sha256": "4073dba60103de8d7a4ea99a901296fab9f1a4b7d6c4228d65037e6a984f2e9b", "dirty": true, "families": ["breakout", "funding", "mean_reversion", "volatility_breakout"], "provisional": true, "reproducible_from_commit_alone": false, "state_id": "tracked_state_2", "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"} | `*/run_identity.json` | `worktree.diff_sha256` | limitation | limitation |
 
 ## Provenance limitation
 
-Executed code cannot be reconstructed exactly from commit(s) `aac33577c14cba08f349381ce3566eca0c587299` alone: every family run_identity.json records worktree.dirty=true; every family records reproducible_from_commit_alone=false; 2 distinct tracked diff states observed across families; patch bytes were not retained in persisted run_identity.json artifacts
+Observed commit(s): `aac33577c14cba08f349381ce3566eca0c587299`. exact reconstruction from commit alone is not possible: single commit recorded across families (aac33577c14cba08f349381ce3566eca0c587299); every family run_identity.json records worktree.dirty=true; at least one family records reproducible_from_commit_alone=false; 2 distinct tracked diff states observed across families; patch bytes were not retained in persisted run_identity.json artifacts
 
 | State | Families | Commit | diff_sha256 | diff_bytes | untracked_sha256 | dirty |
 |---|---|---|---|---|---|:---:|

@@ -31,7 +31,7 @@
       ],
       "distinct_tracked_states": 2,
       "exact_reconstruction_from_commit_alone": false,
-      "note": "every family run_identity.json records worktree.dirty=true; every family records reproducible_from_commit_alone=false; 2 distinct tracked diff states observed across families; patch bytes were not retained in persisted run_identity.json artifacts",
+      "note": "single commit recorded across families (aac33577c14cba08f349381ce3566eca0c587299); every family run_identity.json records worktree.dirty=true; at least one family records reproducible_from_commit_alone=false; 2 distinct tracked diff states observed across families; patch bytes were not retained in persisted run_identity.json artifacts",
       "patch_bytes_available": false,
       "provenance_by_family": [
         {
@@ -128,12 +128,6 @@
       ],
       "verification_level": "limitation"
     },
-    "r4_required": {
-      "source_field": "r4_required",
-      "source_file": "r3_gate_verdict.json",
-      "value": false,
-      "verification_level": "reporter_verified"
-    },
     "units_completed": {
       "note": "Unit completion counts only; does not substitute for fold-isolation audit",
       "source_field": "status.completed vs checkpoint.meta symbols*seeds",
@@ -158,10 +152,17 @@
       "verification_level": "documentary"
     },
     "r4_application_status": {
-      "note": "Promoted-only R4 confirmatory scope was harmonized in documentation after R3 closed; it was not part of the executed R3 contract",
+      "note": "R4 confirmatory scope was not executed because no family was promoted",
       "source_field": "Decision item 3",
       "source_file": "docs/decisions/0015-r3-family-evaluation-negative.md",
-      "value": "SKIPPED (zero R3 promotions at closure)",
+      "value": "SKIPPED (R4 not executed; zero R3 promotions at closure)",
+      "verification_level": "documentary"
+    },
+    "r4_promoted_only_scope": {
+      "note": "Post-closure documentation harmonization; not part of the executed R3 contract",
+      "source_field": "R4 scope definition",
+      "source_file": "docs/roadmap/phase_gates.md",
+      "value": "Promoted-only confirmatory scope harmonized in documentation after R3 closure",
       "verification_level": "documentary"
     },
     "r4_required_at_closure": {
@@ -2192,7 +2193,15 @@
       "classification": "secondary_diagnostic",
       "source_field": "Decision item 3",
       "source_file": "docs/decisions/0015-r3-family-evaluation-negative.md",
-      "value": "SKIPPED (zero R3 promotions at closure)",
+      "value": "SKIPPED (R4 not executed; zero R3 promotions at closure)",
+      "verification_level": "documentary"
+    },
+    {
+      "claim": "R4 promoted-only scope (post-closure documentation)",
+      "classification": "secondary_diagnostic",
+      "source_field": "R4 scope definition",
+      "source_file": "docs/roadmap/phase_gates.md",
+      "value": "Promoted-only confirmatory scope harmonized in documentation after R3 closure",
       "verification_level": "documentary"
     },
     {
