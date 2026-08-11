@@ -93,6 +93,9 @@ class SearchRunConfig(_Strict):
         "funding_reversal",
         "intraday_seasonality",
         "xasset_spread_reversion",
+        "taker_flow_extreme",
+        "illiquidity_reversion",
+        "flow_price_divergence",
     ]
     algorithm: Literal["random_search", "genetic_algorithm", "comparison"] = "comparison"
     symbol: str = "BTCUSDT"

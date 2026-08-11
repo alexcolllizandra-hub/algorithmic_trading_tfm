@@ -553,6 +553,195 @@ class CrossAssetSpreadFamily(_Strict):
         return self
 
 
+class TakerFlowExtremeFamily(_Strict):
+    """Gate S2: bounded-horizon trade after an extreme of accumulated taker flow.
+
+    ``holding_bars`` is restricted to the multi-hour band on purpose. The
+    literature's one negative result on these features (Pindza 2026) is driven
+    entirely by turnover at a five-minute rebalance, so a short holding period
+    would re-run a question already answered rather than test the hypothesis.
+    """
+
+    flow_window: _PosIntTuple = (4, 8, 12, 24)
+    rank_window: _PosIntTuple = (168, 336, 720)
+    extreme_pct: tuple[float, ...] = (0.9, 0.95, 0.99)
+    holding_bars: _PosIntTuple = (4, 6, 8, 12)
+    min_abs_imbalance: tuple[float, ...] = (0.0, 0.05)
+    response: tuple[str, ...] = ("continuation", "reversal")
+    flow_lag: _PosIntTuple = (1,)
+
+    @field_validator("flow_window", "rank_window", "holding_bars")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "taker_flow_extreme windows")
+
+    @field_validator("flow_lag")
+    @classmethod
+    def _lag_is_causal(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        if any(lag < 1 for lag in v):
+            raise ValueError(
+                "taker_flow_extreme flow_lag entries must be >= 1: taker volume is known "
+                "only once the bar has closed and may never be used contemporaneously."
+            )
+        return v
+
+    @field_validator("extreme_pct")
+    @classmethod
+    def _upper_tail(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not 0.5 < x < 1.0 for x in v):
+            raise ValueError(
+                "taker_flow_extreme extreme_pct entries rank an absolute imbalance and must "
+                "lie strictly inside (0.5, 1.0)."
+            )
+        return v
+
+    @field_validator("min_abs_imbalance")
+    @classmethod
+    def _imbalance_floor(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not 0.0 <= x < 1.0 for x in v):
+            raise ValueError("taker_flow_extreme min_abs_imbalance entries must lie in [0, 1).")
+        return v
+
+    @field_validator("response")
+    @classmethod
+    def _responses(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        bad = [s for s in v if s not in {"continuation", "reversal"}]
+        if bad:
+            raise ValueError(f"taker_flow_extreme response has unknown entries {bad}.")
+        if not v:
+            raise ValueError("taker_flow_extreme needs at least one response arm.")
+        return v
+
+    @model_validator(mode="after")
+    def _holding_shorter_than_ranking(self) -> TakerFlowExtremeFamily:
+        if min(self.rank_window) <= max(self.holding_bars):
+            raise ValueError(
+                "Every rank_window must exceed every holding_bars: otherwise one episode "
+                "spans the distribution it is ranked against."
+            )
+        return self
+
+
+class IlliquidityReversionFamily(_Strict):
+    """Gate S2: fade a move whose price impact per unit of traded value is extreme."""
+
+    impact_window: _PosIntTuple = (4, 8, 12, 24)
+    rank_window: _PosIntTuple = (168, 336, 720)
+    entry_pct: tuple[float, ...] = (0.9, 0.95, 0.99)
+    exit_pct: tuple[float, ...] = (0.5, 0.7)
+    max_holding_bars: _PosIntTuple = (12, 24, 48)
+    min_abs_move: tuple[float, ...] = (0.0, 0.002)
+    flow_lag: _PosIntTuple = (1,)
+
+    @field_validator("impact_window", "rank_window", "max_holding_bars")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "illiquidity_reversion windows")
+
+    @field_validator("flow_lag")
+    @classmethod
+    def _lag_is_causal(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        if any(lag < 1 for lag in v):
+            raise ValueError("illiquidity_reversion flow_lag entries must be >= 1.")
+        return v
+
+    @field_validator("entry_pct")
+    @classmethod
+    def _entry_tail(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not 0.5 < x < 1.0 for x in v):
+            raise ValueError(
+                "illiquidity_reversion entry_pct entries must lie strictly inside (0.5, 1.0)."
+            )
+        return v
+
+    @field_validator("exit_pct")
+    @classmethod
+    def _exit_tail(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not 0.0 < x < 1.0 for x in v):
+            raise ValueError(
+                "illiquidity_reversion exit_pct entries must lie strictly inside (0, 1)."
+            )
+        return v
+
+    @field_validator("min_abs_move")
+    @classmethod
+    def _move_floor(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        return _ensure_positive_floats(v, "illiquidity_reversion min_abs_move", allow_zero=True)
+
+    @model_validator(mode="after")
+    def _exit_below_entry(self) -> IlliquidityReversionFamily:
+        if min(self.exit_pct) >= max(self.entry_pct):
+            raise ValueError(
+                "No admissible (entry_pct, exit_pct) pair: every exit quantile is at or above "
+                "every entry quantile, so a position would close on the bar it opens."
+            )
+        return self
+
+
+class FlowPriceDivergenceFamily(_Strict):
+    """Gate S2: trade windows where aggressive flow and the price move disagree.
+
+    The quantile grid is deliberately much lower than the other two S2 families.
+    Windowed imbalance and windowed return correlate at about +0.5 on both
+    assets, so the *conjunction* of a sign disagreement with two extreme
+    magnitudes is rare: measured on development bars, requiring both magnitudes
+    above their 85th percentile fires on 0.01-0.17% of bars, which cannot
+    populate a fold. The grid below fires on roughly 0.2-3.6% of bars. This is a
+    mechanical viability calibration on trigger *frequency* only -- no return,
+    Sharpe or PnL was consulted -- and it is frozen with the rest of the batch.
+    """
+
+    window: _PosIntTuple = (4, 8, 12, 24)
+    rank_window: _PosIntTuple = (168, 336, 720)
+    flow_pct: tuple[float, ...] = (0.5, 0.6, 0.7)
+    move_pct: tuple[float, ...] = (0.5, 0.6, 0.7)
+    holding_bars: _PosIntTuple = (4, 6, 8, 12)
+    response: tuple[str, ...] = ("follow_absorber", "follow_flow")
+    flow_lag: _PosIntTuple = (1,)
+
+    @field_validator("window", "rank_window", "holding_bars")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "flow_price_divergence windows")
+
+    @field_validator("flow_lag")
+    @classmethod
+    def _lag_is_causal(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        if any(lag < 1 for lag in v):
+            raise ValueError("flow_price_divergence flow_lag entries must be >= 1.")
+        return v
+
+    @field_validator("flow_pct", "move_pct")
+    @classmethod
+    def _upper_tails(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not 0.5 <= x < 1.0 for x in v):
+            raise ValueError(
+                "flow_price_divergence flow_pct/move_pct entries rank absolute magnitudes "
+                "and must lie in [0.5, 1.0); 0.5 means 'above the median magnitude', which "
+                "is the loosest materiality floor the family allows."
+            )
+        return v
+
+    @field_validator("response")
+    @classmethod
+    def _responses(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        bad = [s for s in v if s not in {"follow_absorber", "follow_flow"}]
+        if bad:
+            raise ValueError(f"flow_price_divergence response has unknown entries {bad}.")
+        if not v:
+            raise ValueError("flow_price_divergence needs at least one response arm.")
+        return v
+
+    @model_validator(mode="after")
+    def _holding_shorter_than_ranking(self) -> FlowPriceDivergenceFamily:
+        if min(self.rank_window) <= max(self.holding_bars):
+            raise ValueError(
+                "Every rank_window must exceed every holding_bars for the ranking to be "
+                "independent of the episode it triggers."
+            )
+        return self
+
+
 class Families(_Strict):
     momentum: MomentumFamily = MomentumFamily()
     breakout: BreakoutFamily = BreakoutFamily()
@@ -565,6 +754,10 @@ class Families(_Strict):
     funding_reversal: FundingReversalFamily = FundingReversalFamily()
     intraday_seasonality: IntradaySeasonalityFamily = IntradaySeasonalityFamily()
     xasset_spread_reversion: CrossAssetSpreadFamily = CrossAssetSpreadFamily()
+    # -- Gate S2 batch (pre-specified 2026-08-11; see docs/roadmap/gate_s2_batch_01.md) --
+    taker_flow_extreme: TakerFlowExtremeFamily = TakerFlowExtremeFamily()
+    illiquidity_reversion: IlliquidityReversionFamily = IlliquidityReversionFamily()
+    flow_price_divergence: FlowPriceDivergenceFamily = FlowPriceDivergenceFamily()
 
 
 class VolatilityFilter(_Strict):

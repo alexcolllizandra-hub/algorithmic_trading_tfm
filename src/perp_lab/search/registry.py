@@ -25,16 +25,19 @@ from perp_lab.search.space import (
 from perp_lab.strategies.base import Strategy
 from perp_lab.strategies.breakout import Breakout
 from perp_lab.strategies.cross_asset import CrossAssetConfirmation
+from perp_lab.strategies.flow_price_divergence import FlowPriceDivergence
 from perp_lab.strategies.funding import FundingTilt
 from perp_lab.strategies.funding_reversal import FundingReversal
+from perp_lab.strategies.illiquidity_reversion import IlliquidityReversion
 from perp_lab.strategies.intraday_seasonality import IntradaySeasonality
 from perp_lab.strategies.mean_reversion import MeanReversion
 from perp_lab.strategies.momentum import MomentumCrossover
 from perp_lab.strategies.mtf_trend_consensus import MultiHorizonTrendConsensus
+from perp_lab.strategies.taker_flow_extreme import TakerFlowExtreme
 from perp_lab.strategies.volatility_breakout import VolatilityBreakout
 from perp_lab.strategies.xasset_spread_reversion import CrossAssetSpreadReversion
 
-SPACE_VERSION = "1.1.0"
+SPACE_VERSION = "1.2.0"
 
 # Families closed at Gate R3 (momentum at R2). They are recorded here because
 # the registry must still be able to *reproduce* a historical run; they are not
@@ -56,7 +59,15 @@ S1_FAMILIES: tuple[str, ...] = (
     "xasset_spread_reversion",
 )
 
-FAMILIES: tuple[str, ...] = (*R3_CLOSED_FAMILIES, *S1_FAMILIES)
+# Gate S2 batch, pre-specified and frozen before any S2 result was observed.
+# Every member reads the taker aggressor side, which no earlier family uses.
+S2_FAMILIES: tuple[str, ...] = (
+    "taker_flow_extreme",
+    "illiquidity_reversion",
+    "flow_price_divergence",
+)
+
+FAMILIES: tuple[str, ...] = (*R3_CLOSED_FAMILIES, *S1_FAMILIES, *S2_FAMILIES)
 
 
 class _FeatureItem:
@@ -603,6 +614,164 @@ def _xasset_spread_reversion_space(exp: ExperimentConfig, symbol: str) -> Search
     )
 
 
+# --------------------------------------------------------------------------- #
+# Gate S2 batch. Every family below reads the taker aggressor side from the raw
+# klines and therefore declares no feature-engine items: the flow windows are
+# strategy parameters being searched, so materialising one column per candidate
+# window would tie the feature frame to the search space.
+# --------------------------------------------------------------------------- #
+
+
+def _taker_flow_extreme_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.taker_flow_extreme
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    params = (
+        CategoricalParam("flow_window", tuple(fam.flow_window)),
+        CategoricalParam("rank_window", tuple(fam.rank_window)),
+        CategoricalParam("extreme_pct", tuple(fam.extreme_pct)),
+        CategoricalParam("holding_bars", tuple(fam.holding_bars)),
+        CategoricalParam("response", tuple(fam.response)),
+        CategoricalParam("min_abs_imbalance", tuple(fam.min_abs_imbalance)),
+        CategoricalParam("flow_lag", tuple(fam.flow_lag)),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        rank = int(v["rank_window"])  # type: ignore[arg-type]
+        holding = int(v["holding_bars"])  # type: ignore[arg-type]
+        flow = int(v["flow_window"])  # type: ignore[arg-type]
+        if holding >= rank:
+            return False, (
+                f"holding_bars ({holding}) must be shorter than rank_window ({rank}); "
+                "otherwise one episode spans the distribution it is ranked against"
+            )
+        if flow >= rank:
+            return False, f"flow_window ({flow}) must be shorter than rank_window ({rank})"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return TakerFlowExtreme(
+            flow_window=int(v["flow_window"]),  # type: ignore[arg-type]
+            rank_window=int(v["rank_window"]),  # type: ignore[arg-type]
+            extreme_pct=float(v["extreme_pct"]),  # type: ignore[arg-type]
+            holding_bars=int(v["holding_bars"]),  # type: ignore[arg-type]
+            response=str(v["response"]),
+            flow_lag=int(v["flow_lag"]),  # type: ignore[arg-type]
+            min_abs_imbalance=float(v["min_abs_imbalance"]),  # type: ignore[arg-type]
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    return SearchSpace("taker_flow_extreme", SPACE_VERSION, params, build, repair, validate, ())
+
+
+def _illiquidity_reversion_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.illiquidity_reversion
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    params = (
+        CategoricalParam("impact_window", tuple(fam.impact_window)),
+        CategoricalParam("rank_window", tuple(fam.rank_window)),
+        CategoricalParam("entry_pct", tuple(fam.entry_pct)),
+        CategoricalParam("exit_pct", tuple(fam.exit_pct)),
+        CategoricalParam("max_holding_bars", tuple(fam.max_holding_bars)),
+        CategoricalParam("min_abs_move", tuple(fam.min_abs_move)),
+        CategoricalParam("flow_lag", tuple(fam.flow_lag)),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    exit_choices = sorted(fam.exit_pct)
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        entry, exit_ = float(v["entry_pct"]), float(v["exit_pct"])  # type: ignore[arg-type]
+        if exit_ >= entry:
+            smaller = [e for e in exit_choices if e < entry]
+            if smaller:
+                v["exit_pct"] = smaller[-1]
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        if float(v["exit_pct"]) >= float(v["entry_pct"]):  # type: ignore[arg-type]
+            return False, "exit_pct must be < entry_pct"
+        window = int(v["impact_window"])  # type: ignore[arg-type]
+        rank = int(v["rank_window"])  # type: ignore[arg-type]
+        if window >= rank:
+            return False, f"impact_window ({window}) must be shorter than rank_window ({rank})"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return IlliquidityReversion(
+            impact_window=int(v["impact_window"]),  # type: ignore[arg-type]
+            rank_window=int(v["rank_window"]),  # type: ignore[arg-type]
+            entry_pct=float(v["entry_pct"]),  # type: ignore[arg-type]
+            exit_pct=float(v["exit_pct"]),  # type: ignore[arg-type]
+            max_holding_bars=int(v["max_holding_bars"]),  # type: ignore[arg-type]
+            flow_lag=int(v["flow_lag"]),  # type: ignore[arg-type]
+            min_abs_move=float(v["min_abs_move"]),  # type: ignore[arg-type]
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    return SearchSpace("illiquidity_reversion", SPACE_VERSION, params, build, repair, validate, ())
+
+
+def _flow_price_divergence_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.flow_price_divergence
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    params = (
+        CategoricalParam("window", tuple(fam.window)),
+        CategoricalParam("rank_window", tuple(fam.rank_window)),
+        CategoricalParam("flow_pct", tuple(fam.flow_pct)),
+        CategoricalParam("move_pct", tuple(fam.move_pct)),
+        CategoricalParam("holding_bars", tuple(fam.holding_bars)),
+        CategoricalParam("response", tuple(fam.response)),
+        CategoricalParam("flow_lag", tuple(fam.flow_lag)),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        rank = int(v["rank_window"])  # type: ignore[arg-type]
+        holding = int(v["holding_bars"])  # type: ignore[arg-type]
+        window = int(v["window"])  # type: ignore[arg-type]
+        if holding >= rank:
+            return False, f"holding_bars ({holding}) must be shorter than rank_window ({rank})"
+        if window >= rank:
+            return False, f"window ({window}) must be shorter than rank_window ({rank})"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return FlowPriceDivergence(
+            window=int(v["window"]),  # type: ignore[arg-type]
+            rank_window=int(v["rank_window"]),  # type: ignore[arg-type]
+            flow_pct=float(v["flow_pct"]),  # type: ignore[arg-type]
+            move_pct=float(v["move_pct"]),  # type: ignore[arg-type]
+            holding_bars=int(v["holding_bars"]),  # type: ignore[arg-type]
+            response=str(v["response"]),
+            flow_lag=int(v["flow_lag"]),  # type: ignore[arg-type]
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    return SearchSpace("flow_price_divergence", SPACE_VERSION, params, build, repair, validate, ())
+
+
 _BUILDERS: dict[str, Callable[[ExperimentConfig, str], SearchSpace]] = {
     "momentum": _momentum_space,
     "breakout": _breakout_space,
@@ -614,6 +783,9 @@ _BUILDERS: dict[str, Callable[[ExperimentConfig, str], SearchSpace]] = {
     "funding_reversal": _funding_reversal_space,
     "intraday_seasonality": _intraday_seasonality_space,
     "xasset_spread_reversion": _xasset_spread_reversion_space,
+    "taker_flow_extreme": _taker_flow_extreme_space,
+    "illiquidity_reversion": _illiquidity_reversion_space,
+    "flow_price_divergence": _flow_price_divergence_space,
 }
 
 
