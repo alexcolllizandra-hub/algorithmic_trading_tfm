@@ -26,13 +26,20 @@ from perp_lab.strategies.base import Strategy
 from perp_lab.strategies.breakout import Breakout
 from perp_lab.strategies.cross_asset import CrossAssetConfirmation
 from perp_lab.strategies.funding import FundingTilt
+from perp_lab.strategies.funding_reversal import FundingReversal
+from perp_lab.strategies.intraday_seasonality import IntradaySeasonality
 from perp_lab.strategies.mean_reversion import MeanReversion
 from perp_lab.strategies.momentum import MomentumCrossover
+from perp_lab.strategies.mtf_trend_consensus import MultiHorizonTrendConsensus
 from perp_lab.strategies.volatility_breakout import VolatilityBreakout
+from perp_lab.strategies.xasset_spread_reversion import CrossAssetSpreadReversion
 
-SPACE_VERSION = "1.0.0"
+SPACE_VERSION = "1.1.0"
 
-FAMILIES: tuple[str, ...] = (
+# Families closed at Gate R3 (momentum at R2). They are recorded here because
+# the registry must still be able to *reproduce* a historical run; they are not
+# re-searched. See docs/decisions/0013 and 0015.
+R3_CLOSED_FAMILIES: tuple[str, ...] = (
     "momentum",
     "breakout",
     "mean_reversion",
@@ -40,6 +47,16 @@ FAMILIES: tuple[str, ...] = (
     "funding",
     "BTC_ETH_confirmation",
 )
+
+# Gate S1 batch, pre-specified and frozen before any S1 result was observed.
+S1_FAMILIES: tuple[str, ...] = (
+    "mtf_trend_consensus",
+    "funding_reversal",
+    "intraday_seasonality",
+    "xasset_spread_reversion",
+)
+
+FAMILIES: tuple[str, ...] = (*R3_CLOSED_FAMILIES, *S1_FAMILIES)
 
 
 class _FeatureItem:
@@ -366,6 +383,226 @@ def _cross_asset_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
     return SearchSpace("BTC_ETH_confirmation", SPACE_VERSION, params, build, repair, validate, ())
 
 
+def _mtf_trend_consensus_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.mtf_trend_consensus
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    params = (
+        CategoricalParam("horizons", tuple(fam.horizon_sets)),
+        CategoricalParam("min_agreement", tuple(fam.min_agreement)),
+        CategoricalParam("exit_agreement", tuple(fam.exit_agreement)),
+        CategoricalParam("min_strength", tuple(fam.min_strength)),
+        CategoricalParam("strength_window", tuple(fam.strength_window)),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    agreement_choices = sorted(fam.min_agreement)
+    exit_choices = sorted(fam.exit_agreement)
+
+    def _horizons(v: Mapping[str, ParamValue]) -> tuple[int, ...]:
+        raw = v["horizons"]
+        assert isinstance(raw, tuple)
+        return tuple(int(h) for h in raw)  # type: ignore[arg-type]
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        width = len(_horizons(v))
+        agreement = int(v["min_agreement"])  # type: ignore[arg-type]
+        if agreement > width:
+            feasible = [a for a in agreement_choices if a <= width]
+            if feasible:
+                v["min_agreement"] = feasible[-1]
+                agreement = feasible[-1]
+        if int(v["exit_agreement"]) > agreement:  # type: ignore[arg-type]
+            feasible_exit = [e for e in exit_choices if e <= agreement]
+            if feasible_exit:
+                v["exit_agreement"] = feasible_exit[-1]
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        width = len(_horizons(v))
+        agreement = int(v["min_agreement"])  # type: ignore[arg-type]
+        exit_agreement = int(v["exit_agreement"])  # type: ignore[arg-type]
+        if agreement > width:
+            return False, f"min_agreement ({agreement}) exceeds the {width} horizons available"
+        if exit_agreement > agreement:
+            return False, f"exit_agreement ({exit_agreement}) must be <= min_agreement"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return MultiHorizonTrendConsensus(
+            horizons=_horizons(v),
+            min_agreement=int(v["min_agreement"]),  # type: ignore[arg-type]
+            min_strength=float(v["min_strength"]),  # type: ignore[arg-type]
+            strength_window=int(v["strength_window"]),  # type: ignore[arg-type]
+            exit_agreement=int(v["exit_agreement"]),  # type: ignore[arg-type]
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    horizons = sorted({h for horizon_set in fam.horizon_sets for h in horizon_set})
+    items: tuple[FeatureItemLike, ...] = (
+        *(_FeatureItem("momentum", window=h) for h in horizons),
+        *(_FeatureItem("roll_std", window=w) for w in sorted(set(fam.strength_window))),
+    )
+    return SearchSpace("mtf_trend_consensus", SPACE_VERSION, params, build, repair, validate, items)
+
+
+def _funding_reversal_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.funding_reversal
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    params = (
+        CategoricalParam("rank_window", tuple(fam.rank_window)),
+        CategoricalParam("extreme_pct", tuple(fam.extreme_pct)),
+        CategoricalParam("holding_bars", tuple(fam.holding_bars)),
+        CategoricalParam("min_abs_rate", tuple(fam.min_abs_rate)),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        window = int(v["rank_window"])  # type: ignore[arg-type]
+        holding = int(v["holding_bars"])  # type: ignore[arg-type]
+        if holding >= window:
+            return False, (
+                f"holding_bars ({holding}) must be shorter than the rank_window ({window}); "
+                "otherwise a single episode spans the whole distribution it is measured against"
+            )
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return FundingReversal(
+            rank_window=int(v["rank_window"]),  # type: ignore[arg-type]
+            extreme_pct=float(v["extreme_pct"]),  # type: ignore[arg-type]
+            holding_bars=int(v["holding_bars"]),  # type: ignore[arg-type]
+            min_abs_rate=float(v["min_abs_rate"]),  # type: ignore[arg-type]
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    items: tuple[FeatureItemLike, ...] = (_FeatureItem("funding_rate"),)
+    return SearchSpace("funding_reversal", SPACE_VERSION, params, build, repair, validate, items)
+
+
+def _intraday_seasonality_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.intraday_seasonality
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    # ``side_mode`` already fixes the traded direction, so exposing the shared
+    # ``direction`` parameter as well would spend budget on empty combinations.
+    params = (
+        CategoricalParam("entry_hour", tuple(fam.entry_hour)),
+        CategoricalParam("holding_bars", tuple(fam.holding_bars)),
+        CategoricalParam("side_mode", tuple(fam.side_mode)),
+        BoolParam("use_trend_filter"),
+        CategoricalParam(
+            "trend_filter_ma", tuple(fam.trend_filter_ma), active_when=("use_trend_filter", True)
+        ),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        hour = int(v["entry_hour"])  # type: ignore[arg-type]
+        if not 0 <= hour <= 23:
+            return False, f"entry_hour ({hour}) must lie in [0, 23] UTC"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return IntradaySeasonality(
+            entry_hour=int(v["entry_hour"]),  # type: ignore[arg-type]
+            holding_bars=int(v["holding_bars"]),  # type: ignore[arg-type]
+            side_mode=str(v["side_mode"]),
+            trend_filter_ma=int(v["trend_filter_ma"]) if v.get("use_trend_filter") else None,  # type: ignore[arg-type]
+            direction="both",
+            regime_gate=_regime_gate(v),
+        )
+
+    items: tuple[FeatureItemLike, ...] = tuple(
+        _FeatureItem("sma", window=w) for w in sorted(set(fam.trend_filter_ma))
+    )
+    return SearchSpace(
+        "intraday_seasonality", SPACE_VERSION, params, build, repair, validate, items
+    )
+
+
+def _xasset_spread_reversion_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.xasset_spread_reversion
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+    target = symbol
+    reference = fam.reference_symbol.get(target)
+    if reference is None:
+        raise ValueError(
+            f"No reference leg configured for {target!r} in "
+            f"strategies.families.xasset_spread_reversion.reference_symbol "
+            f"(known: {sorted(fam.reference_symbol)}). A spread needs two legs; this family "
+            "cannot fall back to a single-asset strategy."
+        )
+
+    params = (
+        CategoricalParam("lookback", tuple(fam.lookback)),
+        CategoricalParam("entry_spread", tuple(fam.entry_spread)),
+        CategoricalParam("exit_spread", tuple(fam.exit_spread)),
+        BoolParam("use_corr_floor"),
+        CategoricalParam("min_corr", tuple(fam.min_corr), active_when=("use_corr_floor", True)),
+        CategoricalParam(
+            "corr_window", tuple(fam.corr_window), active_when=("use_corr_floor", True)
+        ),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    exit_choices = sorted(fam.exit_spread)
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        entry, exit_ = float(v["entry_spread"]), float(v["exit_spread"])  # type: ignore[arg-type]
+        if exit_ >= entry:
+            smaller = [e for e in exit_choices if e < entry]
+            if smaller:
+                v["exit_spread"] = smaller[-1]
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        if float(v["exit_spread"]) >= float(v["entry_spread"]):  # type: ignore[arg-type]
+            return False, "exit_spread must be < entry_spread"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        use_floor = bool(v.get("use_corr_floor"))
+        return CrossAssetSpreadReversion(
+            lookback=int(v["lookback"]),  # type: ignore[arg-type]
+            entry_spread=float(v["entry_spread"]),  # type: ignore[arg-type]
+            exit_spread=float(v["exit_spread"]),  # type: ignore[arg-type]
+            min_corr=float(v["min_corr"]) if use_floor else None,  # type: ignore[arg-type]
+            corr_window=int(v["corr_window"]) if use_floor else None,  # type: ignore[arg-type]
+            target_symbol=target,
+            reference_symbol=reference,
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    items: tuple[FeatureItemLike, ...] = (
+        *(_FeatureItem("xasset_rel_momentum", window=w) for w in sorted(set(fam.lookback))),
+        *(_FeatureItem("xasset_corr", window=w) for w in sorted(set(fam.corr_window))),
+    )
+    return SearchSpace(
+        "xasset_spread_reversion", SPACE_VERSION, params, build, repair, validate, items
+    )
+
+
 _BUILDERS: dict[str, Callable[[ExperimentConfig, str], SearchSpace]] = {
     "momentum": _momentum_space,
     "breakout": _breakout_space,
@@ -373,6 +610,10 @@ _BUILDERS: dict[str, Callable[[ExperimentConfig, str], SearchSpace]] = {
     "volatility_breakout": _volatility_breakout_space,
     "funding": _funding_space,
     "BTC_ETH_confirmation": _cross_asset_space,
+    "mtf_trend_consensus": _mtf_trend_consensus_space,
+    "funding_reversal": _funding_reversal_space,
+    "intraday_seasonality": _intraday_seasonality_space,
+    "xasset_spread_reversion": _xasset_spread_reversion_space,
 }
 
 
