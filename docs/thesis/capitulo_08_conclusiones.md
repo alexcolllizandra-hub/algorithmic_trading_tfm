@@ -43,9 +43,12 @@ activos, frecuencia y batería de criterios.
 | **RQ2** — ¿GA supera a RS a igual presupuesto? | ADR 0013: GA−RS = −0,061, IC [−0,399 ; +0,277]; R3: GA no decide promoción | **Sin evidencia de superioridad sistemática del GA** |
 | **RQ3** — ¿Meta-labeling mejora señales base? | Sin implementación M1/M2; [scientific_questions.md](../roadmap/scientific_questions.md) H3 «Not started» | **No evaluada** en este TFM |
 | **RQ4** — ¿Dependencia del rendimiento respecto al régimen de volatilidad? | R4 SKIPPED; modelos de régimen existen pero gate confirmatorio no ejecutado | **No respondida** como gate; fuera del arco cerrado |
-| **RQ5** — ¿Robustez ante perturbaciones de costes y parámetros? | Batería parcial en R2/R3 (C3, C5, bootstrap C2); R4 SKIPPED | **Parcialmente abordada** en R3; perturbación extendida no aplicada |
+| **RQ5** — ¿Robustez ante perturbaciones de costes y parámetros? | Batería parcial en R3 (C2–C5: bootstrap, costes 2×, drop-top-5); R4 SKIPPED | **Parcialmente abordada** en R3; **no** confirma H5 (requiere estrategia promovida) |
 | **H1** — Al menos una familia con Sharpe OOS neto > 0 (mayoría de pliegues) | ADR 0013; ADR 0015; 0/5 promociones | **Rechazada** en el alcance ejecutado |
 | **H2** — GA con mayor fitness OOS mediano que RS | ADR 0013 (protocolo limpio) | **Sin evidencia** de ventaja GA |
+| **H3** — Meta-labeling mejora señales base | Gates M1/M2 no iniciados; sin experimento RQ3 | **No evaluada** |
+| **H4** — Rendimiento difiere por régimen de volatilidad | EDA de regímenes descriptivo (Cap. 3); R4 SKIPPED | **No contrastada confirmatoriamente** |
+| **H5** — Estrategias promovidas sobreviven batería extendida | 0 promociones R3; R4 SKIPPED | **No evaluable** (ninguna estrategia promovida) |
 | **Gate R1** — validez temporal por pliegue | ADR 0012; [phase_gates § R1](../roadmap/phase_gates.md) | **Cumplido** — contaminación corregida |
 | **Gate R2** — momentum y RS–GA bajo protocolo limpio | ADR 0013 | **Momentum rechazado**; RS–GA inconcluso a favor de GA |
 | **Gate R3** — promoción familiar | ADR 0015; thesis_report | **CLOSED_NEGATIVE**, **0/5** |
@@ -101,8 +104,10 @@ activos, frecuencia y batería de criterios.
   `reproducible_from_commit_alone=false` limitan reconstrucción exacta del código;
   **no invalida** la coherencia numérica verificada entre JSON persistidos
   (cap. 6.7).
-- **Alcance incompleto:** RQ3, R4 como gate y R5 extendido (perturbación de
-  parámetros confirmatoria) quedan fuera del cierre ejecutado.
+- **Alcance incompleto:** RQ3, R4 como gate confirmatorio y **RQ5 extendida**
+  (perturbación de parámetros sobre promovidas) quedan fuera del cierre ejecutado.
+  La robustez parcial aplicada en R3 (criterios C2–C5) **no sustituye** la
+  confirmación de H5.
 
 ---
 

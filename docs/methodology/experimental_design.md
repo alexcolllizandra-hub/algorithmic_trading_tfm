@@ -7,8 +7,19 @@ futures. It is the human-readable counterpart of
 contract that the Chapter 5 modelling pipeline must respect. It does not repeat
 general theory; it states how each concept is realised in this project.
 
-Status: **specification only.** No modelling code is implemented yet. Values
-marked *provisional* in the configuration are placeholders pending an ADR.
+## Document status (two layers — do not conflate)
+
+| Layer | Meaning |
+|---|---|
+| **Frozen methodological contract** | Research questions RQ1–RQ5, hypotheses H1–H5, temporal rules, cost assumptions, leakage-prevention rules and gate structure defined here and in [`hypothesis_matrix.md`](hypothesis_matrix.md). These rules were **not altered retrospectively** when experiments closed. |
+| **Experimental execution state (2026-08-10)** | Phase gates **R1–R3 completed** under the corrected protocol; **R4 SKIPPED** (zero R3 promotions); frozen holdout **not opened**; meta-labeling gates **M1/M2 not started**. See [phase_gates.md](../roadmap/phase_gates.md) and ADRs 0012, 0013, 0015. |
+
+Sections 7–11 below describe capabilities **specified** for the full Chapter 5
+pipeline (including meta-labeling and extended robustness). Their *execution
+status* is recorded in the table above and in the integrated thesis Chapter 8
+traceability matrix — not by rewriting the original accept/reject rules here.
+
+Values marked *provisional* in the configuration remain documented in ADR 0005.
 
 ---
 
