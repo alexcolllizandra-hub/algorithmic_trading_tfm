@@ -1,0 +1,2259 @@
+{
+  "closure_summary": {
+    "gate_status": {
+      "source_field": "gate_status",
+      "source_file": "r3_gate_verdict.json",
+      "value": "CLOSED_NEGATIVE",
+      "verification_level": "reporter_verified"
+    },
+    "n_promoted": {
+      "source_field": "n_promoted",
+      "source_file": "r3_gate_verdict.json",
+      "value": 0,
+      "verification_level": "reporter_verified"
+    },
+    "n_rejected": {
+      "source_field": "n_rejected",
+      "source_file": "r3_gate_verdict.json",
+      "value": 5,
+      "verification_level": "reporter_verified"
+    },
+    "numerical_discrepancies": {
+      "note": "Zero contradictions across execution, rollup, study_robustness and gate verdict",
+      "source_field": "n/a",
+      "source_file": "reporter consistency battery",
+      "value": 0,
+      "verification_level": "reporter_verified"
+    },
+    "provenance_limitation": {
+      "distinct_commits": [
+        "aac33577c14cba08f349381ce3566eca0c587299"
+      ],
+      "distinct_tracked_states": 2,
+      "exact_reconstruction_from_commit_alone": false,
+      "note": "single commit recorded across families (aac33577c14cba08f349381ce3566eca0c587299); every family run_identity.json records worktree.dirty=true; at least one family records reproducible_from_commit_alone=false; 2 distinct tracked diff states observed across families; patch bytes were not retained in persisted run_identity.json artifacts",
+      "patch_bytes_available": false,
+      "provenance_by_family": [
+        {
+          "commit": "aac33577c14cba08f349381ce3566eca0c587299",
+          "diff_bytes": 45647,
+          "diff_sha256": "4073dba60103de8d7a4ea99a901296fab9f1a4b7d6c4228d65037e6a984f2e9b",
+          "dirty": true,
+          "family": "breakout",
+          "patch_bytes_stored": false,
+          "provisional": true,
+          "reproducible_from_commit_alone": false,
+          "source_file": "breakout/run_identity.json",
+          "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"
+        },
+        {
+          "commit": "aac33577c14cba08f349381ce3566eca0c587299",
+          "diff_bytes": 45647,
+          "diff_sha256": "4073dba60103de8d7a4ea99a901296fab9f1a4b7d6c4228d65037e6a984f2e9b",
+          "dirty": true,
+          "family": "mean_reversion",
+          "patch_bytes_stored": false,
+          "provisional": true,
+          "reproducible_from_commit_alone": false,
+          "source_file": "mean_reversion/run_identity.json",
+          "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"
+        },
+        {
+          "commit": "aac33577c14cba08f349381ce3566eca0c587299",
+          "diff_bytes": 45647,
+          "diff_sha256": "4073dba60103de8d7a4ea99a901296fab9f1a4b7d6c4228d65037e6a984f2e9b",
+          "dirty": true,
+          "family": "volatility_breakout",
+          "patch_bytes_stored": false,
+          "provisional": true,
+          "reproducible_from_commit_alone": false,
+          "source_file": "volatility_breakout/run_identity.json",
+          "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"
+        },
+        {
+          "commit": "aac33577c14cba08f349381ce3566eca0c587299",
+          "diff_bytes": 45647,
+          "diff_sha256": "4073dba60103de8d7a4ea99a901296fab9f1a4b7d6c4228d65037e6a984f2e9b",
+          "dirty": true,
+          "family": "funding",
+          "patch_bytes_stored": false,
+          "provisional": true,
+          "reproducible_from_commit_alone": false,
+          "source_file": "funding/run_identity.json",
+          "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"
+        },
+        {
+          "commit": "aac33577c14cba08f349381ce3566eca0c587299",
+          "diff_bytes": 66986,
+          "diff_sha256": "0378645e31c35f0b988d1a57eefb6dcbed9517e513d6d50cf739c1e8d89534de",
+          "dirty": true,
+          "family": "BTC_ETH_confirmation",
+          "patch_bytes_stored": false,
+          "provisional": true,
+          "reproducible_from_commit_alone": false,
+          "source_file": "BTC_ETH_confirmation/run_identity.json",
+          "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"
+        }
+      ],
+      "provenance_states": [
+        {
+          "commit": "aac33577c14cba08f349381ce3566eca0c587299",
+          "diff_bytes": 66986,
+          "diff_sha256": "0378645e31c35f0b988d1a57eefb6dcbed9517e513d6d50cf739c1e8d89534de",
+          "dirty": true,
+          "families": [
+            "BTC_ETH_confirmation"
+          ],
+          "provisional": true,
+          "reproducible_from_commit_alone": false,
+          "state_id": "tracked_state_1",
+          "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"
+        },
+        {
+          "commit": "aac33577c14cba08f349381ce3566eca0c587299",
+          "diff_bytes": 45647,
+          "diff_sha256": "4073dba60103de8d7a4ea99a901296fab9f1a4b7d6c4228d65037e6a984f2e9b",
+          "dirty": true,
+          "families": [
+            "breakout",
+            "funding",
+            "mean_reversion",
+            "volatility_breakout"
+          ],
+          "provisional": true,
+          "reproducible_from_commit_alone": false,
+          "state_id": "tracked_state_2",
+          "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"
+        }
+      ],
+      "verification_level": "limitation"
+    },
+    "units_completed": {
+      "note": "Unit completion counts only; does not substitute for fold-isolation audit",
+      "source_field": "status.completed vs checkpoint.meta symbols*seeds",
+      "source_file": "*/status.json + */checkpoint.json",
+      "value": "100/100",
+      "verification_level": "reporter_verified"
+    }
+  },
+  "documentary_claims": {
+    "historical_holdout_status": {
+      "note": "Reporter reads only allowlisted JSON under the R3 study root",
+      "source_field": "Decision item 4",
+      "source_file": "docs/decisions/0015-r3-family-evaluation-negative.md",
+      "value": "Frozen holdout not opened during Gate R3 (documented at closure)",
+      "verification_level": "documentary"
+    },
+    "isolation_audit_at_closure": {
+      "note": "Recorded at R3 closure; not re-executed by this reporter",
+      "source_field": "isolation_audit",
+      "source_file": "r3_scientific_closure_report.json",
+      "value": "100/100 audited; failures=0",
+      "verification_level": "documentary"
+    },
+    "r4_application_status": {
+      "note": "R4 confirmatory scope was not executed because no family was promoted",
+      "source_field": "Decision item 3",
+      "source_file": "docs/decisions/0015-r3-family-evaluation-negative.md",
+      "value": "SKIPPED (R4 not executed; zero R3 promotions at closure)",
+      "verification_level": "documentary"
+    },
+    "r4_promoted_only_scope": {
+      "note": "Post-closure documentation harmonization; not part of the executed R3 contract",
+      "source_field": "R4 scope definition",
+      "source_file": "docs/roadmap/phase_gates.md",
+      "value": "Promoted-only confirmatory scope harmonized in documentation after R3 closure",
+      "verification_level": "documentary"
+    },
+    "r4_required_at_closure": {
+      "source_field": "r4_required",
+      "source_file": "r3_gate_verdict.json",
+      "value": false,
+      "verification_level": "reporter_verified"
+    }
+  },
+  "gate": "R3",
+  "majority_rule": ">=6/10 seeds per asset on both assets",
+  "primary_engine": "random_search",
+  "primary_table_rs": [
+    {
+      "criteria": {
+        "beats_buy_and_hold": {
+          "display": "0/10 FAIL",
+          "label": "C4 beats buy-and-hold",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.beats_buy_and_hold",
+          "source_file": "breakout/study_robustness.json"
+        },
+        "bootstrap_sharpe_ci_excludes_zero": {
+          "display": "0/10 FAIL",
+          "label": "C2 bootstrap Sharpe CI",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+          "source_file": "breakout/study_robustness.json"
+        },
+        "not_confined_to_one_fold": {
+          "display": "10/10 OK",
+          "label": "C6 fold locality",
+          "majority_required": 6,
+          "n_pass": 10,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.not_confined_to_one_fold",
+          "source_file": "breakout/study_robustness.json"
+        },
+        "positive_total_return": {
+          "display": "0/10 FAIL",
+          "label": "C1 positive return",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return",
+          "source_file": "breakout/study_robustness.json"
+        },
+        "survives_double_costs": {
+          "display": "0/10 FAIL",
+          "label": "C3 survives 2x costs",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs",
+          "source_file": "breakout/study_robustness.json"
+        },
+        "survives_drop_top_trades": {
+          "display": "0/10 FAIL",
+          "label": "C5 drop top 5 trades",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_drop_top_trades",
+          "source_file": "breakout/study_robustness.json"
+        }
+      },
+      "engine": "random_search",
+      "family": "breakout",
+      "majority_required": 6,
+      "median_buy_and_hold_return": 0.522747844787544,
+      "median_oos_return": -0.15795781516548946,
+      "median_oos_sharpe": -0.7308026909947924,
+      "min_oos_trades_met": {
+        "display": "10/10 OK",
+        "min_trades_required": 5,
+        "n_pass": 10,
+        "n_seeds": 10,
+        "role": "separate veto (not a seventh promotion criterion)",
+        "source_field": "r3_promotion.by_symbol.BTCUSDT.rejections.depends_on_few_trades",
+        "source_file": "breakout/study_robustness.json",
+        "veto_triggered": false
+      },
+      "symbol": "BTCUSDT",
+      "verdict": "REJECTED"
+    },
+    {
+      "criteria": {
+        "beats_buy_and_hold": {
+          "display": "0/10 FAIL",
+          "label": "C4 beats buy-and-hold",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.beats_buy_and_hold",
+          "source_file": "breakout/study_robustness.json"
+        },
+        "bootstrap_sharpe_ci_excludes_zero": {
+          "display": "0/10 FAIL",
+          "label": "C2 bootstrap Sharpe CI",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+          "source_file": "breakout/study_robustness.json"
+        },
+        "not_confined_to_one_fold": {
+          "display": "10/10 OK",
+          "label": "C6 fold locality",
+          "majority_required": 6,
+          "n_pass": 10,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.not_confined_to_one_fold",
+          "source_file": "breakout/study_robustness.json"
+        },
+        "positive_total_return": {
+          "display": "0/10 FAIL",
+          "label": "C1 positive return",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.positive_total_return",
+          "source_file": "breakout/study_robustness.json"
+        },
+        "survives_double_costs": {
+          "display": "0/10 FAIL",
+          "label": "C3 survives 2x costs",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_double_costs",
+          "source_file": "breakout/study_robustness.json"
+        },
+        "survives_drop_top_trades": {
+          "display": "0/10 FAIL",
+          "label": "C5 drop top 5 trades",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_drop_top_trades",
+          "source_file": "breakout/study_robustness.json"
+        }
+      },
+      "engine": "random_search",
+      "family": "breakout",
+      "majority_required": 6,
+      "median_buy_and_hold_return": -0.2190192992677874,
+      "median_oos_return": -0.25525919986792583,
+      "median_oos_sharpe": -1.0545238570959898,
+      "min_oos_trades_met": {
+        "display": "10/10 OK",
+        "min_trades_required": 5,
+        "n_pass": 10,
+        "n_seeds": 10,
+        "role": "separate veto (not a seventh promotion criterion)",
+        "source_field": "r3_promotion.by_symbol.ETHUSDT.rejections.depends_on_few_trades",
+        "source_file": "breakout/study_robustness.json",
+        "veto_triggered": false
+      },
+      "symbol": "ETHUSDT",
+      "verdict": "REJECTED"
+    },
+    {
+      "criteria": {
+        "beats_buy_and_hold": {
+          "display": "0/10 FAIL",
+          "label": "C4 beats buy-and-hold",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.beats_buy_and_hold",
+          "source_file": "mean_reversion/study_robustness.json"
+        },
+        "bootstrap_sharpe_ci_excludes_zero": {
+          "display": "0/10 FAIL",
+          "label": "C2 bootstrap Sharpe CI",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+          "source_file": "mean_reversion/study_robustness.json"
+        },
+        "not_confined_to_one_fold": {
+          "display": "10/10 OK",
+          "label": "C6 fold locality",
+          "majority_required": 6,
+          "n_pass": 10,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.not_confined_to_one_fold",
+          "source_file": "mean_reversion/study_robustness.json"
+        },
+        "positive_total_return": {
+          "display": "0/10 FAIL",
+          "label": "C1 positive return",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return",
+          "source_file": "mean_reversion/study_robustness.json"
+        },
+        "survives_double_costs": {
+          "display": "0/10 FAIL",
+          "label": "C3 survives 2x costs",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs",
+          "source_file": "mean_reversion/study_robustness.json"
+        },
+        "survives_drop_top_trades": {
+          "display": "0/10 FAIL",
+          "label": "C5 drop top 5 trades",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_drop_top_trades",
+          "source_file": "mean_reversion/study_robustness.json"
+        }
+      },
+      "engine": "random_search",
+      "family": "mean_reversion",
+      "majority_required": 6,
+      "median_buy_and_hold_return": 0.522747844787544,
+      "median_oos_return": -0.5996847869944606,
+      "median_oos_sharpe": -0.5005010494241832,
+      "min_oos_trades_met": {
+        "display": "10/10 OK",
+        "min_trades_required": 5,
+        "n_pass": 10,
+        "n_seeds": 10,
+        "role": "separate veto (not a seventh promotion criterion)",
+        "source_field": "r3_promotion.by_symbol.BTCUSDT.rejections.depends_on_few_trades",
+        "source_file": "mean_reversion/study_robustness.json",
+        "veto_triggered": false
+      },
+      "symbol": "BTCUSDT",
+      "verdict": "REJECTED"
+    },
+    {
+      "criteria": {
+        "beats_buy_and_hold": {
+          "display": "0/10 FAIL",
+          "label": "C4 beats buy-and-hold",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.beats_buy_and_hold",
+          "source_file": "mean_reversion/study_robustness.json"
+        },
+        "bootstrap_sharpe_ci_excludes_zero": {
+          "display": "0/10 FAIL",
+          "label": "C2 bootstrap Sharpe CI",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+          "source_file": "mean_reversion/study_robustness.json"
+        },
+        "not_confined_to_one_fold": {
+          "display": "10/10 OK",
+          "label": "C6 fold locality",
+          "majority_required": 6,
+          "n_pass": 10,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.not_confined_to_one_fold",
+          "source_file": "mean_reversion/study_robustness.json"
+        },
+        "positive_total_return": {
+          "display": "0/10 FAIL",
+          "label": "C1 positive return",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.positive_total_return",
+          "source_file": "mean_reversion/study_robustness.json"
+        },
+        "survives_double_costs": {
+          "display": "0/10 FAIL",
+          "label": "C3 survives 2x costs",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_double_costs",
+          "source_file": "mean_reversion/study_robustness.json"
+        },
+        "survives_drop_top_trades": {
+          "display": "0/10 FAIL",
+          "label": "C5 drop top 5 trades",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_drop_top_trades",
+          "source_file": "mean_reversion/study_robustness.json"
+        }
+      },
+      "engine": "random_search",
+      "family": "mean_reversion",
+      "majority_required": 6,
+      "median_buy_and_hold_return": -0.2190192992677874,
+      "median_oos_return": -0.7990860353922618,
+      "median_oos_sharpe": -0.8932117142699131,
+      "min_oos_trades_met": {
+        "display": "10/10 OK",
+        "min_trades_required": 5,
+        "n_pass": 10,
+        "n_seeds": 10,
+        "role": "separate veto (not a seventh promotion criterion)",
+        "source_field": "r3_promotion.by_symbol.ETHUSDT.rejections.depends_on_few_trades",
+        "source_file": "mean_reversion/study_robustness.json",
+        "veto_triggered": false
+      },
+      "symbol": "ETHUSDT",
+      "verdict": "REJECTED"
+    },
+    {
+      "criteria": {
+        "beats_buy_and_hold": {
+          "display": "2/10 FAIL",
+          "label": "C4 beats buy-and-hold",
+          "majority_required": 6,
+          "n_pass": 2,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.beats_buy_and_hold",
+          "source_file": "volatility_breakout/study_robustness.json"
+        },
+        "bootstrap_sharpe_ci_excludes_zero": {
+          "display": "0/10 FAIL",
+          "label": "C2 bootstrap Sharpe CI",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+          "source_file": "volatility_breakout/study_robustness.json"
+        },
+        "not_confined_to_one_fold": {
+          "display": "6/10 OK",
+          "label": "C6 fold locality",
+          "majority_required": 6,
+          "n_pass": 6,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.not_confined_to_one_fold",
+          "source_file": "volatility_breakout/study_robustness.json"
+        },
+        "positive_total_return": {
+          "display": "6/10 OK",
+          "label": "C1 positive return",
+          "majority_required": 6,
+          "n_pass": 6,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return",
+          "source_file": "volatility_breakout/study_robustness.json"
+        },
+        "survives_double_costs": {
+          "display": "3/10 FAIL",
+          "label": "C3 survives 2x costs",
+          "majority_required": 6,
+          "n_pass": 3,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs",
+          "source_file": "volatility_breakout/study_robustness.json"
+        },
+        "survives_drop_top_trades": {
+          "display": "0/10 FAIL",
+          "label": "C5 drop top 5 trades",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_drop_top_trades",
+          "source_file": "volatility_breakout/study_robustness.json"
+        }
+      },
+      "diagnostic_note": "partial non-robust signal (not promotion-eligible)",
+      "engine": "random_search",
+      "family": "volatility_breakout",
+      "majority_required": 6,
+      "median_buy_and_hold_return": 0.522747844787544,
+      "median_oos_return": 0.06492510211407598,
+      "median_oos_sharpe": 0.21537605004200375,
+      "min_oos_trades_met": {
+        "display": "10/10 OK",
+        "min_trades_required": 5,
+        "n_pass": 10,
+        "n_seeds": 10,
+        "role": "separate veto (not a seventh promotion criterion)",
+        "source_field": "r3_promotion.by_symbol.BTCUSDT.rejections.depends_on_few_trades",
+        "source_file": "volatility_breakout/study_robustness.json",
+        "veto_triggered": false
+      },
+      "symbol": "BTCUSDT",
+      "verdict": "REJECTED"
+    },
+    {
+      "criteria": {
+        "beats_buy_and_hold": {
+          "display": "1/10 FAIL",
+          "label": "C4 beats buy-and-hold",
+          "majority_required": 6,
+          "n_pass": 1,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.beats_buy_and_hold",
+          "source_file": "volatility_breakout/study_robustness.json"
+        },
+        "bootstrap_sharpe_ci_excludes_zero": {
+          "display": "0/10 FAIL",
+          "label": "C2 bootstrap Sharpe CI",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+          "source_file": "volatility_breakout/study_robustness.json"
+        },
+        "not_confined_to_one_fold": {
+          "display": "9/10 OK",
+          "label": "C6 fold locality",
+          "majority_required": 6,
+          "n_pass": 9,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.not_confined_to_one_fold",
+          "source_file": "volatility_breakout/study_robustness.json"
+        },
+        "positive_total_return": {
+          "display": "1/10 FAIL",
+          "label": "C1 positive return",
+          "majority_required": 6,
+          "n_pass": 1,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.positive_total_return",
+          "source_file": "volatility_breakout/study_robustness.json"
+        },
+        "survives_double_costs": {
+          "display": "1/10 FAIL",
+          "label": "C3 survives 2x costs",
+          "majority_required": 6,
+          "n_pass": 1,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_double_costs",
+          "source_file": "volatility_breakout/study_robustness.json"
+        },
+        "survives_drop_top_trades": {
+          "display": "0/10 FAIL",
+          "label": "C5 drop top 5 trades",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_drop_top_trades",
+          "source_file": "volatility_breakout/study_robustness.json"
+        }
+      },
+      "engine": "random_search",
+      "family": "volatility_breakout",
+      "majority_required": 6,
+      "median_buy_and_hold_return": -0.2190192992677874,
+      "median_oos_return": -0.7352424298675606,
+      "median_oos_sharpe": -0.6623581493750325,
+      "min_oos_trades_met": {
+        "display": "10/10 OK",
+        "min_trades_required": 5,
+        "n_pass": 10,
+        "n_seeds": 10,
+        "role": "separate veto (not a seventh promotion criterion)",
+        "source_field": "r3_promotion.by_symbol.ETHUSDT.rejections.depends_on_few_trades",
+        "source_file": "volatility_breakout/study_robustness.json",
+        "veto_triggered": false
+      },
+      "symbol": "ETHUSDT",
+      "verdict": "REJECTED"
+    },
+    {
+      "criteria": {
+        "beats_buy_and_hold": {
+          "display": "0/10 FAIL",
+          "label": "C4 beats buy-and-hold",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.beats_buy_and_hold",
+          "source_file": "funding/study_robustness.json"
+        },
+        "bootstrap_sharpe_ci_excludes_zero": {
+          "display": "0/10 FAIL",
+          "label": "C2 bootstrap Sharpe CI",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+          "source_file": "funding/study_robustness.json"
+        },
+        "not_confined_to_one_fold": {
+          "display": "10/10 OK",
+          "label": "C6 fold locality",
+          "majority_required": 6,
+          "n_pass": 10,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.not_confined_to_one_fold",
+          "source_file": "funding/study_robustness.json"
+        },
+        "positive_total_return": {
+          "display": "0/10 FAIL",
+          "label": "C1 positive return",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return",
+          "source_file": "funding/study_robustness.json"
+        },
+        "survives_double_costs": {
+          "display": "0/10 FAIL",
+          "label": "C3 survives 2x costs",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs",
+          "source_file": "funding/study_robustness.json"
+        },
+        "survives_drop_top_trades": {
+          "display": "0/10 FAIL",
+          "label": "C5 drop top 5 trades",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_drop_top_trades",
+          "source_file": "funding/study_robustness.json"
+        }
+      },
+      "engine": "random_search",
+      "family": "funding",
+      "majority_required": 6,
+      "median_buy_and_hold_return": 0.522747844787544,
+      "median_oos_return": -0.4091438240259256,
+      "median_oos_sharpe": -0.2688538431059223,
+      "min_oos_trades_met": {
+        "display": "10/10 OK",
+        "min_trades_required": 5,
+        "n_pass": 10,
+        "n_seeds": 10,
+        "role": "separate veto (not a seventh promotion criterion)",
+        "source_field": "r3_promotion.by_symbol.BTCUSDT.rejections.depends_on_few_trades",
+        "source_file": "funding/study_robustness.json",
+        "veto_triggered": false
+      },
+      "symbol": "BTCUSDT",
+      "verdict": "REJECTED"
+    },
+    {
+      "criteria": {
+        "beats_buy_and_hold": {
+          "display": "1/10 FAIL",
+          "label": "C4 beats buy-and-hold",
+          "majority_required": 6,
+          "n_pass": 1,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.beats_buy_and_hold",
+          "source_file": "funding/study_robustness.json"
+        },
+        "bootstrap_sharpe_ci_excludes_zero": {
+          "display": "0/10 FAIL",
+          "label": "C2 bootstrap Sharpe CI",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+          "source_file": "funding/study_robustness.json"
+        },
+        "not_confined_to_one_fold": {
+          "display": "10/10 OK",
+          "label": "C6 fold locality",
+          "majority_required": 6,
+          "n_pass": 10,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.not_confined_to_one_fold",
+          "source_file": "funding/study_robustness.json"
+        },
+        "positive_total_return": {
+          "display": "1/10 FAIL",
+          "label": "C1 positive return",
+          "majority_required": 6,
+          "n_pass": 1,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.positive_total_return",
+          "source_file": "funding/study_robustness.json"
+        },
+        "survives_double_costs": {
+          "display": "1/10 FAIL",
+          "label": "C3 survives 2x costs",
+          "majority_required": 6,
+          "n_pass": 1,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_double_costs",
+          "source_file": "funding/study_robustness.json"
+        },
+        "survives_drop_top_trades": {
+          "display": "0/10 FAIL",
+          "label": "C5 drop top 5 trades",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_drop_top_trades",
+          "source_file": "funding/study_robustness.json"
+        }
+      },
+      "engine": "random_search",
+      "family": "funding",
+      "majority_required": 6,
+      "median_buy_and_hold_return": -0.2190192992677874,
+      "median_oos_return": -0.5993944568161564,
+      "median_oos_sharpe": -0.31523602254726624,
+      "min_oos_trades_met": {
+        "display": "10/10 OK",
+        "min_trades_required": 5,
+        "n_pass": 10,
+        "n_seeds": 10,
+        "role": "separate veto (not a seventh promotion criterion)",
+        "source_field": "r3_promotion.by_symbol.ETHUSDT.rejections.depends_on_few_trades",
+        "source_file": "funding/study_robustness.json",
+        "veto_triggered": false
+      },
+      "symbol": "ETHUSDT",
+      "verdict": "REJECTED"
+    },
+    {
+      "criteria": {
+        "beats_buy_and_hold": {
+          "display": "0/10 FAIL",
+          "label": "C4 beats buy-and-hold",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.beats_buy_and_hold",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        },
+        "bootstrap_sharpe_ci_excludes_zero": {
+          "display": "0/10 FAIL",
+          "label": "C2 bootstrap Sharpe CI",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        },
+        "not_confined_to_one_fold": {
+          "display": "9/10 OK",
+          "label": "C6 fold locality",
+          "majority_required": 6,
+          "n_pass": 9,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.not_confined_to_one_fold",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        },
+        "positive_total_return": {
+          "display": "1/10 FAIL",
+          "label": "C1 positive return",
+          "majority_required": 6,
+          "n_pass": 1,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        },
+        "survives_double_costs": {
+          "display": "0/10 FAIL",
+          "label": "C3 survives 2x costs",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        },
+        "survives_drop_top_trades": {
+          "display": "0/10 FAIL",
+          "label": "C5 drop top 5 trades",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_drop_top_trades",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        }
+      },
+      "engine": "random_search",
+      "family": "BTC_ETH_confirmation",
+      "majority_required": 6,
+      "median_buy_and_hold_return": 0.522747844787544,
+      "median_oos_return": -0.6578855699743127,
+      "median_oos_sharpe": -0.5486058697854144,
+      "min_oos_trades_met": {
+        "display": "10/10 OK",
+        "min_trades_required": 5,
+        "n_pass": 10,
+        "n_seeds": 10,
+        "role": "separate veto (not a seventh promotion criterion)",
+        "source_field": "r3_promotion.by_symbol.BTCUSDT.rejections.depends_on_few_trades",
+        "source_file": "BTC_ETH_confirmation/study_robustness.json",
+        "veto_triggered": false
+      },
+      "symbol": "BTCUSDT",
+      "verdict": "REJECTED"
+    },
+    {
+      "criteria": {
+        "beats_buy_and_hold": {
+          "display": "0/10 FAIL",
+          "label": "C4 beats buy-and-hold",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.beats_buy_and_hold",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        },
+        "bootstrap_sharpe_ci_excludes_zero": {
+          "display": "0/10 FAIL",
+          "label": "C2 bootstrap Sharpe CI",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        },
+        "not_confined_to_one_fold": {
+          "display": "10/10 OK",
+          "label": "C6 fold locality",
+          "majority_required": 6,
+          "n_pass": 10,
+          "n_seeds": 10,
+          "pass": true,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.not_confined_to_one_fold",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        },
+        "positive_total_return": {
+          "display": "0/10 FAIL",
+          "label": "C1 positive return",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.positive_total_return",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        },
+        "survives_double_costs": {
+          "display": "0/10 FAIL",
+          "label": "C3 survives 2x costs",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_double_costs",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        },
+        "survives_drop_top_trades": {
+          "display": "0/10 FAIL",
+          "label": "C5 drop top 5 trades",
+          "majority_required": 6,
+          "n_pass": 0,
+          "n_seeds": 10,
+          "pass": false,
+          "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_drop_top_trades",
+          "source_file": "BTC_ETH_confirmation/study_robustness.json"
+        }
+      },
+      "engine": "random_search",
+      "family": "BTC_ETH_confirmation",
+      "majority_required": 6,
+      "median_buy_and_hold_return": -0.2190192992677874,
+      "median_oos_return": -0.6830202449583207,
+      "median_oos_sharpe": -0.2976629359260061,
+      "min_oos_trades_met": {
+        "display": "10/10 OK",
+        "min_trades_required": 5,
+        "n_pass": 10,
+        "n_seeds": 10,
+        "role": "separate veto (not a seventh promotion criterion)",
+        "source_field": "r3_promotion.by_symbol.ETHUSDT.rejections.depends_on_few_trades",
+        "source_file": "BTC_ETH_confirmation/study_robustness.json",
+        "veto_triggered": false
+      },
+      "symbol": "ETHUSDT",
+      "verdict": "REJECTED"
+    }
+  ],
+  "reporter_holdout_accessed": false,
+  "rs_ga_comparison": [
+    {
+      "ci_high": 0.1450003441382246,
+      "ci_low": -0.03406478852480028,
+      "family": "breakout",
+      "ga_does_not_decide_promotion": true,
+      "interpretation": "no evidence of a difference between Random Search and the Genetic Algorithm: the 95% confidence interval for the paired difference includes zero",
+      "mean_difference_ga_minus_rs": 0.05546777780671216,
+      "source_field": "families.breakout.analysis.paired_ga_minus_rs",
+      "source_file": "r3_family_rollup.json"
+    },
+    {
+      "ci_high": 0.34551496707723345,
+      "ci_low": 0.011851644153656082,
+      "family": "mean_reversion",
+      "ga_does_not_decide_promotion": true,
+      "interpretation": "genetic_algorithm is ahead on the paired fold-level comparison (interval excludes zero); this is development out-of-sample evidence only and does not establish holdout performance",
+      "mean_difference_ga_minus_rs": 0.17868330561544477,
+      "source_field": "families.mean_reversion.analysis.paired_ga_minus_rs",
+      "source_file": "r3_family_rollup.json"
+    },
+    {
+      "ci_high": 0.2219621414144699,
+      "ci_low": -0.3657664282903287,
+      "family": "volatility_breakout",
+      "ga_does_not_decide_promotion": true,
+      "interpretation": "no evidence of a difference between Random Search and the Genetic Algorithm: the 95% confidence interval for the paired difference includes zero",
+      "mean_difference_ga_minus_rs": -0.0719021434379294,
+      "source_field": "families.volatility_breakout.analysis.paired_ga_minus_rs",
+      "source_file": "r3_family_rollup.json"
+    },
+    {
+      "ci_high": 0.4587641857040295,
+      "ci_low": -0.22696783230639356,
+      "family": "funding",
+      "ga_does_not_decide_promotion": true,
+      "interpretation": "no evidence of a difference between Random Search and the Genetic Algorithm: the 95% confidence interval for the paired difference includes zero",
+      "mean_difference_ga_minus_rs": 0.11589817669881798,
+      "source_field": "families.funding.analysis.paired_ga_minus_rs",
+      "source_file": "r3_family_rollup.json"
+    },
+    {
+      "ci_high": 0.4132134789995759,
+      "ci_low": -0.08440529119545132,
+      "family": "BTC_ETH_confirmation",
+      "ga_does_not_decide_promotion": true,
+      "interpretation": "no evidence of a difference between Random Search and the Genetic Algorithm: the 95% confidence interval for the paired difference includes zero",
+      "mean_difference_ga_minus_rs": 0.1644040939020623,
+      "source_field": "families.BTC_ETH_confirmation.analysis.paired_ga_minus_rs",
+      "source_file": "r3_family_rollup.json"
+    }
+  ],
+  "schema_version": 2,
+  "secondary_engine": "genetic_algorithm",
+  "source_files_read": [
+    {
+      "relative_path": "BTC_ETH_confirmation/checkpoint.json",
+      "sha256": "d9db10c0afa6c750bd158e1b897adf7bb705c5c57f3dcc10f0722e787b3140f9"
+    },
+    {
+      "relative_path": "BTC_ETH_confirmation/run_identity.json",
+      "sha256": "f22383d359cf7b5daf9fbbc9bd83b173e0d2141e123a75165b035f175a13feb6"
+    },
+    {
+      "relative_path": "BTC_ETH_confirmation/status.json",
+      "sha256": "ea91a5a0ebf6244e0f40930a5160e12dced11d6be148da0d489c28b84dcc77a6"
+    },
+    {
+      "relative_path": "BTC_ETH_confirmation/study_robustness.json",
+      "sha256": "0378f0a1618fb776f3268f896a83abfdca3bc9e21bd15387d027a3d03328bc33"
+    },
+    {
+      "relative_path": "breakout/checkpoint.json",
+      "sha256": "c1dd3f76cdd2864d2f22b4494efa544870f1f15a5e5a64e92ba1a7fce2438153"
+    },
+    {
+      "relative_path": "breakout/run_identity.json",
+      "sha256": "802b995ba0ee819430d767d0b274d4d3c619d7dc01f54d23f7d710e11d853d73"
+    },
+    {
+      "relative_path": "breakout/status.json",
+      "sha256": "5e253af7bbc9de59a4617e586b38840d8b513538595e3555b0896136e3a3a5d0"
+    },
+    {
+      "relative_path": "breakout/study_robustness.json",
+      "sha256": "16b82757b07a3881c34441a456a818aedd04de444e971087fd54ac7a9b608d76"
+    },
+    {
+      "relative_path": "funding/checkpoint.json",
+      "sha256": "97cf9dbee240b66716f5e6bd15f9ee8125d6e121ba532a966df7b6555613fbaf"
+    },
+    {
+      "relative_path": "funding/run_identity.json",
+      "sha256": "7b34e4dbdf5c0cd7c12633354dc6f2c592c6a50bbb0219fd4afb75cb41c0c236"
+    },
+    {
+      "relative_path": "funding/status.json",
+      "sha256": "45f3aaf8c4ceb14a083c769fa07a6dc15cf38eb2597033aa07b9c60fffc7c64a"
+    },
+    {
+      "relative_path": "funding/study_robustness.json",
+      "sha256": "7a174369e57b6e3956d4de2f8cf1ac8b14b71b3d1199755b3cd056e419fb90f1"
+    },
+    {
+      "relative_path": "mean_reversion/checkpoint.json",
+      "sha256": "a040b08d4d60ce6455f763e3aa55d506052ef9e7891673e9ddc3fca46469063f"
+    },
+    {
+      "relative_path": "mean_reversion/run_identity.json",
+      "sha256": "499b048f1f9f89107e61faf0193bc4f7abaa0f0feae3d4664c3e562378df80ba"
+    },
+    {
+      "relative_path": "mean_reversion/status.json",
+      "sha256": "b50e09a34275cf5f3bef3543dd500fcce1657ab1f5c51823fd2890b2b930eac6"
+    },
+    {
+      "relative_path": "mean_reversion/study_robustness.json",
+      "sha256": "51b62425c420f863f502d6d3444e79e80d8a9fdd2f1e25e5dbf39a7747dd3c8e"
+    },
+    {
+      "relative_path": "r3_execution.json",
+      "sha256": "ce0c7e7e00f92f66f20cf41104b4f6e0fc8f7da9cb19993c48c0a590a003a908"
+    },
+    {
+      "relative_path": "r3_family_rollup.json",
+      "sha256": "b4e2b6d1facc62d49d3b224e24a6d26a41fa793d4485acf88c728cb64b3e04b2"
+    },
+    {
+      "relative_path": "r3_gate_verdict.json",
+      "sha256": "0098a8f66106263230f7dfb2e0966457fbf4c5792f99883d1b50bb3ece27f189"
+    },
+    {
+      "relative_path": "r3_scientific_closure_report.json",
+      "sha256": "dc65da48e6ea6cccc7a9d0d2588bfedd28c05d3fe557029368c16074648f3200"
+    },
+    {
+      "relative_path": "volatility_breakout/checkpoint.json",
+      "sha256": "dc6f941bb3bb45994e39463a45c290fb4254c4c7c14676a6dc0fd80801670f06"
+    },
+    {
+      "relative_path": "volatility_breakout/run_identity.json",
+      "sha256": "381778a52fb5ae3ee85e6dcd73b4ec4ee7435659b2bdf6f7112b243f86165d40"
+    },
+    {
+      "relative_path": "volatility_breakout/status.json",
+      "sha256": "8074c777884317f99e6e8abf9a29b3b9d2599b7d6a3b1f61c330233634650509"
+    },
+    {
+      "relative_path": "volatility_breakout/study_robustness.json",
+      "sha256": "b44ba6ab2fc21b7094d12159d18b4bfad0900cb078239d9279a5f96926d1dd85"
+    }
+  ],
+  "source_root": "artifacts/runs/r3_full_budget100_ga21",
+  "source_timestamp": "2026-08-10T17:41:53.213509+00:00",
+  "traceability": [
+    {
+      "claim": "breakout/BTCUSDT C1 positive return",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return",
+      "source_file": "breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/BTCUSDT C2 bootstrap Sharpe CI",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+      "source_file": "breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/BTCUSDT C3 survives 2x costs",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs",
+      "source_file": "breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/BTCUSDT C4 beats buy-and-hold",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.beats_buy_and_hold",
+      "source_file": "breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/BTCUSDT C5 drop top 5 trades",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_drop_top_trades",
+      "source_file": "breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/BTCUSDT C6 fold locality",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.not_confined_to_one_fold",
+      "source_file": "breakout/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/BTCUSDT min_oos_trades_met veto",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.rejections.depends_on_few_trades",
+      "source_file": "breakout/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/BTCUSDT median OOS return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.BTCUSDT|random_search.median_total_return",
+      "source_file": "breakout/study_robustness.json",
+      "value": -0.15795781516548946,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/BTCUSDT median OOS Sharpe",
+      "classification": "primary_result",
+      "derivation": "median of per_run strategy.sharpe for symbol and random_search",
+      "source_field": "per_run[].strategy.sharpe",
+      "source_file": "breakout/study_robustness.json",
+      "value": -0.7308026909947924,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/BTCUSDT median buy-and-hold return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.BTCUSDT|random_search.median_buy_and_hold_return",
+      "source_file": "breakout/study_robustness.json",
+      "value": 0.522747844787544,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/BTCUSDT family verdict",
+      "classification": "primary_result",
+      "source_field": "families.breakout.analysis.verdict",
+      "source_file": "r3_family_rollup.json",
+      "value": "REJECTED",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT C1 positive return",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.positive_total_return",
+      "source_file": "breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT C2 bootstrap Sharpe CI",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+      "source_file": "breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT C3 survives 2x costs",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_double_costs",
+      "source_file": "breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT C4 beats buy-and-hold",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.beats_buy_and_hold",
+      "source_file": "breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT C5 drop top 5 trades",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_drop_top_trades",
+      "source_file": "breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT C6 fold locality",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.not_confined_to_one_fold",
+      "source_file": "breakout/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT min_oos_trades_met veto",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.rejections.depends_on_few_trades",
+      "source_file": "breakout/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT median OOS return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.ETHUSDT|random_search.median_total_return",
+      "source_file": "breakout/study_robustness.json",
+      "value": -0.25525919986792583,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT median OOS Sharpe",
+      "classification": "primary_result",
+      "derivation": "median of per_run strategy.sharpe for symbol and random_search",
+      "source_field": "per_run[].strategy.sharpe",
+      "source_file": "breakout/study_robustness.json",
+      "value": -1.0545238570959898,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT median buy-and-hold return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.ETHUSDT|random_search.median_buy_and_hold_return",
+      "source_file": "breakout/study_robustness.json",
+      "value": -0.2190192992677874,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout/ETHUSDT family verdict",
+      "classification": "primary_result",
+      "source_field": "families.breakout.analysis.verdict",
+      "source_file": "r3_family_rollup.json",
+      "value": "REJECTED",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout GA-RS paired mean difference",
+      "classification": "secondary_diagnostic",
+      "source_field": "families.breakout.analysis.paired_ga_minus_rs.mean_difference",
+      "source_file": "r3_family_rollup.json",
+      "value": 0.05546777780671216,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "breakout GA-RS 95% CI",
+      "classification": "secondary_diagnostic",
+      "source_field": "families.breakout.analysis.paired_ga_minus_rs",
+      "source_file": "r3_family_rollup.json",
+      "value": [
+        -0.03406478852480028,
+        0.1450003441382246
+      ],
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT C1 positive return",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT C2 bootstrap Sharpe CI",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT C3 survives 2x costs",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT C4 beats buy-and-hold",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.beats_buy_and_hold",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT C5 drop top 5 trades",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_drop_top_trades",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT C6 fold locality",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.not_confined_to_one_fold",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT min_oos_trades_met veto",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.rejections.depends_on_few_trades",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT median OOS return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.BTCUSDT|random_search.median_total_return",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": -0.5996847869944606,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT median OOS Sharpe",
+      "classification": "primary_result",
+      "derivation": "median of per_run strategy.sharpe for symbol and random_search",
+      "source_field": "per_run[].strategy.sharpe",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": -0.5005010494241832,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT median buy-and-hold return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.BTCUSDT|random_search.median_buy_and_hold_return",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": 0.522747844787544,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/BTCUSDT family verdict",
+      "classification": "primary_result",
+      "source_field": "families.mean_reversion.analysis.verdict",
+      "source_file": "r3_family_rollup.json",
+      "value": "REJECTED",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT C1 positive return",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.positive_total_return",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT C2 bootstrap Sharpe CI",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT C3 survives 2x costs",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_double_costs",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT C4 beats buy-and-hold",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.beats_buy_and_hold",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT C5 drop top 5 trades",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_drop_top_trades",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT C6 fold locality",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.not_confined_to_one_fold",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT min_oos_trades_met veto",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.rejections.depends_on_few_trades",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT median OOS return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.ETHUSDT|random_search.median_total_return",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": -0.7990860353922618,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT median OOS Sharpe",
+      "classification": "primary_result",
+      "derivation": "median of per_run strategy.sharpe for symbol and random_search",
+      "source_field": "per_run[].strategy.sharpe",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": -0.8932117142699131,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT median buy-and-hold return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.ETHUSDT|random_search.median_buy_and_hold_return",
+      "source_file": "mean_reversion/study_robustness.json",
+      "value": -0.2190192992677874,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion/ETHUSDT family verdict",
+      "classification": "primary_result",
+      "source_field": "families.mean_reversion.analysis.verdict",
+      "source_file": "r3_family_rollup.json",
+      "value": "REJECTED",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion GA-RS paired mean difference",
+      "classification": "secondary_diagnostic",
+      "source_field": "families.mean_reversion.analysis.paired_ga_minus_rs.mean_difference",
+      "source_file": "r3_family_rollup.json",
+      "value": 0.17868330561544477,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "mean_reversion GA-RS 95% CI",
+      "classification": "secondary_diagnostic",
+      "source_field": "families.mean_reversion.analysis.paired_ga_minus_rs",
+      "source_file": "r3_family_rollup.json",
+      "value": [
+        0.011851644153656082,
+        0.34551496707723345
+      ],
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT C1 positive return",
+      "classification": "secondary_diagnostic",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "6/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT C2 bootstrap Sharpe CI",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT C3 survives 2x costs",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "3/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT C4 beats buy-and-hold",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.beats_buy_and_hold",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "2/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT C5 drop top 5 trades",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_drop_top_trades",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT C6 fold locality",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.not_confined_to_one_fold",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "6/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT min_oos_trades_met veto",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.rejections.depends_on_few_trades",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT median OOS return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.BTCUSDT|random_search.median_total_return",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": 0.06492510211407598,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT median OOS Sharpe",
+      "classification": "primary_result",
+      "derivation": "median of per_run strategy.sharpe for symbol and random_search",
+      "source_field": "per_run[].strategy.sharpe",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": 0.21537605004200375,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT median buy-and-hold return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.BTCUSDT|random_search.median_buy_and_hold_return",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": 0.522747844787544,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/BTCUSDT family verdict",
+      "classification": "primary_result",
+      "source_field": "families.volatility_breakout.analysis.verdict",
+      "source_file": "r3_family_rollup.json",
+      "value": "REJECTED",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT C1 positive return",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.positive_total_return",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "1/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT C2 bootstrap Sharpe CI",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT C3 survives 2x costs",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_double_costs",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "1/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT C4 beats buy-and-hold",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.beats_buy_and_hold",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "1/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT C5 drop top 5 trades",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_drop_top_trades",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT C6 fold locality",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.not_confined_to_one_fold",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "9/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT min_oos_trades_met veto",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.rejections.depends_on_few_trades",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT median OOS return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.ETHUSDT|random_search.median_total_return",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": -0.7352424298675606,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT median OOS Sharpe",
+      "classification": "primary_result",
+      "derivation": "median of per_run strategy.sharpe for symbol and random_search",
+      "source_field": "per_run[].strategy.sharpe",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": -0.6623581493750325,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT median buy-and-hold return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.ETHUSDT|random_search.median_buy_and_hold_return",
+      "source_file": "volatility_breakout/study_robustness.json",
+      "value": -0.2190192992677874,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout/ETHUSDT family verdict",
+      "classification": "primary_result",
+      "source_field": "families.volatility_breakout.analysis.verdict",
+      "source_file": "r3_family_rollup.json",
+      "value": "REJECTED",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout GA-RS paired mean difference",
+      "classification": "secondary_diagnostic",
+      "source_field": "families.volatility_breakout.analysis.paired_ga_minus_rs.mean_difference",
+      "source_file": "r3_family_rollup.json",
+      "value": -0.0719021434379294,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "volatility_breakout GA-RS 95% CI",
+      "classification": "secondary_diagnostic",
+      "source_field": "families.volatility_breakout.analysis.paired_ga_minus_rs",
+      "source_file": "r3_family_rollup.json",
+      "value": [
+        -0.3657664282903287,
+        0.2219621414144699
+      ],
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT C1 positive return",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return",
+      "source_file": "funding/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT C2 bootstrap Sharpe CI",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+      "source_file": "funding/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT C3 survives 2x costs",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs",
+      "source_file": "funding/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT C4 beats buy-and-hold",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.beats_buy_and_hold",
+      "source_file": "funding/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT C5 drop top 5 trades",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_drop_top_trades",
+      "source_file": "funding/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT C6 fold locality",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.not_confined_to_one_fold",
+      "source_file": "funding/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT min_oos_trades_met veto",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.rejections.depends_on_few_trades",
+      "source_file": "funding/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT median OOS return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.BTCUSDT|random_search.median_total_return",
+      "source_file": "funding/study_robustness.json",
+      "value": -0.4091438240259256,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT median OOS Sharpe",
+      "classification": "primary_result",
+      "derivation": "median of per_run strategy.sharpe for symbol and random_search",
+      "source_field": "per_run[].strategy.sharpe",
+      "source_file": "funding/study_robustness.json",
+      "value": -0.2688538431059223,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT median buy-and-hold return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.BTCUSDT|random_search.median_buy_and_hold_return",
+      "source_file": "funding/study_robustness.json",
+      "value": 0.522747844787544,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/BTCUSDT family verdict",
+      "classification": "primary_result",
+      "source_field": "families.funding.analysis.verdict",
+      "source_file": "r3_family_rollup.json",
+      "value": "REJECTED",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT C1 positive return",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.positive_total_return",
+      "source_file": "funding/study_robustness.json",
+      "value": "1/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT C2 bootstrap Sharpe CI",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+      "source_file": "funding/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT C3 survives 2x costs",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_double_costs",
+      "source_file": "funding/study_robustness.json",
+      "value": "1/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT C4 beats buy-and-hold",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.beats_buy_and_hold",
+      "source_file": "funding/study_robustness.json",
+      "value": "1/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT C5 drop top 5 trades",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_drop_top_trades",
+      "source_file": "funding/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT C6 fold locality",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.not_confined_to_one_fold",
+      "source_file": "funding/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT min_oos_trades_met veto",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.rejections.depends_on_few_trades",
+      "source_file": "funding/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT median OOS return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.ETHUSDT|random_search.median_total_return",
+      "source_file": "funding/study_robustness.json",
+      "value": -0.5993944568161564,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT median OOS Sharpe",
+      "classification": "primary_result",
+      "derivation": "median of per_run strategy.sharpe for symbol and random_search",
+      "source_field": "per_run[].strategy.sharpe",
+      "source_file": "funding/study_robustness.json",
+      "value": -0.31523602254726624,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT median buy-and-hold return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.ETHUSDT|random_search.median_buy_and_hold_return",
+      "source_file": "funding/study_robustness.json",
+      "value": -0.2190192992677874,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding/ETHUSDT family verdict",
+      "classification": "primary_result",
+      "source_field": "families.funding.analysis.verdict",
+      "source_file": "r3_family_rollup.json",
+      "value": "REJECTED",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding GA-RS paired mean difference",
+      "classification": "secondary_diagnostic",
+      "source_field": "families.funding.analysis.paired_ga_minus_rs.mean_difference",
+      "source_file": "r3_family_rollup.json",
+      "value": 0.11589817669881798,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "funding GA-RS 95% CI",
+      "classification": "secondary_diagnostic",
+      "source_field": "families.funding.analysis.paired_ga_minus_rs",
+      "source_file": "r3_family_rollup.json",
+      "value": [
+        -0.22696783230639356,
+        0.4587641857040295
+      ],
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT C1 positive return",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "1/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT C2 bootstrap Sharpe CI",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT C3 survives 2x costs",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT C4 beats buy-and-hold",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.beats_buy_and_hold",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT C5 drop top 5 trades",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.survives_drop_top_trades",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT C6 fold locality",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.promotion.not_confined_to_one_fold",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "9/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT min_oos_trades_met veto",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.BTCUSDT.rejections.depends_on_few_trades",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT median OOS return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.BTCUSDT|random_search.median_total_return",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": -0.6578855699743127,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT median OOS Sharpe",
+      "classification": "primary_result",
+      "derivation": "median of per_run strategy.sharpe for symbol and random_search",
+      "source_field": "per_run[].strategy.sharpe",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": -0.5486058697854144,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT median buy-and-hold return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.BTCUSDT|random_search.median_buy_and_hold_return",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": 0.522747844787544,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/BTCUSDT family verdict",
+      "classification": "primary_result",
+      "source_field": "families.BTC_ETH_confirmation.analysis.verdict",
+      "source_file": "r3_family_rollup.json",
+      "value": "REJECTED",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT C1 positive return",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.positive_total_return",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT C2 bootstrap Sharpe CI",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.bootstrap_sharpe_ci_excludes_zero",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT C3 survives 2x costs",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_double_costs",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT C4 beats buy-and-hold",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.beats_buy_and_hold",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT C5 drop top 5 trades",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.survives_drop_top_trades",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "0/10 FAIL",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT C6 fold locality",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.promotion.not_confined_to_one_fold",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT min_oos_trades_met veto",
+      "classification": "primary_result",
+      "source_field": "r3_promotion.by_symbol.ETHUSDT.rejections.depends_on_few_trades",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": "10/10 OK",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT median OOS return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.ETHUSDT|random_search.median_total_return",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": -0.6830202449583207,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT median OOS Sharpe",
+      "classification": "primary_result",
+      "derivation": "median of per_run strategy.sharpe for symbol and random_search",
+      "source_field": "per_run[].strategy.sharpe",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": -0.2976629359260061,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT median buy-and-hold return",
+      "classification": "primary_result",
+      "source_field": "by_symbol_and_engine.ETHUSDT|random_search.median_buy_and_hold_return",
+      "source_file": "BTC_ETH_confirmation/study_robustness.json",
+      "value": -0.2190192992677874,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation/ETHUSDT family verdict",
+      "classification": "primary_result",
+      "source_field": "families.BTC_ETH_confirmation.analysis.verdict",
+      "source_file": "r3_family_rollup.json",
+      "value": "REJECTED",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation GA-RS paired mean difference",
+      "classification": "secondary_diagnostic",
+      "source_field": "families.BTC_ETH_confirmation.analysis.paired_ga_minus_rs.mean_difference",
+      "source_file": "r3_family_rollup.json",
+      "value": 0.1644040939020623,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "BTC_ETH_confirmation GA-RS 95% CI",
+      "classification": "secondary_diagnostic",
+      "source_field": "families.BTC_ETH_confirmation.analysis.paired_ga_minus_rs",
+      "source_file": "r3_family_rollup.json",
+      "value": [
+        -0.08440529119545132,
+        0.4132134789995759
+      ],
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "Units completed",
+      "classification": "primary_result",
+      "source_field": "completed",
+      "source_file": "*/status.json",
+      "value": "100/100",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "Numerical discrepancies",
+      "classification": "primary_result",
+      "derivation": "cross-check execution, rollup, study_robustness, gate_verdict",
+      "source_field": "n/a",
+      "source_file": "reporter consistency battery",
+      "value": 0,
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "Gate R3 status",
+      "classification": "primary_result",
+      "source_field": "gate_status",
+      "source_file": "r3_gate_verdict.json",
+      "value": "CLOSED_NEGATIVE",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "Families promoted",
+      "classification": "primary_result",
+      "source_field": "n_promoted",
+      "source_file": "r3_gate_verdict.json",
+      "value": "0",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "Isolation audit at R3 closure",
+      "classification": "secondary_diagnostic",
+      "source_field": "isolation_audit",
+      "source_file": "r3_scientific_closure_report.json",
+      "value": "100/100 audited; failures=0",
+      "verification_level": "documentary"
+    },
+    {
+      "claim": "R4 required at closure",
+      "classification": "primary_result",
+      "source_field": "r4_required",
+      "source_file": "r3_gate_verdict.json",
+      "value": "False",
+      "verification_level": "reporter_verified"
+    },
+    {
+      "claim": "R4 application status",
+      "classification": "secondary_diagnostic",
+      "source_field": "Decision item 3",
+      "source_file": "docs/decisions/0015-r3-family-evaluation-negative.md",
+      "value": "SKIPPED (R4 not executed; zero R3 promotions at closure)",
+      "verification_level": "documentary"
+    },
+    {
+      "claim": "R4 promoted-only scope (post-closure documentation)",
+      "classification": "secondary_diagnostic",
+      "source_field": "R4 scope definition",
+      "source_file": "docs/roadmap/phase_gates.md",
+      "value": "Promoted-only confirmatory scope harmonized in documentation after R3 closure",
+      "verification_level": "documentary"
+    },
+    {
+      "claim": "Historical holdout status",
+      "classification": "limitation",
+      "source_field": "Decision item 4",
+      "source_file": "docs/decisions/0015-r3-family-evaluation-negative.md",
+      "value": "Frozen holdout not opened during Gate R3 (documented at closure)",
+      "verification_level": "documentary"
+    },
+    {
+      "claim": "Provenance state tracked_state_1",
+      "classification": "limitation",
+      "source_field": "worktree.diff_sha256",
+      "source_file": "*/run_identity.json",
+      "value": {
+        "commit": "aac33577c14cba08f349381ce3566eca0c587299",
+        "diff_bytes": 66986,
+        "diff_sha256": "0378645e31c35f0b988d1a57eefb6dcbed9517e513d6d50cf739c1e8d89534de",
+        "dirty": true,
+        "families": [
+          "BTC_ETH_confirmation"
+        ],
+        "provisional": true,
+        "reproducible_from_commit_alone": false,
+        "state_id": "tracked_state_1",
+        "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"
+      },
+      "verification_level": "limitation"
+    },
+    {
+      "claim": "Provenance state tracked_state_2",
+      "classification": "limitation",
+      "source_field": "worktree.diff_sha256",
+      "source_file": "*/run_identity.json",
+      "value": {
+        "commit": "aac33577c14cba08f349381ce3566eca0c587299",
+        "diff_bytes": 45647,
+        "diff_sha256": "4073dba60103de8d7a4ea99a901296fab9f1a4b7d6c4228d65037e6a984f2e9b",
+        "dirty": true,
+        "families": [
+          "breakout",
+          "funding",
+          "mean_reversion",
+          "volatility_breakout"
+        ],
+        "provisional": true,
+        "reproducible_from_commit_alone": false,
+        "state_id": "tracked_state_2",
+        "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"
+      },
+      "verification_level": "limitation"
+    }
+  ]
+}

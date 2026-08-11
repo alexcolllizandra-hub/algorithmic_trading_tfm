@@ -24,6 +24,7 @@ from perp_lab.config import load_data_contract, load_experiment_config, load_set
 from perp_lab.data.download import run_ingestion
 from perp_lab.data.providers.binance_vision import BinanceVisionBulkProvider
 from perp_lab.experiments.pipeline import run_dev_pipeline
+from perp_lab.reporting.r3_gate import R3ReportError, default_r3_root, write_r3_thesis_report
 from perp_lab.search.config import load_search_config
 from perp_lab.search.runner import run_search
 from perp_lab.utils.logging import add_file_logging, get_logger
@@ -689,6 +690,21 @@ def cmd_robustness(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_report_r3_gate(args: argparse.Namespace) -> int:
+    """Generate thesis-ready Gate R3 tables from persisted artifacts (read-only)."""
+    root = args.root.resolve()
+    output_dir = (args.output_dir or Path("reports/r3_gate") / root.name).resolve()
+    try:
+        paths = write_r3_thesis_report(root, output_dir)
+    except R3ReportError as exc:
+        _log.error("%s", exc)
+        return 1
+    print("Gate R3 thesis report written:")
+    print(f"  JSON : {paths['json']}")
+    print(f"  MD   : {paths['markdown']}")
+    return 0
+
+
 def cmd_dashboard(args: argparse.Namespace) -> int:
     """Launch the read-only Streamlit Research Dashboard (default port 8501)."""
     import importlib.util
@@ -899,6 +915,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run Streamlit headless (do not open a browser automatically).",
     )
     p_dash.set_defaults(func=cmd_dashboard)
+
+    p_r3 = sub.add_parser(
+        "report-r3-gate",
+        parents=[common],
+        help="Generate thesis-ready Gate R3 report tables from persisted artifacts.",
+    )
+    p_r3.add_argument(
+        "root",
+        nargs="?",
+        type=Path,
+        default=default_r3_root(),
+        help="Gate R3 study root (default: artifacts/runs/r3_full_budget100_ga21).",
+    )
+    p_r3.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Directory for derived thesis report outputs (default: reports/r3_gate/<root>).",
+    )
+    p_r3.set_defaults(func=cmd_report_r3_gate)
 
     return parser
 
