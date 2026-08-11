@@ -5,8 +5,9 @@
 El contrato de datos fija un **holdout congelado** en el intervalo
 `[2026-01-01 00:00 UTC, 2026-07-01)` y un conjunto de desarrollo estrictamente
 anterior a esa fecha ([ADR 0003](../decisions/0003-cutoff-and-holdout-window.md)).
-Todo el arco experimental R1–R4 se ejecutó **solo sobre la partición de
-desarrollo**; el holdout no se abrió para EDA orientada a diseño, selección de
+Las fases **ejecutadas** R1–R3 utilizaron exclusivamente la partición de
+desarrollo; R4 quedó **SKIPPED** conforme al protocolo y no se ejecutó como gate
+confirmatorio. El holdout no se abrió para EDA orientada a diseño, selección de
 estrategias ni ajuste de hiperparámetros.
 
 La validación temporal principal es **walk-forward** con quince pliegues externos
