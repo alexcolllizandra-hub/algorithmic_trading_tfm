@@ -12,6 +12,22 @@ Whichever is touched first ends the event. The horizontal barriers are scanned
 against the high/low of each bar in the holding window, so a barrier is
 registered on the bar that actually reached it rather than at the closing price.
 
+Costs
+-----
+The question a meta-label has to answer is not "did price move in the signalled
+direction" but **"would acting on this signal have been profitable after
+costs"**. A label computed on gross returns answers the first question and
+systematically over-states how often the primary rule was right, because it
+hands the model a set of marginal winners that a real account would have paid
+away in fees, slippage and funding.
+
+:class:`LabelCosts` therefore charges the same three components the backtester
+charges (:mod:`perp_lab.backtesting.engine`): a round trip of fee plus slippage
+on entry and exit, and the funding rates settling inside the holding interval,
+signed by the position. ``ret`` is the **net** return and the label is its sign
+against ``min_return_bps``. With :data:`FREE_LABELS` the two coincide, which is
+only appropriate for mechanical tests.
+
 Causality
 ---------
 ``volatility_col`` must already be causal: its value on the event bar may only
@@ -37,6 +53,7 @@ chapters 3 and 4.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 import polars as pl
@@ -49,14 +66,34 @@ _TOUCH_LOWER = "lower"
 _TOUCH_VERTICAL = "vertical"
 
 
+ExitFill = Literal["barrier", "next_open"]
+
+
 @dataclass(frozen=True)
 class TripleBarrierSpec:
-    """The barrier geometry, mirroring ``experiment.yaml``'s ``labeling`` block."""
+    """The barrier geometry, mirroring ``experiment.yaml``'s ``labeling`` block.
+
+    ``exit_fill`` decides what price a barrier touch is credited at, and the two
+    options describe genuinely different execution mechanisms:
+
+    * ``barrier`` — the classical convention (Lopez de Prado): the touch fills at
+      the barrier level, which assumes resting stop and take-profit orders in the
+      market.
+    * ``next_open`` — the touch is only *observed* at the end of the bar and is
+      filled at the next open, which is what
+      :mod:`perp_lab.backtesting.engine` can actually execute under this
+      project's ``next_bar_open``, no-same-bar-fill contract.
+
+    Use ``next_open`` whenever the label has to line up with a backtest of the
+    same events; ``barrier`` labels are optimistic by exactly the move between
+    the touch and the following open.
+    """
 
     upper_barrier_atr: float
     lower_barrier_atr: float
     vertical_barrier_bars: int
     min_return_bps: float = 0.0
+    exit_fill: ExitFill = "barrier"
 
     def __post_init__(self) -> None:
         if self.upper_barrier_atr <= 0 or self.lower_barrier_atr <= 0:
@@ -65,14 +102,56 @@ class TripleBarrierSpec:
             raise ValueError("vertical_barrier_bars must be at least 1.")
         if self.min_return_bps < 0:
             raise ValueError("min_return_bps must be non-negative.")
+        if self.exit_fill not in ("barrier", "next_open"):
+            raise ValueError("exit_fill must be 'barrier' or 'next_open'.")
 
-    def to_dict(self) -> dict[str, float | int]:
+    def to_dict(self) -> dict[str, float | int | str]:
         return {
             "upper_barrier_atr": self.upper_barrier_atr,
             "lower_barrier_atr": self.lower_barrier_atr,
             "vertical_barrier_bars": self.vertical_barrier_bars,
             "min_return_bps": self.min_return_bps,
+            "exit_fill": self.exit_fill,
         }
+
+
+@dataclass(frozen=True)
+class LabelCosts:
+    """What acting on a signal costs, in the backtester's own cost model.
+
+    ``fee_bps_per_side`` and ``slippage_bps_per_side`` are charged twice — once
+    on the entry fill and once on the exit — because a label describes a
+    completed round trip. ``funding_rate_col`` names a per-bar column holding
+    the funding rate settling inside that bar (the ledger's
+    ``funding_rate_in_bar``); it is charged with the sign of the position, so a
+    long pays when the rate is positive.
+    """
+
+    fee_bps_per_side: float = 0.0
+    slippage_bps_per_side: float = 0.0
+    funding_rate_col: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.fee_bps_per_side < 0 or self.slippage_bps_per_side < 0:
+            raise ValueError("Fees and slippage must be non-negative.")
+
+    @property
+    def round_trip_cost(self) -> float:
+        """Fee plus slippage on both fills, as a fraction of notional."""
+        return 2.0 * (self.fee_bps_per_side + self.slippage_bps_per_side) / 1e4
+
+    def to_dict(self) -> dict[str, float | str | None]:
+        return {
+            "fee_bps_per_side": self.fee_bps_per_side,
+            "slippage_bps_per_side": self.slippage_bps_per_side,
+            "funding_rate_col": self.funding_rate_col,
+            "round_trip_cost": self.round_trip_cost,
+        }
+
+
+#: Costless labels. Mechanically valid, economically wrong: use only in tests
+#: that isolate the barrier geometry from the cost model.
+FREE_LABELS = LabelCosts()
 
 
 @dataclass(frozen=True)
@@ -106,6 +185,7 @@ def triple_barrier_labels(
     spec: TripleBarrierSpec,
     *,
     volatility_col: str,
+    costs: LabelCosts = FREE_LABELS,
     time_col: str = "open_time",
 ) -> pl.DataFrame:
     """Label each event by the first barrier its holding window touches.
@@ -122,17 +202,23 @@ def triple_barrier_labels(
         in ``{-1, +1}``: the direction the primary strategy wants to take.
     spec:
         Barrier geometry.
+    costs:
+        Fees, slippage and funding charged to the round trip. The default is
+        costless and should not be used for research labels.
 
     Returns
     -------
-    One row per labelable event with the entry/exit bars, the realised return in
-    the event's own direction, the barrier that was touched, the three-state
-    ``label`` and the binary ``meta_label``. Events whose vertical barrier would
-    fall outside the available history are dropped: labeling them would require
-    prices that do not exist yet.
+    One row per labelable event with the entry/exit bars, the gross and net
+    realised return in the event's own direction, the cost breakdown, the
+    barrier that was touched, the three-state ``label`` and the binary
+    ``meta_label``. ``ret`` is net of costs and is what the labels are cut on.
+    Events whose vertical barrier would fall outside the available history are
+    dropped: labeling them would require prices that do not exist yet.
     """
     _require_columns(bars, (time_col, "open", "high", "low", volatility_col), what="bars")
     _require_columns(events, (EVENT_TIME_COL, SIDE_COL), what="events")
+    if costs.funding_rate_col is not None:
+        _require_columns(bars, (costs.funding_rate_col,), what="bars")
 
     times = bars[time_col]
     if bars.height >= 2 and not times.is_sorted():
@@ -143,6 +229,15 @@ def triple_barrier_labels(
     lows = bars["low"].to_numpy().astype(float)
     vols = bars[volatility_col].to_numpy().astype(float)
     n_bars = opens.size
+    if costs.funding_rate_col is None:
+        funding_rates = np.zeros(n_bars, dtype=float)
+    else:
+        funding_rates = np.nan_to_num(
+            bars[costs.funding_rate_col].to_numpy().astype(float), nan=0.0
+        )
+    # Cumulative funding so a holding interval costs one subtraction.
+    funding_cumulative = np.concatenate([[0.0], np.cumsum(funding_rates)])
+    round_trip = costs.round_trip_cost
 
     position_of = {t: i for i, t in enumerate(times.to_list())}
     horizon = spec.vertical_barrier_bars
@@ -197,12 +292,23 @@ def triple_barrier_labels(
                 offset = up
                 exit_price = upper if side < 0 else lower
             exit_index = entry_index + offset
+            if spec.exit_fill == "next_open":
+                # The touch is observed at the end of its bar, so the first
+                # executable price is the following open.
+                exit_index += 1
+                exit_price = opens[exit_index]
 
         raw_return = float(exit_price / entry - 1.0)
-        signed_return = side * raw_return
-        if signed_return > threshold:
+        gross_return = side * raw_return
+        # Funding settles on the bars the position is actually held, exactly the
+        # bars the engine charges it on: [entry_index, exit_index).
+        funding_paid = side * float(
+            funding_cumulative[exit_index] - funding_cumulative[entry_index]
+        )
+        net_return = gross_return - round_trip - funding_paid
+        if net_return > threshold:
             label = 1
-        elif signed_return < -threshold:
+        elif net_return < -threshold:
             label = -1
         else:
             label = 0
@@ -221,7 +327,10 @@ def triple_barrier_labels(
                 "exit_price": float(exit_price),
                 "holding_bars": exit_index - entry_index,
                 "barrier_touched": touch,
-                "ret": signed_return,
+                "gross_ret": gross_return,
+                "cost": round_trip,
+                "funding": funding_paid,
+                "ret": net_return,
                 "label": label,
                 "meta_label": int(label > 0),
             }
@@ -240,6 +349,9 @@ def triple_barrier_labels(
         "exit_price": pl.Float64,
         "holding_bars": pl.Int64,
         "barrier_touched": pl.String,
+        "gross_ret": pl.Float64,
+        "cost": pl.Float64,
+        "funding": pl.Float64,
         "ret": pl.Float64,
         "label": pl.Int64,
         "meta_label": pl.Int64,
