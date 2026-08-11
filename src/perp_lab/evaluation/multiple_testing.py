@@ -16,7 +16,12 @@ corrections the Gate S1 contract requires:
   underperforms the median out of sample (Bailey, Borwein, Lopez de Prado and
   Zhu, 2017);
 * :func:`benjamini_hochberg` -- false-discovery-rate control when several
-  families are tested at once.
+  families are tested at once;
+* :func:`superior_predictive_ability` -- Hansen's SPA test, and
+  :func:`reality_check` -- White's Reality Check, which ask whether *any* of the
+  candidates beats a benchmark once the whole set of candidates is accounted
+  for. Both share a stationary bootstrap, so the time dependence of the
+  performance series is preserved rather than destroyed by an i.i.d. shuffle.
 
 References
 ----------
@@ -30,6 +35,15 @@ Probability of Backtest Overfitting." *Journal of Computational Finance* 20(4),
 
 Benjamini, Y. and Hochberg, Y. (1995). "Controlling the False Discovery Rate."
 *Journal of the Royal Statistical Society B* 57(1), 289-300.
+
+White, H. (2000). "A Reality Check for Data Snooping." *Econometrica* 68(5),
+1097-1126.
+
+Hansen, P. R. (2005). "A Test for Superior Predictive Ability." *Journal of
+Business and Economic Statistics* 23(4), 365-380.
+
+Politis, D. N. and Romano, J. P. (1994). "The Stationary Bootstrap." *Journal of
+the American Statistical Association* 89(428), 1303-1313.
 
 Consulted 2026-08-11. These are corrections applied to results the pipeline has
 already produced; nothing here reads market data.
@@ -255,3 +269,223 @@ def benjamini_hochberg(p_values: Sequence[float], *, alpha: float = 0.05) -> tup
         cutoff = int(np.max(np.flatnonzero(passed)))
         rejected[order[: cutoff + 1]] = True
     return tuple(bool(x) for x in rejected)
+
+
+# --------------------------------------------------------------------------- #
+# Data-snooping tests over a whole set of candidates (White RC / Hansen SPA)
+# --------------------------------------------------------------------------- #
+
+
+def stationary_bootstrap_indices(
+    n_observations: int,
+    n_bootstrap: int,
+    *,
+    block_probability: float,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    """Politis-Romano stationary-bootstrap resampling indices.
+
+    Each resample walks forward through the series, restarting at a uniformly
+    random position with probability ``block_probability`` at every step, which
+    produces geometrically distributed blocks with mean length
+    ``1 / block_probability``. Resampling *blocks* rather than individual
+    observations is what preserves the autocorrelation and volatility clustering
+    of a performance series; an i.i.d. shuffle would destroy both and understate
+    the sampling variability of the mean.
+
+    Returns an integer array of shape ``(n_bootstrap, n_observations)``.
+    """
+    if n_observations < 2:
+        raise ValueError("n_observations must be at least 2.")
+    if n_bootstrap < 1:
+        raise ValueError("n_bootstrap must be at least 1.")
+    if not 0.0 < block_probability <= 1.0:
+        raise ValueError(
+            f"block_probability ({block_probability}) must lie in (0, 1]; it is the "
+            "per-step restart probability, so its reciprocal is the mean block length."
+        )
+    restarts = rng.random((n_bootstrap, n_observations)) < block_probability
+    fresh = rng.integers(0, n_observations, size=(n_bootstrap, n_observations))
+    indices = np.empty((n_bootstrap, n_observations), dtype=np.int64)
+    indices[:, 0] = fresh[:, 0]
+    for t in range(1, n_observations):
+        advanced = (indices[:, t - 1] + 1) % n_observations
+        indices[:, t] = np.where(restarts[:, t], fresh[:, t], advanced)
+    return indices
+
+
+@dataclass(frozen=True)
+class SnoopingTestResult:
+    """Outcome of a data-snooping test over a set of candidates."""
+
+    test: str
+    statistic: float
+    p_value: float
+    n_candidates: int
+    n_observations: int
+    n_bootstrap: int
+    block_probability: float
+    best_candidate: int
+
+    @property
+    def significant_at_5pct(self) -> bool:
+        return self.p_value < 0.05
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "test": self.test,
+            "statistic": self.statistic,
+            "p_value": self.p_value,
+            "n_candidates": self.n_candidates,
+            "n_observations": self.n_observations,
+            "n_bootstrap": self.n_bootstrap,
+            "block_probability": self.block_probability,
+            "best_candidate": self.best_candidate,
+        }
+
+
+def _validate_differentials(loss_differentials: np.ndarray) -> np.ndarray:
+    matrix = np.asarray(loss_differentials, dtype=float)
+    if matrix.ndim != 2:
+        raise ValueError(
+            f"loss_differentials must be 2-D (observations x candidates), got {matrix.ndim}-D."
+        )
+    if matrix.shape[0] < 2:
+        raise ValueError("loss_differentials needs at least 2 observations.")
+    if matrix.shape[1] < 1:
+        raise ValueError("loss_differentials needs at least one candidate.")
+    if not np.isfinite(matrix).all():
+        raise ValueError("loss_differentials contains non-finite entries.")
+    return matrix
+
+
+def _bootstrap_means(
+    matrix: np.ndarray,
+    *,
+    n_bootstrap: int,
+    block_probability: float,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    indices = stationary_bootstrap_indices(
+        matrix.shape[0], n_bootstrap, block_probability=block_probability, rng=rng
+    )
+    return matrix[indices].mean(axis=1)
+
+
+def reality_check(
+    loss_differentials: np.ndarray,
+    *,
+    n_bootstrap: int = 1000,
+    block_probability: float = 0.1,
+    seed: int = 42,
+) -> SnoopingTestResult:
+    """White's Reality Check: does the best candidate beat the benchmark?
+
+    ``loss_differentials[t, k]`` is candidate *k*'s performance advantage over the
+    benchmark at observation *t* (positive means the candidate did better). The
+    null hypothesis is that **no** candidate is better than the benchmark.
+
+    The test recentres every candidate at its own sample mean, including
+    candidates that are clearly hopeless. Those poor candidates still enlarge the
+    bootstrap maximum, which is why the Reality Check is conservative and why
+    :func:`superior_predictive_ability` is normally preferred.
+    """
+    matrix = _validate_differentials(loss_differentials)
+    n_obs, n_candidates = matrix.shape
+    rng = np.random.default_rng(seed)
+
+    means = matrix.mean(axis=0)
+    root_t = math.sqrt(n_obs)
+    statistic = float(np.max(root_t * means))
+
+    boot_means = _bootstrap_means(
+        matrix, n_bootstrap=n_bootstrap, block_probability=block_probability, rng=rng
+    )
+    boot_statistics = np.max(root_t * (boot_means - means[None, :]), axis=1)
+    p_value = float(np.mean(boot_statistics >= statistic))
+
+    return SnoopingTestResult(
+        test="white_reality_check",
+        statistic=statistic,
+        p_value=p_value,
+        n_candidates=n_candidates,
+        n_observations=n_obs,
+        n_bootstrap=n_bootstrap,
+        block_probability=block_probability,
+        best_candidate=int(np.argmax(means)),
+    )
+
+
+def superior_predictive_ability(
+    loss_differentials: np.ndarray,
+    *,
+    n_bootstrap: int = 1000,
+    block_probability: float = 0.1,
+    seed: int = 42,
+) -> SnoopingTestResult:
+    """Hansen's SPA test: does any candidate beat the benchmark, studentised?
+
+    ``loss_differentials[t, k]`` is candidate *k*'s performance advantage over the
+    benchmark at observation *t*. The null hypothesis is that no candidate is
+    better than the benchmark once the size of the candidate set is accounted
+    for. A small p-value is evidence that at least one candidate genuinely
+    outperforms.
+
+    Two things distinguish this from :func:`reality_check`:
+
+    * the statistic is **studentised** by each candidate's own bootstrap standard
+      error, so a candidate is not favoured merely for being volatile;
+    * candidates whose sample mean is far enough below zero are recentred at
+      zero rather than at their own mean (Hansen's *consistent* estimator), which
+      removes them from the null distribution instead of letting them inflate its
+      maximum. This is what makes the test more powerful than the Reality Check.
+
+    The threshold for that recentring is Hansen's
+    ``-sqrt(omega_k^2 / T * 2 * log(log(T)))``.
+    """
+    matrix = _validate_differentials(loss_differentials)
+    n_obs, n_candidates = matrix.shape
+    if n_obs < 4:
+        raise ValueError(
+            "Hansen's SPA needs at least 4 observations: its recentring threshold "
+            "uses log(log(T)), which is undefined below T = 3."
+        )
+    rng = np.random.default_rng(seed)
+
+    means = matrix.mean(axis=0)
+    root_t = math.sqrt(n_obs)
+
+    boot_means = _bootstrap_means(
+        matrix, n_bootstrap=n_bootstrap, block_probability=block_probability, rng=rng
+    )
+    # Bootstrap variance of sqrt(T) * mean, taken around the sample mean.
+    omega_squared = float(n_obs) * np.mean((boot_means - means[None, :]) ** 2, axis=0)
+    # A candidate with no variation at all cannot be studentised; it is also
+    # uninformative, so it is given an infinite scale and drops out of the max.
+    degenerate = omega_squared <= 0.0
+    omega = np.sqrt(np.where(degenerate, 1.0, omega_squared))
+
+    studentised = np.where(degenerate, -np.inf, root_t * means / omega)
+    statistic = float(max(np.max(studentised), 0.0))
+
+    threshold = -np.sqrt(omega_squared / n_obs * 2.0 * math.log(math.log(n_obs)))
+    recentred = np.where(means >= threshold, means, 0.0)
+
+    boot_studentised = np.where(
+        degenerate[None, :],
+        -np.inf,
+        root_t * (boot_means - recentred[None, :]) / omega[None, :],
+    )
+    boot_statistics = np.maximum(np.max(boot_studentised, axis=1), 0.0)
+    p_value = float(np.mean(boot_statistics >= statistic))
+
+    return SnoopingTestResult(
+        test="hansen_spa_consistent",
+        statistic=statistic,
+        p_value=p_value,
+        n_candidates=n_candidates,
+        n_observations=n_obs,
+        n_bootstrap=n_bootstrap,
+        block_probability=block_probability,
+        best_candidate=int(np.argmax(studentised)),
+    )
