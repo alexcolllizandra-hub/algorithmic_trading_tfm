@@ -101,10 +101,11 @@ En R3, las medianas buy-and-hold de referencia difieren marcadamente (+52,3 %
 BTC vs −21,9 % ETH en la ventana OOS agregada; fuente: thesis_report). Las
 estrategias evaluadas muestran pérdidas en ambos activos en casi todas las
 familias; ETH concentra los retornos OOS más negativos (p. ej. mean_reversion
-−79,9 %). Esto es coherente con un periodo de desarrollo en el que el activo
-subyacente en ETH no presenta la misma deriva alcista que BTC, de modo que
-estrategias direccionales long-biased o con poca capacidad de adaptación quedan
-penalizadas con más frecuencia.
+−79,9 %). *Hipótesis interpretativa (no demostrada de forma aislada aquí):* la
+mayor deriva alcista observada en BTC frente a ETH en la ventana OOS agregada
+podría penalizar con más frecuencia estrategias direccionales con sesgo long o
+poca adaptación al signo del subyacente; esta explicación no fue sometida a un
+contraste causal específico en el diseño experimental.
 
 Ninguna familia satisface el requisito de **ambos** activos simultáneamente, lo
 que refuerza que los efectos observados en un solo activo (volatility_breakout BTC)
@@ -120,10 +121,6 @@ operaciones OOS) descarta configuraciones con muestras operativas demasiado
 pequeñas **sin** mezclarse en la mayoría de seis criterios. En los datos
 persistidos, el veto no fue el motor principal del rechazo masivo (10/10 en la
 mayoría de filas); lo fueron C1, C2, C4 y retornos medianos negativos.
-
-El número limitado de operaciones intradía en 1h, sumado a costes explícitos,
-reduce el espacio de Sharpe positivos estables — especialmente cuando C2 exige que
-un bootstrap por bloques semanales excluya cero en la mayoría de semillas.
 
 ---
 
