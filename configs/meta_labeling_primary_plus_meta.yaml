@@ -1,0 +1,81 @@
+# =========================================================================== #
+# TEMPLATE — treatment arm: the primary strategy plus its meta-label filter.
+#
+# NOT EXECUTED. Pair this with `meta_labeling_primary_only.yaml`; every field
+# outside the `meta_labeling` block must match it exactly.
+#
+# The contract this file encodes (ADR 0016, and the S1 outcome in ADR 0017):
+#
+#   * direction comes from the interpretable primary rule, never from the model;
+#   * the model may REFUSE a trade or RESIZE it within frozen bounds;
+#   * it may NEVER reverse the direction — `position_scale` is non-negative;
+#   * the decision threshold is fitted on validation only, never on test or on
+#     the holdout;
+#   * a model is not selected on AUC. It is kept only if it raises NET RETURN
+#     against the control arm. A filter that sharpens classification while
+#     losing money is rejected.
+# =========================================================================== #
+version: "0.1.0"
+arm: "primary_plus_meta_labeling"
+
+experiment_config: "configs/experiment.yaml"
+data_contract: "configs/data_contract.yaml"
+
+family: null # must equal the control arm's family
+symbol: "BTCUSDT"
+timeframe: "1h"
+
+partition: "development"
+
+meta_labeling:
+  enabled: true
+
+  # Triple-barrier geometry defining "was the primary right?". Inherited from
+  # experiment.yaml so the two arms cannot silently diverge on labels.
+  labels:
+    inherit_from: "experiment.yaml:labeling"
+
+  # Pre-registered candidates. Logistic regression is the baseline and must be
+  # reported even when it loses: a complex model is only interesting relative to
+  # the simple one. LightGBM requires the optional `ml` extra.
+  models:
+    - "logistic_regression" # baseline, always reported
+    - "random_forest"
+    - "lightgbm" # requires: uv sync --extra ml
+
+  calibration: "isotonic"
+
+  # Chronological three-way split of the validation block: the classifier is
+  # fitted on train, calibrated on the earlier validation part and thresholded
+  # on the later one.
+  calibration_fraction: 0.5
+  threshold_criterion: "expected_return"
+  min_signal_rate: 0.05
+
+  # Frozen sizing bounds. min_scale = 0 would make the filter a pure veto;
+  # max_scale > 1 lets it add size on high confidence. Both must stay inside
+  # [MIN_POSITION_SCALE, MAX_POSITION_SCALE] in meta_labeling/diagnostics.py,
+  # which are non-negative, so direction cannot be inverted.
+  position_scale:
+    min_scale: 0.5
+    max_scale: 1.0
+
+  # Sample weighting for overlapping labels (Lopez de Prado): concurrent events
+  # share credit so a dense cluster cannot dominate the fit.
+  sample_weights: "return_attributed"
+
+  # Diagnostics computed and reported for every fitted model. None of them may
+  # be used to select the model; they exist to explain and to audit it.
+  diagnostics:
+    - "permutation_importance"
+    - "shap" # requires: uv sync --extra ml
+    - "feature_drift" # PSI, train block vs application block
+
+  # The one criterion that may keep the filter.
+  promotion:
+    criterion: "net_return_vs_primary_only"
+    require_positive_delta: true
+    # Selecting on AUC alone is forbidden; it is recorded for description only.
+    auc_is_descriptive_only: true
+
+seed: 42

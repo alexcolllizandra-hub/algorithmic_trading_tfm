@@ -55,6 +55,11 @@ dev = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
 ]
+ml = [
+    "lightgbm>=4.5",
+    "numba>=0.60",
+    "shap>=0.46",
+]
 
 [project.scripts]
 perp-lab = "perp_lab.cli:main"

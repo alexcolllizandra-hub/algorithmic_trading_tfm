@@ -161,7 +161,13 @@ def dunn_posthoc(
             alpha=alpha,
             method=adjust,
         )
-        it = iter(zip(rej, adj, strict=True))
+        it = iter(
+            zip(
+                np.asarray(rej, dtype=bool),
+                np.asarray(adj, dtype=float),
+                strict=True,
+            )
+        )
         for k in range(len(raw_p)):
             if finite_mask[k]:
                 r, pa = next(it)
