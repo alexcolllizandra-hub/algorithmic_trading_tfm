@@ -142,3 +142,17 @@ ignored its own pilot metrics.
    are to be exercised. The scikit-learn backends already work.
 4. **The frozen holdout stays closed.** Nothing in S1-B touched it and nothing
    here justifies opening it.
+
+---
+
+## 6. Resolution (2026-08-11)
+
+Decisions 1 and 2 were answered by a human: **S1-C is not run**, on resource
+grounds, and Gate S1 is recorded as `S1_STOPPED_AFTER_PILOT_INCONCLUSIVE`. The
+four families stay `PILOTED`, not `REJECTED`; Gate S1 is not `CLOSED_NEGATIVE`;
+no meta-label comparison is attached; the holdout stays closed; Gate R4 stays
+`SKIPPED`. Decision 3 (the optional ML extras) was carried out under Gate S2.
+The S1-C configurations are retained unexecuted.
+
+See [ADR 0017](../decisions/0017-gate-s1-stopped-after-pilot.md). The frozen
+pre-specification was not edited.
