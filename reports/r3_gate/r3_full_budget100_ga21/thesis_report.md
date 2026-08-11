@@ -15,7 +15,8 @@ Random Search is the **confirmatory** promotion engine. Genetic Algorithm result
 - **isolation_audit_at_closure:** 100/100 audited; failures=0 (*documentary* · `r3_scientific_closure_report.json` · `isolation_audit`)
 - **reporter_holdout_accessed:** False (*reporter_verified* · read manifest under R3 root only)
 - **historical_holdout_status:** Frozen holdout not opened during Gate R3 (documented at closure) (*documentary* · `docs/decisions/0015-r3-family-evaluation-negative.md`)
-- **r4_application_status:** SKIPPED — zero R3 promotions; R4 confirmatory scope harmonized after R3 closure (*reporter_verified*)
+- **r4_required_at_closure:** False (*reporter_verified* · `r3_gate_verdict.json`)
+- **r4_application_status:** SKIPPED (zero R3 promotions at closure) (*documentary*)
 
 ## Primary results — Random Search
 
@@ -70,8 +71,8 @@ Random Search is the **confirmatory** promotion engine. Genetic Algorithm result
 | breakout/ETHUSDT median OOS Sharpe | -1.0545238570959898 | `breakout/study_robustness.json` | `per_run[].strategy.sharpe` | reporter_verified | primary_result |
 | breakout/ETHUSDT median buy-and-hold return | -0.2190192992677874 | `breakout/study_robustness.json` | `by_symbol_and_engine.ETHUSDT|random_search.median_buy_and_hold_return` | reporter_verified | primary_result |
 | breakout/ETHUSDT family verdict | REJECTED | `r3_family_rollup.json` | `families.breakout.analysis.verdict` | reporter_verified | primary_result |
-| breakout GA−RS paired mean difference | 0.05546777780671216 | `r3_family_rollup.json` | `families.breakout.analysis.paired_ga_minus_rs.mean_difference` | reporter_verified | secondary_diagnostic |
-| breakout GA−RS 95% CI | [-0.03406478852480028, 0.1450003441382246] | `r3_family_rollup.json` | `families.breakout.analysis.paired_ga_minus_rs` | reporter_verified | secondary_diagnostic |
+| breakout GA-RS paired mean difference | 0.05546777780671216 | `r3_family_rollup.json` | `families.breakout.analysis.paired_ga_minus_rs.mean_difference` | reporter_verified | secondary_diagnostic |
+| breakout GA-RS 95% CI | [-0.03406478852480028, 0.1450003441382246] | `r3_family_rollup.json` | `families.breakout.analysis.paired_ga_minus_rs` | reporter_verified | secondary_diagnostic |
 | mean_reversion/BTCUSDT C1 positive return | 0/10 FAIL | `mean_reversion/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return` | reporter_verified | primary_result |
 | mean_reversion/BTCUSDT C2 bootstrap Sharpe CI | 0/10 FAIL | `mean_reversion/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero` | reporter_verified | primary_result |
 | mean_reversion/BTCUSDT C3 survives 2x costs | 0/10 FAIL | `mean_reversion/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs` | reporter_verified | primary_result |
@@ -94,8 +95,8 @@ Random Search is the **confirmatory** promotion engine. Genetic Algorithm result
 | mean_reversion/ETHUSDT median OOS Sharpe | -0.8932117142699131 | `mean_reversion/study_robustness.json` | `per_run[].strategy.sharpe` | reporter_verified | primary_result |
 | mean_reversion/ETHUSDT median buy-and-hold return | -0.2190192992677874 | `mean_reversion/study_robustness.json` | `by_symbol_and_engine.ETHUSDT|random_search.median_buy_and_hold_return` | reporter_verified | primary_result |
 | mean_reversion/ETHUSDT family verdict | REJECTED | `r3_family_rollup.json` | `families.mean_reversion.analysis.verdict` | reporter_verified | primary_result |
-| mean_reversion GA−RS paired mean difference | 0.17868330561544477 | `r3_family_rollup.json` | `families.mean_reversion.analysis.paired_ga_minus_rs.mean_difference` | reporter_verified | secondary_diagnostic |
-| mean_reversion GA−RS 95% CI | [0.011851644153656082, 0.34551496707723345] | `r3_family_rollup.json` | `families.mean_reversion.analysis.paired_ga_minus_rs` | reporter_verified | secondary_diagnostic |
+| mean_reversion GA-RS paired mean difference | 0.17868330561544477 | `r3_family_rollup.json` | `families.mean_reversion.analysis.paired_ga_minus_rs.mean_difference` | reporter_verified | secondary_diagnostic |
+| mean_reversion GA-RS 95% CI | [0.011851644153656082, 0.34551496707723345] | `r3_family_rollup.json` | `families.mean_reversion.analysis.paired_ga_minus_rs` | reporter_verified | secondary_diagnostic |
 | volatility_breakout/BTCUSDT C1 positive return | 6/10 OK | `volatility_breakout/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return` | reporter_verified | secondary_diagnostic |
 | volatility_breakout/BTCUSDT C2 bootstrap Sharpe CI | 0/10 FAIL | `volatility_breakout/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero` | reporter_verified | primary_result |
 | volatility_breakout/BTCUSDT C3 survives 2x costs | 3/10 FAIL | `volatility_breakout/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs` | reporter_verified | primary_result |
@@ -118,8 +119,8 @@ Random Search is the **confirmatory** promotion engine. Genetic Algorithm result
 | volatility_breakout/ETHUSDT median OOS Sharpe | -0.6623581493750325 | `volatility_breakout/study_robustness.json` | `per_run[].strategy.sharpe` | reporter_verified | primary_result |
 | volatility_breakout/ETHUSDT median buy-and-hold return | -0.2190192992677874 | `volatility_breakout/study_robustness.json` | `by_symbol_and_engine.ETHUSDT|random_search.median_buy_and_hold_return` | reporter_verified | primary_result |
 | volatility_breakout/ETHUSDT family verdict | REJECTED | `r3_family_rollup.json` | `families.volatility_breakout.analysis.verdict` | reporter_verified | primary_result |
-| volatility_breakout GA−RS paired mean difference | -0.0719021434379294 | `r3_family_rollup.json` | `families.volatility_breakout.analysis.paired_ga_minus_rs.mean_difference` | reporter_verified | secondary_diagnostic |
-| volatility_breakout GA−RS 95% CI | [-0.3657664282903287, 0.2219621414144699] | `r3_family_rollup.json` | `families.volatility_breakout.analysis.paired_ga_minus_rs` | reporter_verified | secondary_diagnostic |
+| volatility_breakout GA-RS paired mean difference | -0.0719021434379294 | `r3_family_rollup.json` | `families.volatility_breakout.analysis.paired_ga_minus_rs.mean_difference` | reporter_verified | secondary_diagnostic |
+| volatility_breakout GA-RS 95% CI | [-0.3657664282903287, 0.2219621414144699] | `r3_family_rollup.json` | `families.volatility_breakout.analysis.paired_ga_minus_rs` | reporter_verified | secondary_diagnostic |
 | funding/BTCUSDT C1 positive return | 0/10 FAIL | `funding/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return` | reporter_verified | primary_result |
 | funding/BTCUSDT C2 bootstrap Sharpe CI | 0/10 FAIL | `funding/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero` | reporter_verified | primary_result |
 | funding/BTCUSDT C3 survives 2x costs | 0/10 FAIL | `funding/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs` | reporter_verified | primary_result |
@@ -142,8 +143,8 @@ Random Search is the **confirmatory** promotion engine. Genetic Algorithm result
 | funding/ETHUSDT median OOS Sharpe | -0.31523602254726624 | `funding/study_robustness.json` | `per_run[].strategy.sharpe` | reporter_verified | primary_result |
 | funding/ETHUSDT median buy-and-hold return | -0.2190192992677874 | `funding/study_robustness.json` | `by_symbol_and_engine.ETHUSDT|random_search.median_buy_and_hold_return` | reporter_verified | primary_result |
 | funding/ETHUSDT family verdict | REJECTED | `r3_family_rollup.json` | `families.funding.analysis.verdict` | reporter_verified | primary_result |
-| funding GA−RS paired mean difference | 0.11589817669881798 | `r3_family_rollup.json` | `families.funding.analysis.paired_ga_minus_rs.mean_difference` | reporter_verified | secondary_diagnostic |
-| funding GA−RS 95% CI | [-0.22696783230639356, 0.4587641857040295] | `r3_family_rollup.json` | `families.funding.analysis.paired_ga_minus_rs` | reporter_verified | secondary_diagnostic |
+| funding GA-RS paired mean difference | 0.11589817669881798 | `r3_family_rollup.json` | `families.funding.analysis.paired_ga_minus_rs.mean_difference` | reporter_verified | secondary_diagnostic |
+| funding GA-RS 95% CI | [-0.22696783230639356, 0.4587641857040295] | `r3_family_rollup.json` | `families.funding.analysis.paired_ga_minus_rs` | reporter_verified | secondary_diagnostic |
 | BTC_ETH_confirmation/BTCUSDT C1 positive return | 1/10 FAIL | `BTC_ETH_confirmation/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.positive_total_return` | reporter_verified | primary_result |
 | BTC_ETH_confirmation/BTCUSDT C2 bootstrap Sharpe CI | 0/10 FAIL | `BTC_ETH_confirmation/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.bootstrap_sharpe_ci_excludes_zero` | reporter_verified | primary_result |
 | BTC_ETH_confirmation/BTCUSDT C3 survives 2x costs | 0/10 FAIL | `BTC_ETH_confirmation/study_robustness.json` | `r3_promotion.by_symbol.BTCUSDT.promotion.survives_double_costs` | reporter_verified | primary_result |
@@ -166,21 +167,22 @@ Random Search is the **confirmatory** promotion engine. Genetic Algorithm result
 | BTC_ETH_confirmation/ETHUSDT median OOS Sharpe | -0.2976629359260061 | `BTC_ETH_confirmation/study_robustness.json` | `per_run[].strategy.sharpe` | reporter_verified | primary_result |
 | BTC_ETH_confirmation/ETHUSDT median buy-and-hold return | -0.2190192992677874 | `BTC_ETH_confirmation/study_robustness.json` | `by_symbol_and_engine.ETHUSDT|random_search.median_buy_and_hold_return` | reporter_verified | primary_result |
 | BTC_ETH_confirmation/ETHUSDT family verdict | REJECTED | `r3_family_rollup.json` | `families.BTC_ETH_confirmation.analysis.verdict` | reporter_verified | primary_result |
-| BTC_ETH_confirmation GA−RS paired mean difference | 0.1644040939020623 | `r3_family_rollup.json` | `families.BTC_ETH_confirmation.analysis.paired_ga_minus_rs.mean_difference` | reporter_verified | secondary_diagnostic |
-| BTC_ETH_confirmation GA−RS 95% CI | [-0.08440529119545132, 0.4132134789995759] | `r3_family_rollup.json` | `families.BTC_ETH_confirmation.analysis.paired_ga_minus_rs` | reporter_verified | secondary_diagnostic |
+| BTC_ETH_confirmation GA-RS paired mean difference | 0.1644040939020623 | `r3_family_rollup.json` | `families.BTC_ETH_confirmation.analysis.paired_ga_minus_rs.mean_difference` | reporter_verified | secondary_diagnostic |
+| BTC_ETH_confirmation GA-RS 95% CI | [-0.08440529119545132, 0.4132134789995759] | `r3_family_rollup.json` | `families.BTC_ETH_confirmation.analysis.paired_ga_minus_rs` | reporter_verified | secondary_diagnostic |
 | Units completed | 100/100 | `*/status.json` | `completed` | reporter_verified | primary_result |
 | Numerical discrepancies | 0 | `reporter consistency battery` | `n/a` | reporter_verified | primary_result |
 | Gate R3 status | CLOSED_NEGATIVE | `r3_gate_verdict.json` | `gate_status` | reporter_verified | primary_result |
 | Families promoted | 0 | `r3_gate_verdict.json` | `n_promoted` | reporter_verified | primary_result |
-| R4 required | False | `r3_gate_verdict.json` | `r4_required` | reporter_verified | primary_result |
 | Isolation audit at R3 closure | 100/100 audited; failures=0 | `r3_scientific_closure_report.json` | `isolation_audit` | documentary | secondary_diagnostic |
+| R4 required at closure | False | `r3_gate_verdict.json` | `r4_required` | reporter_verified | primary_result |
+| R4 application status | SKIPPED (zero R3 promotions at closure) | `docs/decisions/0015-r3-family-evaluation-negative.md` | `Decision item 3` | documentary | secondary_diagnostic |
 | Historical holdout status | Frozen holdout not opened during Gate R3 (documented at closure) | `docs/decisions/0015-r3-family-evaluation-negative.md` | `Decision item 4` | documentary | limitation |
 | Provenance state tracked_state_1 | {"commit": "aac33577c14cba08f349381ce3566eca0c587299", "diff_bytes": 66986, "diff_sha256": "0378645e31c35f0b988d1a57eefb6dcbed9517e513d6d50cf739c1e8d89534de", "dirty": true, "families": ["BTC_ETH_confirmation"], "provisional": true, "reproducible_from_commit_alone": false, "state_id": "tracked_state_1", "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"} | `*/run_identity.json` | `worktree.diff_sha256` | limitation | limitation |
 | Provenance state tracked_state_2 | {"commit": "aac33577c14cba08f349381ce3566eca0c587299", "diff_bytes": 45647, "diff_sha256": "4073dba60103de8d7a4ea99a901296fab9f1a4b7d6c4228d65037e6a984f2e9b", "dirty": true, "families": ["breakout", "funding", "mean_reversion", "volatility_breakout"], "provisional": true, "reproducible_from_commit_alone": false, "state_id": "tracked_state_2", "untracked_sha256": "97ca909987a70b14c7e7f71095e4b5c068ae8348d70df39f385c3990ae265d50"} | `*/run_identity.json` | `worktree.diff_sha256` | limitation | limitation |
 
 ## Provenance limitation
 
-Executed code cannot be reconstructed exactly from commit `aac3357` alone: the worktree was dirty, patch bytes were not retained, and more than one tracked diff state was observed across families.
+Executed code cannot be reconstructed exactly from commit(s) `aac33577c14cba08f349381ce3566eca0c587299` alone: every family run_identity.json records worktree.dirty=true; every family records reproducible_from_commit_alone=false; 2 distinct tracked diff states observed across families; patch bytes were not retained in persisted run_identity.json artifacts
 
 | State | Families | Commit | diff_sha256 | diff_bytes | untracked_sha256 | dirty |
 |---|---|---|---|---|---|:---:|

@@ -15,6 +15,7 @@ from perp_lab.reporting.r3_gate import (
     R3ReportConsistencyError,
     R3ReportError,
     build_r3_thesis_report,
+    build_read_allowlist,
     render_r3_thesis_markdown,
     write_r3_thesis_report,
 )
@@ -123,6 +124,16 @@ def _rollup_family(*, family: str, n_pass: int = 0) -> dict:
     }
 
 
+def _checkpoint_units(*, seeds: list[int] | None = None) -> dict:
+    seed_list = seeds or list(range(10))
+    units: dict = {}
+    for symbol in ("BTCUSDT", "ETHUSDT"):
+        for seed in seed_list:
+            key = f"{symbol}|seed={seed}"
+            units[key] = {"symbol": symbol, "seed": seed}
+    return units
+
+
 def _run_identity(*, family: str, diff_sha256: str, diff_bytes: int) -> dict:
     return {
         "provisional": True,
@@ -201,6 +212,8 @@ def _write_full_r3_root(
             json.dumps(
                 {
                     "isolation_audit": {
+                        "per_family_runs": 20,
+                        "families": 5,
                         "total_runs_audited": 100,
                         "failures": 0,
                     }
@@ -215,6 +228,7 @@ def _write_full_r3_root(
         promo = {
             "engine": R3_PRIMARY_ENGINE,
             "verdict": "REJECTED",
+            "triggered_rejections": ["BTCUSDT: zero_seeds_positive"],
             "by_symbol": {
                 "BTCUSDT": _promotion_block(n_pass=n_pass),
                 "ETHUSDT": _promotion_block(n_pass=n_pass),
@@ -236,7 +250,7 @@ def _write_full_r3_root(
                         "symbols": ["BTCUSDT", "ETHUSDT"],
                         "seeds": list(range(10)),
                     },
-                    "units": {f"u{i}": {} for i in range(20)},
+                    "units": _checkpoint_units(),
                 }
             ),
             encoding="utf-8",
@@ -309,18 +323,90 @@ def test_rejects_oos_end_in_holdout(tmp_path: Path) -> None:
 
 
 def test_units_completed_does_not_imply_isolation_audit(tmp_path: Path) -> None:
-    root = _write_full_r3_root(tmp_path, include_closure=False)
+    root = _write_full_r3_root(tmp_path, include_closure=True)
     report = build_r3_thesis_report(root)
-    assert report["closure_summary"]["units_completed"]["verification_level"] == "reporter_verified"
-    assert "isolation_audit_at_closure" not in report["documentary_claims"]
+    units = report["closure_summary"]["units_completed"]
+    audit = report["documentary_claims"]["isolation_audit_at_closure"]
+    assert units["verification_level"] == "reporter_verified"
+    assert audit["verification_level"] == "documentary"
+    assert "does not substitute" in units.get("note", "").lower() or units["note"]
+
+
+def test_r4_evidence_is_split_between_reporter_and_documentary(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    report = build_r3_thesis_report(root)
+    assert report["documentary_claims"]["r4_required_at_closure"]["verification_level"] == (
+        "reporter_verified"
+    )
+    assert report["documentary_claims"]["r4_application_status"]["verification_level"] == (
+        "documentary"
+    )
+    assert report["closure_summary"]["r4_required"]["verification_level"] == "reporter_verified"
+
+
+def test_rejects_missing_closure_report(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path, include_closure=False)
+    with pytest.raises(R3ReportError, match="missing"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_isolation_audit_failures(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    (root / "r3_scientific_closure_report.json").write_text(
+        json.dumps({"isolation_audit": {"total_runs_audited": 100, "failures": 1}}),
+        encoding="utf-8",
+    )
+    with pytest.raises(R3ReportConsistencyError, match="failures"):
+        build_r3_thesis_report(root)
+
+
+def test_rejects_incomplete_checkpoint_units(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    checkpoint = json.loads((root / "breakout/checkpoint.json").read_text(encoding="utf-8"))
+    units = dict(list(checkpoint["units"].items())[:19])
+    checkpoint["units"] = units
+    (root / "breakout/checkpoint.json").write_text(json.dumps(checkpoint), encoding="utf-8")
+    with pytest.raises(R3ReportConsistencyError, match=r"checkpoint\.units count"):
+        build_r3_thesis_report(root)
+
+
+def test_allowlist_rejects_unlisted_json(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    (root / "unexpected.json").write_text("{}", encoding="utf-8")
+    reader = ArtifactReader(root, allowlist=build_read_allowlist(list(R3_GATE_FAMILIES)))
+    with pytest.raises(R3ReportError, match="allowlist"):
+        reader.read_json("unexpected.json")
+
+
+def test_provenance_note_is_derived_not_hardcoded(tmp_path: Path) -> None:
+    root = _write_full_r3_root(tmp_path)
+    report = build_r3_thesis_report(root)
+    prov = report["closure_summary"]["provenance_limitation"]
+    assert prov["distinct_tracked_states"] == 1
+    assert "aac3357" not in prov["note"]
+    assert prov["patch_bytes_available"] is False
+
+
+def test_determinism_across_two_absolute_roots(tmp_path: Path) -> None:
+    import shutil
+
+    source = _write_full_r3_root(tmp_path)
+    study_name = "r3_full_budget100_ga21"
+    root_a = tmp_path / "abs_a" / study_name
+    root_b = tmp_path / "abs_b" / study_name
+    shutil.copytree(source, root_a)
+    shutil.copytree(source, root_b)
+    report_a = build_r3_thesis_report(root_a)
+    report_b = build_r3_thesis_report(root_b)
+    assert json.dumps(report_a, sort_keys=True) == json.dumps(report_b, sort_keys=True)
 
 
 def test_documentary_isolation_when_closure_present(tmp_path: Path) -> None:
     root = _write_full_r3_root(tmp_path, include_closure=True)
     report = build_r3_thesis_report(root)
-    audit = report["documentary_claims"]["isolation_audit_at_closure"]
-    assert audit["verification_level"] == "documentary"
-    assert audit["source_file"] == "r3_scientific_closure_report.json"
+    assert report["documentary_claims"]["isolation_audit_at_closure"]["value"] == (
+        "100/100 audited; failures=0"
+    )
 
 
 def test_preserves_two_provenance_states(tmp_path: Path) -> None:
@@ -363,15 +449,14 @@ def test_traceability_in_markdown_and_json(tmp_path: Path) -> None:
 
 def test_reader_only_opens_json_under_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _write_full_r3_root(tmp_path)
-    reader = ArtifactReader(root)
+    reader = ArtifactReader(root, allowlist=build_read_allowlist(list(R3_GATE_FAMILIES)))
     original_read_bytes = Path.read_bytes
+    allowed = {root.resolve()}
 
     def tracked_read_bytes(self: Path) -> bytes:
-        if (
-            self.suffix == ".json"
-            and root.resolve() not in self.resolve().parents
-            and self.resolve() != root.resolve()
-            and not str(self.resolve()).startswith(str(root.resolve()))
+        resolved = self.resolve()
+        if self.suffix == ".json" and not any(
+            resolved == base or base in resolved.parents for base in allowed
         ):
             raise AssertionError(f"unexpected read outside root: {self}")
         return original_read_bytes(self)
@@ -379,7 +464,9 @@ def test_reader_only_opens_json_under_root(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(Path, "read_bytes", tracked_read_bytes)
     build_r3_thesis_report(root, reader=reader)
     assert reader.reads
+    allowlist = build_read_allowlist(list(R3_GATE_FAMILIES))
     assert all(item.relative_path.endswith(".json") for item in reader.reads)
+    assert all(item.relative_path in allowlist for item in reader.reads)
 
 
 def test_determinism_across_output_directories(tmp_path: Path) -> None:
@@ -396,7 +483,7 @@ def test_determinism_across_output_directories(tmp_path: Path) -> None:
 
 def test_rejects_forbidden_json_path(tmp_path: Path) -> None:
     root = _write_full_r3_root(tmp_path)
-    reader = ArtifactReader(root)
+    reader = ArtifactReader(root, allowlist=build_read_allowlist(list(R3_GATE_FAMILIES)))
     with pytest.raises(R3ReportError, match="forbidden"):
         reader.read_json("data/raw/forbidden.json")
 

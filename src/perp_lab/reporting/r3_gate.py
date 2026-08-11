@@ -46,6 +46,31 @@ FORBIDDEN_READ_SEGMENTS = (
     "\\holdout\\",
 )
 
+REQUIRED_ROOT_ARTIFACTS = (
+    "r3_execution.json",
+    "r3_gate_verdict.json",
+    "r3_family_rollup.json",
+    "r3_scientific_closure_report.json",
+)
+
+PER_FAMILY_ARTIFACTS = (
+    "study_robustness.json",
+    "status.json",
+    "checkpoint.json",
+    "run_identity.json",
+)
+
+
+def build_read_allowlist(families: list[str]) -> frozenset[str]:
+    """Explicit JSON allowlist for a complete Gate R3 study root."""
+    allowed: set[str] = set(REQUIRED_ROOT_ARTIFACTS)
+    allowed.add("r3_gate_report.json")
+    for family in families:
+        for name in PER_FAMILY_ARTIFACTS:
+            allowed.add(f"{family}/{name}")
+    return frozenset(allowed)
+
+
 CRITERION_LABELS: dict[str, str] = {
     "positive_total_return": "C1 positive return",
     "bootstrap_sharpe_ci_excludes_zero": "C2 bootstrap Sharpe CI",
@@ -97,6 +122,7 @@ class ArtifactReader:
     """Read-only JSON loader confined to an R3 study root."""
 
     root: Path
+    allowlist: frozenset[str] | None = None
     reads: list[ArtifactRead] = field(default_factory=list)
 
     def __post_init__(self) -> None:
@@ -114,18 +140,19 @@ class ArtifactReader:
         return loaded
 
     def manifest(self) -> list[dict[str, str]]:
+        by_path: dict[str, str] = {}
+        for item in self.reads:
+            by_path[item.relative_path] = item.sha256
         return [
-            {"relative_path": item.relative_path, "sha256": item.sha256}
-            for item in sorted(self.reads, key=lambda r: r.relative_path)
+            {"relative_path": path, "sha256": digest}
+            for path, digest in sorted(by_path.items())
         ]
 
     def _resolve_allowed(self, relative_path: str | Path) -> Path:
         candidate = Path(relative_path)
-        path = (
-            (self.root / candidate).resolve()
-            if not candidate.is_absolute()
-            else candidate.resolve()
-        )
+        if candidate.is_absolute():
+            raise R3ReportError(f"absolute read paths are forbidden: {relative_path}")
+        path = (self.root / candidate).resolve()
         if not path.is_relative_to(self.root):
             raise R3ReportError(f"read outside R3 root forbidden: {relative_path}")
         rel_posix = path.relative_to(self.root).as_posix()
@@ -134,6 +161,8 @@ class ArtifactReader:
             raise R3ReportError(f"only JSON artifacts may be read: {rel_posix}")
         if any(segment in lowered for segment in FORBIDDEN_READ_SEGMENTS):
             raise R3ReportError(f"forbidden artifact path: {rel_posix}")
+        if self.allowlist is not None and rel_posix not in self.allowlist:
+            raise R3ReportError(f"artifact not on read allowlist: {rel_posix}")
         if not path.exists():
             raise R3ReportError(f"required artifact missing: {rel_posix}")
         return path
@@ -164,11 +193,7 @@ def _require_key(payload: dict[str, Any], key: str, *, context: str) -> Any:
 
 
 def _stable_root_label(root: Path) -> str:
-    parts = root.resolve().parts
-    if "artifacts" in parts and "runs" in parts:
-        idx = parts.index("artifacts")
-        return "/".join(parts[idx:])
-    return root.name
+    return f"artifacts/runs/{root.name}"
 
 
 def _fmt_pct(value: float | None) -> str:
@@ -246,35 +271,73 @@ def _family_order(execution: dict[str, Any]) -> list[str]:
     return [str(item) for item in order]
 
 
-def _count_completed_units(reader: ArtifactReader, families: list[str]) -> tuple[int, int]:
-    expected = 0
-    completed = 0
-    for family in families:
-        status = reader.read_json(f"{family}/status.json")
-        checkpoint = reader.read_json(f"{family}/checkpoint.json")
-        meta = _require_key(checkpoint, "meta", context=f"{family}/checkpoint.json")
-        symbols = _require_key(meta, "symbols", context=f"{family}/checkpoint.json meta")
-        seeds = _require_key(meta, "seeds", context=f"{family}/checkpoint.json meta")
-        if list(symbols) != list(R3_EXPECTED_SYMBOLS):
-            raise R3ReportConsistencyError(
-                f"{family}: expected symbols {R3_EXPECTED_SYMBOLS}, got {symbols!r}"
-            )
-        if len(seeds) != R3_EXPECTED_SEEDS:
-            raise R3ReportConsistencyError(
-                f"{family}: expected {R3_EXPECTED_SEEDS} seeds, got {len(seeds)}"
-            )
-        family_expected = len(symbols) * len(seeds)
-        if family_expected != R3_EXPECTED_UNITS_PER_FAMILY:
-            raise R3ReportConsistencyError(
-                f"{family}: expected {R3_EXPECTED_UNITS_PER_FAMILY} units, got {family_expected}"
-            )
-        expected += family_expected
-        completed += int(_require_key(status, "completed", context=f"{family}/status.json"))
-    if expected != R3_EXPECTED_TOTAL_UNITS:
-        raise R3ReportConsistencyError(
-            f"expected {R3_EXPECTED_TOTAL_UNITS} total units, got {expected}"
+def _validate_checkpoint_units(reader: ArtifactReader, family: str) -> list[str]:
+    """Validate the 20 planned units recorded in checkpoint.units for one family."""
+    discrepancies: list[str] = []
+    checkpoint = reader.read_json(f"{family}/checkpoint.json")
+    meta = _require_key(checkpoint, "meta", context=f"{family}/checkpoint.json")
+    symbols = list(_require_key(meta, "symbols", context=f"{family}/checkpoint.json meta"))
+    seeds = list(_require_key(meta, "seeds", context=f"{family}/checkpoint.json meta"))
+    units = _require_key(checkpoint, "units", context=f"{family}/checkpoint.json")
+
+    if list(symbols) != list(R3_EXPECTED_SYMBOLS):
+        discrepancies.append(f"{family}: checkpoint symbols {symbols!r} != expected")
+    if len(seeds) != R3_EXPECTED_SEEDS:
+        discrepancies.append(
+            f"{family}: checkpoint seeds count {len(seeds)} != {R3_EXPECTED_SEEDS}"
         )
-    return completed, expected
+
+    expected_keys = {f"{symbol}|seed={seed}" for symbol in symbols for seed in seeds}
+    if len(units) != R3_EXPECTED_UNITS_PER_FAMILY:
+        discrepancies.append(
+            f"{family}: checkpoint.units count {len(units)} != {R3_EXPECTED_UNITS_PER_FAMILY}"
+        )
+    if set(units) != expected_keys:
+        discrepancies.append(f"{family}: checkpoint.units keys != expected symbol|seed grid")
+
+    for key, unit in units.items():
+        symbol = unit.get("symbol")
+        seed = unit.get("seed")
+        if symbol not in R3_EXPECTED_SYMBOLS:
+            discrepancies.append(f"{family}/{key}: unit symbol {symbol!r} invalid")
+        if seed not in seeds:
+            discrepancies.append(f"{family}/{key}: unit seed {seed!r} not in checkpoint.meta.seeds")
+        if key != f"{symbol}|seed={seed}":
+            discrepancies.append(f"{family}/{key}: unit key inconsistent with symbol/seed fields")
+
+    status = reader.read_json(f"{family}/status.json")
+    completed = int(_require_key(status, "completed", context=f"{family}/status.json"))
+    total = int(_require_key(status, "total", context=f"{family}/status.json"))
+    if total != R3_EXPECTED_UNITS_PER_FAMILY:
+        discrepancies.append(f"{family}: status.total {total} != {R3_EXPECTED_UNITS_PER_FAMILY}")
+    if completed != len(units):
+        discrepancies.append(
+            f"{family}: status.completed {completed} != checkpoint.units count {len(units)}"
+        )
+    return discrepancies
+
+
+def _validate_units_aggregate(reader: ArtifactReader, families: list[str]) -> tuple[int, int]:
+    discrepancies: list[str] = []
+    total_units = 0
+    total_completed = 0
+    for family in families:
+        discrepancies.extend(_validate_checkpoint_units(reader, family))
+        checkpoint = reader.read_json(f"{family}/checkpoint.json")
+        status = reader.read_json(f"{family}/status.json")
+        total_units += len(checkpoint["units"])
+        total_completed += int(status["completed"])
+    if total_units != R3_EXPECTED_TOTAL_UNITS:
+        discrepancies.append(
+            f"aggregate checkpoint.units count {total_units} != {R3_EXPECTED_TOTAL_UNITS}"
+        )
+    if total_completed != R3_EXPECTED_TOTAL_UNITS:
+        discrepancies.append(
+            f"aggregate status.completed {total_completed} != {R3_EXPECTED_TOTAL_UNITS}"
+        )
+    if discrepancies:
+        raise R3ReportConsistencyError("; ".join(discrepancies))
+    return total_completed, total_units
 
 
 def _load_provenance_by_family(reader: ArtifactReader, families: list[str]) -> list[dict[str, Any]]:
@@ -295,6 +358,10 @@ def _load_provenance_by_family(reader: ArtifactReader, families: list[str]) -> l
                 "provisional": bool(identity.get("provisional")),
                 "reproducible_from_commit_alone": bool(
                     worktree.get("reproducible_from_commit_alone", False)
+                ),
+                "patch_bytes_stored": any(
+                    key in worktree
+                    for key in ("patch_bytes", "diff_content", "diff_patch", "patch")
                 ),
                 "source_file": f"{family}/run_identity.json",
             }
@@ -502,39 +569,133 @@ def _validate_rollup_medians(
     return discrepancies
 
 
-def _documentary_isolation_audit(
-    reader: ArtifactReader, paths: R3GatePaths
-) -> dict[str, Any] | None:
-    if paths.scientific_closure is not None:
-        payload = reader.read_json("r3_scientific_closure_report.json")
-        audit = payload.get("isolation_audit")
-        if isinstance(audit, dict):
-            return {
-                "value": (
-                    f"{audit.get('total_runs_audited', 'n/a')}/"
-                    f"{audit.get('total_runs_audited', 'n/a')} audited; "
-                    f"failures={audit.get('failures')}"
-                ),
-                "source_file": "r3_scientific_closure_report.json",
-                "source_field": "isolation_audit",
-                "verification_level": "documentary",
-                "note": (
-                    "Fold-isolation audit recorded at R3 closure; not re-executed by this reporter"
-                ),
-            }
-    if paths.gate_report is not None:
-        payload = reader.read_json("r3_gate_report.json")
-        if "isolation_audit" in payload:
-            return {
-                "value": str(payload["isolation_audit"]),
-                "source_file": "r3_gate_report.json",
-                "source_field": "isolation_audit",
-                "verification_level": "documentary",
-                "note": (
-                    "Fold-isolation audit recorded at R3 closure; not re-executed by this reporter"
-                ),
-            }
-    return None
+def _validate_veto_and_verdict(
+    *,
+    family: str,
+    symbol: str,
+    symbol_promo: dict[str, Any],
+    family_verdict: str,
+) -> list[str]:
+    discrepancies: list[str] = []
+    promo_block = symbol_promo["promotion"]
+    rejections = symbol_promo["rejections"]
+    min_trades = rejections["depends_on_few_trades"]
+
+    if "min_oos_trades_met" in promo_block:
+        discrepancies.append(
+            f"{family}/{symbol}: min_oos_trades_met must not be a promotion criterion"
+        )
+
+    if min_trades.get("triggered") and family_verdict == "PROMOTED":
+        discrepancies.append(
+            f"{family}/{symbol}: min_oos_trades veto triggered but family verdict is PROMOTED"
+        )
+    return discrepancies
+
+
+def _validate_family_promotion_semantics(
+    *,
+    family: str,
+    promo: dict[str, Any],
+    family_verdict: str,
+) -> list[str]:
+    discrepancies: list[str] = []
+    if promo.get("engine") != R3_PRIMARY_ENGINE:
+        discrepancies.append(f"{family}: promotion engine must be random_search")
+    if promo.get("verdict") != family_verdict:
+        discrepancies.append(
+            f"{family}: study verdict {promo.get('verdict')!r} != rollup {family_verdict!r}"
+        )
+    if family_verdict == "PROMOTED":
+        discrepancies.append(f"{family}: CLOSED_NEGATIVE gate cannot contain PROMOTED family")
+    elif family_verdict != "REJECTED":
+        discrepancies.append(f"{family}: expected family verdict REJECTED, got {family_verdict!r}")
+
+    both_symbols_pass_all_six = True
+    for symbol in R3_EXPECTED_SYMBOLS:
+        if symbol not in promo.get("by_symbol", {}):
+            discrepancies.append(f"{family}: missing r3_promotion.by_symbol[{symbol!r}]")
+            continue
+        symbol_promo = promo["by_symbol"][symbol]
+        discrepancies.extend(
+            _validate_veto_and_verdict(
+                family=family,
+                symbol=symbol,
+                symbol_promo=symbol_promo,
+                family_verdict=family_verdict,
+            )
+        )
+        if not all(symbol_promo["promotion"][name]["pass"] for name in PROMOTION_TESTS):
+            both_symbols_pass_all_six = False
+
+    if both_symbols_pass_all_six and family_verdict == "REJECTED":
+        any_veto = any(
+            promo["by_symbol"][symbol]["rejections"]["depends_on_few_trades"].get("triggered")
+            for symbol in R3_EXPECTED_SYMBOLS
+        )
+        any_rejection = bool(promo.get("triggered_rejections"))
+        if not any_veto and not any_rejection:
+            discrepancies.append(
+                f"{family}: all six criteria pass on both assets but family verdict is REJECTED"
+            )
+    return discrepancies
+
+
+def _require_documentary_isolation_audit(reader: ArtifactReader) -> dict[str, Any]:
+    payload = reader.read_json("r3_scientific_closure_report.json")
+    audit = _require_key(payload, "isolation_audit", context="r3_scientific_closure_report.json")
+    total = int(_require_key(audit, "total_runs_audited", context="isolation_audit"))
+    failures = int(_require_key(audit, "failures", context="isolation_audit"))
+    if total != R3_EXPECTED_TOTAL_UNITS:
+        raise R3ReportConsistencyError(
+            f"documentary isolation_audit.total_runs_audited={total}, expected 100"
+        )
+    if failures != 0:
+        raise R3ReportConsistencyError(
+            f"documentary isolation_audit.failures={failures}, expected 0"
+        )
+    per_family = audit.get("per_family_runs")
+    if per_family is not None and int(per_family) != R3_EXPECTED_UNITS_PER_FAMILY:
+        raise R3ReportConsistencyError(
+            f"documentary isolation_audit.per_family_runs={per_family}, expected 20"
+        )
+    return {
+        "value": f"{total}/{total} audited; failures={failures}",
+        "source_file": "r3_scientific_closure_report.json",
+        "source_field": "isolation_audit",
+        "verification_level": "documentary",
+        "note": "Recorded at R3 closure; not re-executed by this reporter",
+    }
+
+
+def _derive_provenance_limitation(
+    rows: list[dict[str, Any]], states: list[dict[str, Any]]
+) -> dict[str, Any]:
+    commits = sorted({str(row["commit"]) for row in rows if row.get("commit")})
+    all_dirty = all(bool(row.get("dirty")) for row in rows)
+    all_not_reproducible = all(not bool(row.get("reproducible_from_commit_alone")) for row in rows)
+    patch_bytes_available = any(
+        row.get("diff_bytes") is not None and row.get("patch_bytes_stored") for row in rows
+    )
+    notes: list[str] = []
+    if all_dirty:
+        notes.append("every family run_identity.json records worktree.dirty=true")
+    if all_not_reproducible:
+        notes.append("every family records reproducible_from_commit_alone=false")
+    if len(states) > 1:
+        notes.append(f"{len(states)} distinct tracked diff states observed across families")
+    if not patch_bytes_available:
+        notes.append("patch bytes were not retained in persisted run_identity.json artifacts")
+    return {
+        "provenance_by_family": rows,
+        "provenance_states": states,
+        "distinct_commits": commits,
+        "distinct_tracked_states": len(states),
+        "patch_bytes_available": patch_bytes_available,
+        "exact_reconstruction_from_commit_alone": False if all_not_reproducible else None,
+        "note": "; ".join(notes),
+        "verification_level": "limitation",
+    }
 
 
 def _partial_signal_note(family: str, symbol: str, row: dict[str, Any]) -> str | None:
@@ -549,13 +710,18 @@ def _partial_signal_note(family: str, symbol: str, row: dict[str, Any]) -> str |
 def build_r3_thesis_report(root: Path, *, reader: ArtifactReader | None = None) -> dict[str, Any]:
     """Build a deterministic thesis report payload from persisted Gate R3 artifacts."""
     paths = resolve_r3_paths(root)
-    artifact_reader = reader or ArtifactReader(paths.root)
+    artifact_reader = reader or ArtifactReader(
+        paths.root, allowlist=build_read_allowlist(list(R3_GATE_FAMILIES))
+    )
+    if artifact_reader.allowlist is None:
+        artifact_reader.allowlist = build_read_allowlist(list(R3_GATE_FAMILIES))
 
     execution = artifact_reader.read_json("r3_execution.json")
     verdict = artifact_reader.read_json("r3_gate_verdict.json")
     rollup = artifact_reader.read_json("r3_family_rollup.json")
 
     families = _family_order(execution)
+    artifact_reader.allowlist = build_read_allowlist(families)
     n_seeds = int(_require_key(execution, "n_seeds", context="r3_execution.json"))
     if n_seeds != R3_EXPECTED_SEEDS:
         raise R3ReportConsistencyError(f"expected n_seeds={R3_EXPECTED_SEEDS}, got {n_seeds}")
@@ -577,12 +743,11 @@ def build_r3_thesis_report(root: Path, *, reader: ArtifactReader | None = None) 
     ):
         discrepancies.append("no family may be PROMOTED in rollup")
 
-    units_completed, units_expected = _count_completed_units(artifact_reader, families)
-    if units_completed != units_expected:
-        discrepancies.append(f"units completed {units_completed} != expected {units_expected}")
+    units_completed, units_expected = _validate_units_aggregate(artifact_reader, families)
 
     provenance_rows = _load_provenance_by_family(artifact_reader, families)
     provenance_states = _group_provenance_states(provenance_rows)
+    documentary_isolation = _require_documentary_isolation_audit(artifact_reader)
 
     primary_rows: list[dict[str, Any]] = []
     rs_ga_rows: list[dict[str, Any]] = []
@@ -600,12 +765,13 @@ def build_r3_thesis_report(root: Path, *, reader: ArtifactReader | None = None) 
 
         study = artifact_reader.read_json(f"{family}/study_robustness.json")
         promo = _require_key(study, "r3_promotion", context=f"{family}/study_robustness.json")
-        if promo.get("verdict") != analysis["verdict"]:
-            discrepancies.append(
-                f"{family}: study verdict {promo.get('verdict')!r} != rollup {analysis['verdict']!r}"
+        discrepancies.extend(
+            _validate_family_promotion_semantics(
+                family=family,
+                promo=promo,
+                family_verdict=str(analysis["verdict"]),
             )
-        if promo.get("engine") != R3_PRIMARY_ENGINE:
-            discrepancies.append(f"{family}: promotion engine must be random_search")
+        )
         if analysis["verdict"] == "PROMOTED":
             discrepancies.append(f"{family}: rejected families cannot be PROMOTED")
 
@@ -816,41 +982,34 @@ def build_r3_thesis_report(root: Path, *, reader: ArtifactReader | None = None) 
     if discrepancies:
         raise R3ReportConsistencyError("; ".join(discrepancies))
 
-    documentary_isolation = _documentary_isolation_audit(artifact_reader, paths)
     documentary_claims: dict[str, Any] = {
         "historical_holdout_status": {
             "value": "Frozen holdout not opened during Gate R3 (documented at closure)",
             "source_file": "docs/decisions/0015-r3-family-evaluation-negative.md",
             "source_field": "Decision item 4",
             "verification_level": "documentary",
-            "note": "Reporter reads only JSON under the R3 study root; no holdout market data accessed",
+            "note": "Reporter reads only allowlisted JSON under the R3 study root",
         },
-        "r4_application_status": {
-            "value": "SKIPPED — zero R3 promotions; R4 confirmatory scope harmonized after R3 closure",
+        "r4_required_at_closure": {
+            "value": verdict["r4_required"],
             "source_file": "r3_gate_verdict.json",
             "source_field": "r4_required",
             "verification_level": "reporter_verified",
+        },
+        "r4_application_status": {
+            "value": "SKIPPED (zero R3 promotions at closure)",
+            "source_file": "docs/decisions/0015-r3-family-evaluation-negative.md",
+            "source_field": "Decision item 3",
+            "verification_level": "documentary",
             "note": (
-                "r4_required=false verified from gate verdict; promoted-only R4 rule post-dates R3 "
-                "execution and is documented in phase_gates.md after closure"
+                "Promoted-only R4 confirmatory scope was harmonized in documentation after "
+                "R3 closed; it was not part of the executed R3 contract"
             ),
         },
+        "isolation_audit_at_closure": documentary_isolation,
     }
-    if documentary_isolation is not None:
-        documentary_claims["isolation_audit_at_closure"] = documentary_isolation
 
-    provenance_limitation = {
-        "provenance_by_family": provenance_rows,
-        "provenance_states": provenance_states,
-        "patch_bytes_available": False,
-        "exact_reconstruction_from_commit": False,
-        "note": (
-            "Dirty worktree at commit aac3357; diff/untracked hashes were recorded per family but "
-            "patch bytes were not retained, so executed code cannot be reconstructed exactly from "
-            "the commit alone. Multiple tracked diff states were observed across families."
-        ),
-        "verification_level": "limitation",
-    }
+    provenance_limitation = _derive_provenance_limitation(provenance_rows, provenance_states)
 
     closure = {
         "gate_status": {
@@ -929,27 +1088,38 @@ def build_r3_thesis_report(root: Path, *, reader: ArtifactReader | None = None) 
                 classification="primary_result",
                 verification_level="reporter_verified",
             ),
-            _trace_entry(
-                claim="R4 required",
-                value=str(verdict["r4_required"]),
-                source_file="r3_gate_verdict.json",
-                source_field="r4_required",
-                classification="primary_result",
-                verification_level="reporter_verified",
-            ),
         ]
     )
-    if documentary_isolation is not None:
-        traceability.append(
-            _trace_entry(
-                claim="Isolation audit at R3 closure",
-                value=documentary_isolation["value"],
-                source_file=documentary_isolation["source_file"],
-                source_field=documentary_isolation["source_field"],
-                classification="secondary_diagnostic",
-                verification_level="documentary",
-            )
+    traceability.append(
+        _trace_entry(
+            claim="Isolation audit at R3 closure",
+            value=documentary_isolation["value"],
+            source_file=documentary_isolation["source_file"],
+            source_field=documentary_isolation["source_field"],
+            classification="secondary_diagnostic",
+            verification_level="documentary",
         )
+    )
+    traceability.append(
+        _trace_entry(
+            claim="R4 required at closure",
+            value=str(verdict["r4_required"]),
+            source_file="r3_gate_verdict.json",
+            source_field="r4_required",
+            classification="primary_result",
+            verification_level="reporter_verified",
+        )
+    )
+    traceability.append(
+        _trace_entry(
+            claim="R4 application status",
+            value=documentary_claims["r4_application_status"]["value"],
+            source_file=documentary_claims["r4_application_status"]["source_file"],
+            source_field=documentary_claims["r4_application_status"]["source_field"],
+            classification="secondary_diagnostic",
+            verification_level="documentary",
+        )
+    )
     traceability.append(
         _trace_entry(
             claim="Historical holdout status",
@@ -1036,6 +1206,11 @@ def render_r3_thesis_markdown(report: dict[str, Any]) -> str:
         f"- **historical_holdout_status:** {holdout_doc['value']} "
         f"(*documentary* · `{holdout_doc['source_file']}`)"
     )
+    r4_required = report["documentary_claims"]["r4_required_at_closure"]
+    lines.append(
+        f"- **r4_required_at_closure:** {r4_required['value']} "
+        f"(*{r4_required['verification_level']}* · `{r4_required['source_file']}`)"
+    )
     r4_doc = report["documentary_claims"]["r4_application_status"]
     lines.append(
         f"- **r4_application_status:** {r4_doc['value']} (*{r4_doc['verification_level']}*)"
@@ -1104,14 +1279,14 @@ def render_r3_thesis_markdown(report: dict[str, Any]) -> str:
         )
 
     prov = closure["provenance_limitation"]
+    commits = ", ".join(f"`{c}`" for c in prov.get("distinct_commits", []))
     lines.extend(
         [
             "",
             "## Provenance limitation",
             "",
-            "Executed code cannot be reconstructed exactly from commit `aac3357` alone: the worktree "
-            "was dirty, patch bytes were not retained, and more than one tracked diff state was "
-            "observed across families.",
+            f"Executed code cannot be reconstructed exactly from commit(s) {commits} alone: "
+            f"{prov.get('note', '')}",
             "",
             "| State | Families | Commit | diff_sha256 | diff_bytes | untracked_sha256 | dirty |",
             "|---|---|---|---|---|---|:---:|",

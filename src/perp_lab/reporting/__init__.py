@@ -16,6 +16,7 @@ from perp_lab.reporting.r3_gate import (
     R3ReportConsistencyError,
     R3ReportError,
     build_r3_thesis_report,
+    build_read_allowlist,
     render_r3_thesis_markdown,
     write_r3_thesis_report,
 )
@@ -41,6 +42,7 @@ __all__ = [
     "apply_house_style",
     "asset_color",
     "build_r3_thesis_report",
+    "build_read_allowlist",
     "regime_color",
     "render_r3_thesis_markdown",
     "save_figure",
