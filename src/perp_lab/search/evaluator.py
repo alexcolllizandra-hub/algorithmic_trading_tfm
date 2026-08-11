@@ -290,20 +290,26 @@ class CandidateEvaluator:
         return strat  # type: ignore[return-value]
 
     def _signals(self, strategy: Strategy, frame: pl.DataFrame) -> pl.DataFrame:
-        """Generate signals, supplying the reference asset when one is declared.
+        """Generate signals, supplying the reference asset's bars when required.
 
-        A strategy that names a ``reference_symbol`` must receive that asset's bars.
-        Falling back to a single-asset call would turn a cross-asset strategy into a
-        different, unlabelled strategy that still reports the cross-asset family.
+        Two cross-asset conventions coexist and must not be confused.
+        ``CrossAssetConfirmation`` joins the peer's *bars* itself and announces
+        that with ``consumes_reference_bars``. ``CrossAssetSpreadReversion`` reads
+        the peer through the causal ``xasset_*`` columns the feature engine has
+        already built from the peer frame, so handing it raw bars would be an
+        error. Routing on the explicit flag rather than on the mere presence of a
+        ``reference_symbol`` attribute — which both declare, because both record
+        their second leg — keeps the two apart.
         """
-        reference_symbol = getattr(strategy, "reference_symbol", None)
-        if reference_symbol is None:
+        if not getattr(strategy, "consumes_reference_bars", False):
             return strategy.signals(frame)
         if self.reference_bars is None:
+            reference_symbol = getattr(strategy, "reference_symbol", None)
             raise ValueError(
-                f"{type(strategy).__name__} declares reference_symbol={reference_symbol!r} "
-                "but the evaluator was built without reference bars. Load the reference "
-                "asset for this fold; this family cannot be evaluated without it."
+                f"{type(strategy).__name__} consumes the bars of reference_symbol="
+                f"{reference_symbol!r} but the evaluator was built without reference bars. "
+                "Load the reference asset for this fold; this family cannot be evaluated "
+                "without it."
             )
         # Slice the reference to the fold's own window. Handing over the whole
         # history would let a fold read reference bars from beyond its own end.

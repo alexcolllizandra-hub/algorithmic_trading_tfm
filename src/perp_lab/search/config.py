@@ -80,6 +80,8 @@ class SearchRunConfig(_Strict):
 
     experiment_config: Path = Path("configs/experiment.yaml")
     data_contract: Path = Path("configs/data_contract.yaml")
+    # The R2/R3 families are closed; they remain here so historical configs stay
+    # loadable and reproducible, not because they may be searched again.
     family: Literal[
         "momentum",
         "breakout",
@@ -87,6 +89,10 @@ class SearchRunConfig(_Strict):
         "volatility_breakout",
         "funding",
         "BTC_ETH_confirmation",
+        "mtf_trend_consensus",
+        "funding_reversal",
+        "intraday_seasonality",
+        "xasset_spread_reversion",
     ]
     algorithm: Literal["random_search", "genetic_algorithm", "comparison"] = "comparison"
     symbol: str = "BTCUSDT"

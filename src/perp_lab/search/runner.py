@@ -191,6 +191,24 @@ def _load_data(
     return frame, funding, holdout_start, manifests
 
 
+# Families that need a second asset, mapped to the config block that names it.
+# Each family owns its own reference map, so one family cannot silently inherit
+# another's pairing.
+_REFERENCE_CONFIG_BLOCK: dict[str, str] = {
+    "BTC_ETH_confirmation": "cross_asset",
+    "xasset_spread_reversion": "xasset_spread_reversion",
+}
+
+
+def reference_symbol_for(cfg: SearchRunConfig, exp: ExperimentConfig) -> str | None:
+    """The second asset this run needs, or ``None`` for a single-asset family."""
+    block = _REFERENCE_CONFIG_BLOCK.get(cfg.family)
+    if block is None:
+        return None
+    reference_map = getattr(exp.strategies.families, block).reference_symbol
+    return reference_map.get(cfg.symbol)
+
+
 def _load_reference_bars(
     cfg: SearchRunConfig,
     exp: ExperimentConfig,
@@ -207,9 +225,8 @@ def _load_reference_bars(
     traded asset: a cross-asset strategy could otherwise read the frozen partition
     through the back door of its reference symbol.
     """
-    reference_map = exp.strategies.families.cross_asset.reference_symbol
-    reference_symbol = reference_map.get(cfg.symbol)
-    if cfg.family != "BTC_ETH_confirmation" or reference_symbol is None:
+    reference_symbol = reference_symbol_for(cfg, exp)
+    if reference_symbol is None:
         return None
 
     if cfg.synthetic:
@@ -221,7 +238,7 @@ def _load_reference_bars(
     key = f"{reference_symbol}:{cfg.timeframe}_development"
     if not lake.available().get(key, False):
         raise FileNotFoundError(
-            f"Family {cfg.family!r} trades {cfg.symbol} confirmed by {reference_symbol}, but no "
+            f"Family {cfg.family!r} trades {cfg.symbol} against {reference_symbol}, but no "
             f"processed development data exists for {key}; run 'perp-lab download'."
         )
     _assert_partition_before_holdout(
@@ -233,7 +250,7 @@ def _load_reference_bars(
     )
     loaded = lake.load_klines(reference_symbol, cfg.timeframe, partition="development")
     log.info(
-        "cross-asset reference | %s confirmed by %s | %d bars",
+        "cross-asset reference | %s against %s | %d bars",
         cfg.symbol,
         reference_symbol,
         loaded.frame.height,
@@ -515,7 +532,7 @@ def run_search(
         holdout_start=holdout_start,
         seeds=seeds,
         reference_bars=reference_bars,
-        reference_symbol=exp.strategies.families.cross_asset.reference_symbol.get(cfg.symbol),
+        reference_symbol=reference_symbol_for(cfg, exp),
     )
     overrides = cfg.objective.as_overrides() if cfg.objective else None
     objective_cfg = ObjectiveConfig.from_experiment(

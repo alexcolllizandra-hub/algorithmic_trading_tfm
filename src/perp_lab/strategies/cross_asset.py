@@ -27,6 +27,7 @@ later ETH bar is the same error with the symbols exchanged.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import ClassVar
 
 import numpy as np
 import polars as pl
@@ -69,6 +70,11 @@ class CrossAssetConfirmation:
     exit_threshold: float = 0.0
     direction: str = "both"
     regime_gate: tuple[str, ...] | None = None
+
+    # This family joins the reference asset's raw bars itself, so an evaluator
+    # must hand them over. Families that read the peer through causal ``xasset_*``
+    # feature columns leave this False.
+    consumes_reference_bars: ClassVar[bool] = True
 
     def __post_init__(self) -> None:
         if self.lookback <= 0:
