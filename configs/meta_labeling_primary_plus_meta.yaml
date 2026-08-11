@@ -4,7 +4,8 @@
 # NOT EXECUTED. Pair this with `meta_labeling_primary_only.yaml`; every field
 # outside the `meta_labeling` block must match it exactly.
 #
-# The contract this file encodes (ADR 0016, and the S1 outcome in ADR 0017):
+# The contract this file encodes (ADR 0016; ADR 0017 for how it was validated;
+# the S1 outcome in docs/roadmap/gate_s1b_outcome.md):
 #
 #   * direction comes from the interpretable primary rule, never from the model;
 #   * the model may REFUSE a trade or RESIZE it within frozen bounds;

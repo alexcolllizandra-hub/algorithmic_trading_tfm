@@ -7,7 +7,7 @@
 # difference in net return is attributable to the filter and to nothing else.
 #
 # The comparison may only be run once a primary family has passed its own gate.
-# Under ADR 0017 no S1 family did, so at the time of writing there is nothing
+# No S1 family did (docs/roadmap/gate_s1b_outcome.md), so there is nothing
 # eligible to fill `family` below.
 # =========================================================================== #
 version: "0.1.0"
