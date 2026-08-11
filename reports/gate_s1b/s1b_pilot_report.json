@@ -1,0 +1,290 @@
+{
+  "families": [
+    "funding_reversal",
+    "intraday_seasonality",
+    "mtf_trend_consensus",
+    "xasset_spread_reversion"
+  ],
+  "gating_rule": "S1-B drops a family only for a mechanical reason (no valid candidates, no trades, or a failed invariant), never for weak performance (gate_s1_batch_01.md section 3).",
+  "holdout_accessed": false,
+  "mechanically_viable_families": [
+    "funding_reversal",
+    "intraday_seasonality",
+    "mtf_trend_consensus",
+    "xasset_spread_reversion"
+  ],
+  "multiple_testing": {
+    "benjamini_hochberg": {
+      "alpha": 0.05,
+      "available": true,
+      "p_values": {
+        "funding_reversal": 0.7455,
+        "intraday_seasonality": 0.9195,
+        "mtf_trend_consensus": 0.8375,
+        "xasset_spread_reversion": 0.991
+      },
+      "rejected": {
+        "funding_reversal": false,
+        "intraday_seasonality": false,
+        "mtf_trend_consensus": false,
+        "xasset_spread_reversion": false
+      }
+    },
+    "deflated_sharpe_threshold": 0.95,
+    "family_level_snooping": {
+      "available": true,
+      "benchmark": "flat (no position, no costs)",
+      "covers": "selection across the four families only",
+      "does_not_cover": "the evaluations spent inside each family; see the deflated Sharpe ratio",
+      "engine": "random_search",
+      "families": [
+        "funding_reversal",
+        "intraday_seasonality",
+        "mtf_trend_consensus",
+        "xasset_spread_reversion"
+      ],
+      "hansen_spa": {
+        "best_candidate": 0,
+        "block_probability": 0.041666666666666664,
+        "n_bootstrap": 2000,
+        "n_candidates": 4,
+        "n_observations": 32385,
+        "p_value": 1.0,
+        "statistic": 0.0,
+        "test": "hansen_spa_consistent"
+      },
+      "n_aligned_observations": 32385,
+      "white_reality_check": {
+        "best_candidate": 0,
+        "block_probability": 0.041666666666666664,
+        "n_bootstrap": 2000,
+        "n_candidates": 4,
+        "n_observations": 32385,
+        "p_value": 0.9955,
+        "statistic": -0.0018742844564398737,
+        "test": "white_reality_check"
+      }
+    },
+    "probability_of_backtest_overfitting": {
+      "available": false,
+      "reason": "CSCV needs one performance matrix of the same configurations across all time blocks. Under ADR 0012 the search is independent per outer fold, so no configuration is shared between folds. Computing it requires evaluating a common candidate set across every fold, which is an S1-C task."
+    }
+  },
+  "per_family": {
+    "funding_reversal": {
+      "engines": {
+        "genetic_algorithm": {
+          "budget_per_fold": 25,
+          "engine": "genetic_algorithm",
+          "family": "funding_reversal",
+          "folds_deflated_sharpe_above_threshold": 0,
+          "folds_positive_return": 8,
+          "folds_with_trades": 15,
+          "folds_without_winner": 0,
+          "mechanically_viable": true,
+          "median_deflated_sharpe": 0.4563829657409514,
+          "median_test_sharpe": 0.7561654004152346,
+          "median_test_total_return": 0.028321716225352622,
+          "n_deflated_sharpe_folds": 15,
+          "n_feasible": 365,
+          "n_folds": 15,
+          "n_unique_evaluations": 375,
+          "oos_bars": 32385,
+          "oos_bootstrap_p_value": 0.402,
+          "oos_mean_net_return": 3.5414334550251027e-06,
+          "run_dir": "artifacts/runs/search_funding_reversal_20260811T111329Z_fe5008",
+          "run_id": "search_funding_reversal_20260811T111329Z_fe5008",
+          "total_test_trades": 463.0,
+          "viability_failures": []
+        },
+        "random_search": {
+          "budget_per_fold": 25,
+          "engine": "random_search",
+          "family": "funding_reversal",
+          "folds_deflated_sharpe_above_threshold": 0,
+          "folds_positive_return": 8,
+          "folds_with_trades": 14,
+          "folds_without_winner": 0,
+          "mechanically_viable": true,
+          "median_deflated_sharpe": 0.5762194414301777,
+          "median_test_sharpe": 0.17054614535683832,
+          "median_test_total_return": 0.002137199694662195,
+          "n_deflated_sharpe_folds": 15,
+          "n_feasible": 358,
+          "n_folds": 15,
+          "n_unique_evaluations": 375,
+          "oos_bars": 32385,
+          "oos_bootstrap_p_value": 0.7455,
+          "oos_mean_net_return": -1.0415102607151633e-05,
+          "run_dir": "artifacts/runs/search_funding_reversal_20260811T111329Z_fe5008",
+          "run_id": "search_funding_reversal_20260811T111329Z_fe5008",
+          "total_test_trades": 515.0,
+          "viability_failures": []
+        }
+      },
+      "mechanically_viable": true
+    },
+    "intraday_seasonality": {
+      "engines": {
+        "genetic_algorithm": {
+          "budget_per_fold": 25,
+          "engine": "genetic_algorithm",
+          "family": "intraday_seasonality",
+          "folds_deflated_sharpe_above_threshold": 0,
+          "folds_positive_return": 2,
+          "folds_with_trades": 14,
+          "folds_without_winner": 0,
+          "mechanically_viable": true,
+          "median_deflated_sharpe": 0.1645827076937511,
+          "median_test_sharpe": -1.3034269462862982,
+          "median_test_total_return": -0.030515893224131507,
+          "n_deflated_sharpe_folds": 15,
+          "n_feasible": 375,
+          "n_folds": 15,
+          "n_unique_evaluations": 375,
+          "oos_bars": 32385,
+          "oos_bootstrap_p_value": 0.999,
+          "oos_mean_net_return": -3.221559218480079e-05,
+          "run_dir": "artifacts/runs/search_intraday_seasonality_20260811T111339Z_ba21a8",
+          "run_id": "search_intraday_seasonality_20260811T111339Z_ba21a8",
+          "total_test_trades": 1468.0,
+          "viability_failures": []
+        },
+        "random_search": {
+          "budget_per_fold": 25,
+          "engine": "random_search",
+          "family": "intraday_seasonality",
+          "folds_deflated_sharpe_above_threshold": 0,
+          "folds_positive_return": 4,
+          "folds_with_trades": 15,
+          "folds_without_winner": 0,
+          "mechanically_viable": true,
+          "median_deflated_sharpe": 0.09066283042170248,
+          "median_test_sharpe": -1.2183870133646986,
+          "median_test_total_return": -0.029561817317565353,
+          "n_deflated_sharpe_folds": 15,
+          "n_feasible": 375,
+          "n_folds": 15,
+          "n_unique_evaluations": 375,
+          "oos_bars": 32385,
+          "oos_bootstrap_p_value": 0.9195,
+          "oos_mean_net_return": -1.5044484515001657e-05,
+          "run_dir": "artifacts/runs/search_intraday_seasonality_20260811T111339Z_ba21a8",
+          "run_id": "search_intraday_seasonality_20260811T111339Z_ba21a8",
+          "total_test_trades": 1387.0,
+          "viability_failures": []
+        }
+      },
+      "mechanically_viable": true
+    },
+    "mtf_trend_consensus": {
+      "engines": {
+        "genetic_algorithm": {
+          "budget_per_fold": 25,
+          "engine": "genetic_algorithm",
+          "family": "mtf_trend_consensus",
+          "folds_deflated_sharpe_above_threshold": 0,
+          "folds_positive_return": 5,
+          "folds_with_trades": 14,
+          "folds_without_winner": 1,
+          "mechanically_viable": true,
+          "median_deflated_sharpe": 0.4376675172490989,
+          "median_test_sharpe": -0.5730646147308073,
+          "median_test_total_return": -0.07685846426344661,
+          "n_deflated_sharpe_folds": 15,
+          "n_feasible": 101,
+          "n_folds": 15,
+          "n_unique_evaluations": 375,
+          "oos_bars": 30226,
+          "oos_bootstrap_p_value": 0.811,
+          "oos_mean_net_return": -2.2355155973901856e-05,
+          "run_dir": "artifacts/runs/search_mtf_trend_consensus_20260811T111305Z_cec7ab",
+          "run_id": "search_mtf_trend_consensus_20260811T111305Z_cec7ab",
+          "total_test_trades": 441.0,
+          "viability_failures": []
+        },
+        "random_search": {
+          "budget_per_fold": 25,
+          "engine": "random_search",
+          "family": "mtf_trend_consensus",
+          "folds_deflated_sharpe_above_threshold": 0,
+          "folds_positive_return": 6,
+          "folds_with_trades": 15,
+          "folds_without_winner": 0,
+          "mechanically_viable": true,
+          "median_deflated_sharpe": 0.41100137390692065,
+          "median_test_sharpe": -0.9365437522421791,
+          "median_test_total_return": -0.06836170906773809,
+          "n_deflated_sharpe_folds": 15,
+          "n_feasible": 61,
+          "n_folds": 15,
+          "n_unique_evaluations": 375,
+          "oos_bars": 32385,
+          "oos_bootstrap_p_value": 0.8375,
+          "oos_mean_net_return": -2.4805527458501234e-05,
+          "run_dir": "artifacts/runs/search_mtf_trend_consensus_20260811T111305Z_cec7ab",
+          "run_id": "search_mtf_trend_consensus_20260811T111305Z_cec7ab",
+          "total_test_trades": 1334.0,
+          "viability_failures": []
+        }
+      },
+      "mechanically_viable": true
+    },
+    "xasset_spread_reversion": {
+      "engines": {
+        "genetic_algorithm": {
+          "budget_per_fold": 25,
+          "engine": "genetic_algorithm",
+          "family": "xasset_spread_reversion",
+          "folds_deflated_sharpe_above_threshold": 0,
+          "folds_positive_return": 4,
+          "folds_with_trades": 15,
+          "folds_without_winner": 0,
+          "mechanically_viable": true,
+          "median_deflated_sharpe": 0.2852295129338199,
+          "median_test_sharpe": -0.9292450635688866,
+          "median_test_total_return": -0.08054361450627268,
+          "n_deflated_sharpe_folds": 15,
+          "n_feasible": 321,
+          "n_folds": 15,
+          "n_unique_evaluations": 375,
+          "oos_bars": 32385,
+          "oos_bootstrap_p_value": 0.9975,
+          "oos_mean_net_return": -4.77555637736878e-05,
+          "run_dir": "artifacts/runs/search_xasset_spread_reversion_20260811T111350Z_9791ce",
+          "run_id": "search_xasset_spread_reversion_20260811T111350Z_9791ce",
+          "total_test_trades": 844.0,
+          "viability_failures": []
+        },
+        "random_search": {
+          "budget_per_fold": 25,
+          "engine": "random_search",
+          "family": "xasset_spread_reversion",
+          "folds_deflated_sharpe_above_threshold": 0,
+          "folds_positive_return": 3,
+          "folds_with_trades": 15,
+          "folds_without_winner": 0,
+          "mechanically_viable": true,
+          "median_deflated_sharpe": 0.2584074583794326,
+          "median_test_sharpe": -1.1206550689319372,
+          "median_test_total_return": -0.08066940273434287,
+          "n_deflated_sharpe_folds": 15,
+          "n_feasible": 310,
+          "n_folds": 15,
+          "n_unique_evaluations": 375,
+          "oos_bars": 32385,
+          "oos_bootstrap_p_value": 0.991,
+          "oos_mean_net_return": -4.970548397863567e-05,
+          "run_dir": "artifacts/runs/search_xasset_spread_reversion_20260811T111350Z_9791ce",
+          "run_id": "search_xasset_spread_reversion_20260811T111350Z_9791ce",
+          "total_test_trades": 1227.0,
+          "viability_failures": []
+        }
+      },
+      "mechanically_viable": true
+    }
+  },
+  "primary_engine": "random_search",
+  "report": "gate_s1b_development_pilot",
+  "status": "DEVELOPMENT-ONLY EVIDENCE. Gate S1-B is a mechanical viability screen, not a promotion decision. No holdout data was read."
+}
