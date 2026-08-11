@@ -206,6 +206,27 @@ def test_the_validation_split_is_chronological_not_shuffled() -> None:
     )
     assert ordered.validation_metrics["roc_auc"] > corrupted.validation_metrics["roc_auc"]
 
+    # The comparison above degrades under any split, shuffled or not, so it does
+    # not by itself pin the order down. Corrupting one half at a time does: the
+    # reported metrics come from the threshold part, which is the *later* half.
+    # Noise confined to the early half must leave them intact, and noise confined
+    # to the late half must destroy them. Shuffling first would blend the two
+    # cases into the same mediocre score and break this asymmetry.
+    early_noise = y_val.copy()
+    early_noise[:120] = np.random.default_rng(1).integers(0, 2, size=120)
+    late_noise = y_val.copy()
+    late_noise[120:] = np.random.default_rng(1).integers(0, 2, size=120)
+    common = {
+        "features_train": x_train,
+        "labels_train": y_train,
+        "features_validation": x_val,
+        "seed": 13,
+    }
+    early = fit_meta_model("logistic_regression", labels_validation=early_noise, **common)
+    late = fit_meta_model("logistic_regression", labels_validation=late_noise, **common)
+    assert early.validation_metrics["roc_auc"] > 0.8
+    assert late.validation_metrics["roc_auc"] < 0.65
+
 
 def test_calibration_improves_the_brier_score_of_an_overconfident_model() -> None:
     # A *small* forest of fully grown trees is the overconfident case: with five
