@@ -372,6 +372,187 @@ class CrossAssetFamily(_Strict):
         return self
 
 
+class MultiHorizonTrendFamily(_Strict):
+    """Gate S1: drift traded only when several separated horizons agree."""
+
+    horizon_sets: tuple[tuple[int, ...], ...] = (
+        (12, 48, 168),
+        (6, 24, 96),
+        (24, 96, 336),
+        (6, 24, 96, 336),
+    )
+    min_agreement: _PosIntTuple = (2, 3)
+    min_strength: tuple[float, ...] = (0.0, 0.25, 0.5)
+    strength_window: _PosIntTuple = (48, 168)
+    exit_agreement: _PosIntTuple = (1, 2)
+
+    @field_validator("horizon_sets")
+    @classmethod
+    def _horizon_sets_usable(cls, v: tuple[tuple[int, ...], ...]) -> tuple[tuple[int, ...], ...]:
+        if not v:
+            raise ValueError("mtf_trend_consensus needs at least one horizon set.")
+        for horizons in v:
+            if len(horizons) < 2:
+                raise ValueError(f"horizon set {horizons} needs at least two horizons.")
+            if len(set(horizons)) != len(horizons):
+                raise ValueError(f"horizon set {horizons} repeats a horizon.")
+            _ensure_positive(horizons, "mtf_trend_consensus horizons")
+        return v
+
+    @field_validator("min_agreement", "strength_window", "exit_agreement")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "mtf_trend_consensus counts and windows")
+
+    @field_validator("min_strength")
+    @classmethod
+    def _strength_non_negative(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        return _ensure_positive_floats(v, "mtf_trend_consensus min_strength", allow_zero=True)
+
+    @field_validator("strength_window")
+    @classmethod
+    def _strength_window_admits_deviation(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        if any(w <= 1 for w in v):
+            raise ValueError("mtf_trend_consensus strength_window must exceed 1 bar.")
+        return v
+
+    @model_validator(mode="after")
+    def _an_admissible_combination_exists(self) -> MultiHorizonTrendFamily:
+        widest = max(len(h) for h in self.horizon_sets)
+        if min(self.min_agreement) > widest:
+            raise ValueError(
+                f"No admissible min_agreement: the smallest option "
+                f"({min(self.min_agreement)}) exceeds the widest horizon set ({widest})."
+            )
+        if min(self.exit_agreement) > max(self.min_agreement):
+            raise ValueError(
+                "No admissible (min_agreement, exit_agreement) pair: every exit threshold is "
+                "at or above every entry threshold, so a position closes on the bar it opened."
+            )
+        return self
+
+
+class FundingReversalFamily(_Strict):
+    """Gate S1: bounded-horizon reversal after a trailing funding extreme."""
+
+    rank_window: _PosIntTuple = (168, 336, 720)
+    extreme_pct: tuple[float, ...] = (0.9, 0.95, 0.99)
+    holding_bars: _PosIntTuple = (4, 8, 24, 48)
+    min_abs_rate: tuple[float, ...] = (0.0, 0.00005)
+
+    @field_validator("rank_window")
+    @classmethod
+    def _rank_windows(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        if any(w <= 1 for w in v):
+            raise ValueError("funding_reversal rank_window must exceed 1 bar.")
+        return v
+
+    @field_validator("holding_bars")
+    @classmethod
+    def _holding(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "funding_reversal holding_bars")
+
+    @field_validator("extreme_pct")
+    @classmethod
+    def _upper_tail(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not 0.5 < x < 1.0 for x in v):
+            raise ValueError(
+                "funding_reversal extreme_pct entries are upper-tail quantiles and must lie "
+                "strictly inside (0.5, 1.0); the lower tail is taken as 1 - pct."
+            )
+        return v
+
+    @field_validator("min_abs_rate")
+    @classmethod
+    def _rate_floor(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        return _ensure_positive_floats(v, "funding_reversal min_abs_rate", allow_zero=True)
+
+
+class IntradaySeasonalityFamily(_Strict):
+    """Gate S1: calendar-only entry at a fixed UTC hour, exit on a bar count."""
+
+    entry_hour: tuple[int, ...] = tuple(range(24))
+    holding_bars: _PosIntTuple = (1, 2, 4, 8)
+    side_mode: tuple[str, ...] = ("long", "short")
+    trend_filter_ma: _PosIntTuple = (168, 336)
+
+    @field_validator("entry_hour")
+    @classmethod
+    def _hours(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        if not v:
+            raise ValueError("intraday_seasonality needs at least one entry_hour.")
+        if any(not 0 <= h <= 23 for h in v):
+            raise ValueError("intraday_seasonality entry_hour entries must lie in [0, 23] UTC.")
+        return v
+
+    @field_validator("holding_bars", "trend_filter_ma")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "intraday_seasonality windows")
+
+    @field_validator("side_mode")
+    @classmethod
+    def _sides(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        bad = [s for s in v if s not in {"long", "short"}]
+        if bad:
+            raise ValueError(f"intraday_seasonality side_mode has unknown entries {bad}.")
+        return v
+
+
+class CrossAssetSpreadFamily(_Strict):
+    """Gate S1: reversion of the target leg's relative move versus its reference."""
+
+    lookback: _PosIntTuple = (6, 12, 24, 48)
+    entry_spread: tuple[float, ...] = (0.005, 0.01, 0.02)
+    exit_spread: tuple[float, ...] = (0.0, 0.002, 0.005)
+    min_corr: tuple[float, ...] = (0.3, 0.5, 0.7)
+    corr_window: _PosIntTuple = (48, 168)
+    reference_symbol: dict[str, str] = {"BTCUSDT": "ETHUSDT", "ETHUSDT": "BTCUSDT"}
+
+    @field_validator("lookback", "corr_window")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "xasset_spread_reversion windows")
+
+    @field_validator("corr_window")
+    @classmethod
+    def _corr_window_admits_correlation(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        if any(w < 2 for w in v):
+            raise ValueError("xasset_spread_reversion corr_window must be at least 2 bars.")
+        return v
+
+    @field_validator("entry_spread")
+    @classmethod
+    def _entry_positive(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        return _ensure_positive_floats(v, "xasset_spread_reversion entry_spread")
+
+    @field_validator("exit_spread")
+    @classmethod
+    def _exit_non_negative(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        return _ensure_positive_floats(v, "xasset_spread_reversion exit_spread", allow_zero=True)
+
+    @field_validator("min_corr")
+    @classmethod
+    def _correlations(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not -1.0 <= x <= 1.0 for x in v):
+            raise ValueError("xasset_spread_reversion min_corr entries must lie in [-1, 1].")
+        return v
+
+    @model_validator(mode="after")
+    def _spread_is_between_two_legs(self) -> CrossAssetSpreadFamily:
+        if min(self.exit_spread) >= max(self.entry_spread):
+            raise ValueError(
+                "No admissible (entry_spread, exit_spread) pair: every exit band is at or "
+                "outside every entry band."
+            )
+        for target, reference in self.reference_symbol.items():
+            if target == reference:
+                raise ValueError(
+                    f"{target} cannot be its own reference leg; there would be no spread."
+                )
+        return self
+
+
 class Families(_Strict):
     momentum: MomentumFamily = MomentumFamily()
     breakout: BreakoutFamily = BreakoutFamily()
@@ -379,6 +560,11 @@ class Families(_Strict):
     volatility_breakout: VolatilityBreakoutFamily = VolatilityBreakoutFamily()
     funding: FundingFamily = FundingFamily()
     cross_asset: CrossAssetFamily = CrossAssetFamily()
+    # -- Gate S1 batch (pre-specified 2026-08-11; see docs/roadmap/gate_s1.md) --
+    mtf_trend_consensus: MultiHorizonTrendFamily = MultiHorizonTrendFamily()
+    funding_reversal: FundingReversalFamily = FundingReversalFamily()
+    intraday_seasonality: IntradaySeasonalityFamily = IntradaySeasonalityFamily()
+    xasset_spread_reversion: CrossAssetSpreadFamily = CrossAssetSpreadFamily()
 
 
 class VolatilityFilter(_Strict):
