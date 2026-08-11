@@ -10,6 +10,9 @@ from perp_lab.evaluation.multiple_testing import (
     deflated_sharpe_ratio,
     expected_maximum_sharpe,
     probability_of_backtest_overfitting,
+    reality_check,
+    stationary_bootstrap_indices,
+    superior_predictive_ability,
 )
 
 
@@ -112,3 +115,126 @@ def test_benjamini_hochberg_validates_its_inputs() -> None:
     assert benjamini_hochberg([]) == ()
     with pytest.raises(ValueError, match="p_values"):
         benjamini_hochberg([0.1, 1.5])
+
+
+# --------------------------------------------------------------------------- #
+# Stationary bootstrap
+# --------------------------------------------------------------------------- #
+
+
+def test_stationary_bootstrap_returns_indices_inside_the_series() -> None:
+    rng = np.random.default_rng(0)
+    idx = stationary_bootstrap_indices(50, 100, block_probability=0.2, rng=rng)
+    assert idx.shape == (100, 50)
+    assert idx.min() >= 0
+    assert idx.max() <= 49
+
+
+def test_a_restart_probability_of_one_resamples_independently() -> None:
+    rng = np.random.default_rng(1)
+    idx = stationary_bootstrap_indices(200, 200, block_probability=1.0, rng=rng)
+    # Every step restarts, so consecutive positions are almost never adjacent.
+    contiguous = (idx[:, 1:] == (idx[:, :-1] + 1) % 200).mean()
+    assert contiguous < 0.02
+
+
+def test_a_low_restart_probability_preserves_contiguous_blocks() -> None:
+    rng = np.random.default_rng(1)
+    idx = stationary_bootstrap_indices(200, 200, block_probability=0.05, rng=rng)
+    contiguous = (idx[:, 1:] == (idx[:, :-1] + 1) % 200).mean()
+    assert contiguous > 0.9, "block resampling must keep the time ordering inside blocks"
+
+
+def test_stationary_bootstrap_validates_its_inputs() -> None:
+    rng = np.random.default_rng(0)
+    with pytest.raises(ValueError, match="block_probability"):
+        stationary_bootstrap_indices(10, 5, block_probability=0.0, rng=rng)
+    with pytest.raises(ValueError, match="n_observations"):
+        stationary_bootstrap_indices(1, 5, block_probability=0.5, rng=rng)
+
+
+# --------------------------------------------------------------------------- #
+# Hansen SPA and White's Reality Check
+# --------------------------------------------------------------------------- #
+
+
+def _null_differentials(seed: int, n_obs: int = 300, n_candidates: int = 15) -> np.ndarray:
+    return np.random.default_rng(seed).normal(0.0, 1.0, size=(n_obs, n_candidates))
+
+
+def test_spa_does_not_find_significance_when_no_candidate_beats_the_benchmark() -> None:
+    p_values = [
+        superior_predictive_ability(_null_differentials(seed), n_bootstrap=400, seed=seed).p_value
+        for seed in range(12)
+    ]
+    assert float(np.mean(p_values)) > 0.25, "p-values must not collapse under the null"
+    assert float(np.mean(np.asarray(p_values) < 0.05)) <= 0.25
+
+
+def test_spa_detects_a_planted_signal() -> None:
+    for seed in range(5):
+        rng = np.random.default_rng(200 + seed)
+        differentials = rng.normal(0.0, 1.0, size=(400, 15))
+        differentials[:, 4] += 0.3
+        result = superior_predictive_ability(differentials, n_bootstrap=400, seed=seed)
+        assert result.p_value < 0.05
+        assert result.best_candidate == 4
+        assert result.significant_at_5pct
+
+
+def test_spa_reports_no_evidence_when_every_candidate_is_worse() -> None:
+    differentials = np.random.default_rng(3).normal(-1.0, 1.0, size=(300, 15))
+    result = superior_predictive_ability(differentials, n_bootstrap=400, seed=3)
+    assert result.statistic == 0.0
+    assert result.p_value == 1.0
+
+
+def test_spa_is_more_powerful_than_the_reality_check_when_bad_candidates_abound() -> None:
+    # One genuinely good candidate buried among many hopeless ones. The Reality
+    # Check lets the hopeless candidates inflate its null distribution; Hansen's
+    # consistent recentring removes them.
+    rng = np.random.default_rng(7)
+    differentials = rng.normal(-1.0, 1.0, size=(400, 40))
+    differentials[:, 0] = rng.normal(0.18, 1.0, size=400)
+    spa = superior_predictive_ability(differentials, n_bootstrap=600, seed=7)
+    rc = reality_check(differentials, n_bootstrap=600, seed=7)
+    assert spa.p_value < rc.p_value
+
+
+def test_reality_check_behaves_sensibly_under_the_null_and_with_a_signal() -> None:
+    null_p = [
+        reality_check(_null_differentials(seed), n_bootstrap=400, seed=seed).p_value
+        for seed in range(8)
+    ]
+    assert float(np.mean(null_p)) > 0.25
+
+    rng = np.random.default_rng(11)
+    planted = rng.normal(0.0, 1.0, size=(400, 15))
+    planted[:, 2] += 0.4
+    assert reality_check(planted, n_bootstrap=400, seed=11).p_value < 0.05
+
+
+def test_snooping_tests_are_deterministic_for_a_given_seed() -> None:
+    differentials = _null_differentials(5)
+    first = superior_predictive_ability(differentials, n_bootstrap=200, seed=99)
+    second = superior_predictive_ability(differentials, n_bootstrap=200, seed=99)
+    assert first.p_value == second.p_value
+    assert first.to_dict() == second.to_dict()
+
+
+def test_spa_records_its_own_configuration() -> None:
+    result = superior_predictive_ability(_null_differentials(0), n_bootstrap=200, seed=0)
+    payload = result.to_dict()
+    assert payload["test"] == "hansen_spa_consistent"
+    assert payload["n_candidates"] == 15
+    assert payload["n_observations"] == 300
+    assert payload["n_bootstrap"] == 200
+
+
+def test_snooping_tests_reject_malformed_input() -> None:
+    with pytest.raises(ValueError, match="2-D"):
+        superior_predictive_ability(np.zeros(10), n_bootstrap=10)
+    with pytest.raises(ValueError, match="non-finite"):
+        superior_predictive_ability(np.full((10, 2), np.nan), n_bootstrap=10)
+    with pytest.raises(ValueError, match="at least 4 observations"):
+        superior_predictive_ability(np.zeros((3, 2)) + 1.0, n_bootstrap=10)
