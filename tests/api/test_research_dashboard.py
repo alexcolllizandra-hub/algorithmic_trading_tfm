@@ -54,9 +54,52 @@ def test_performance_fold_matches_equity_summary(real_client: TestClient) -> Non
             )
 
 
+@pytest.mark.skipif(not ETH_PILOT.is_dir(), reason="ETH pilot artifacts not present locally")
+def test_rs_fold_zero_winner_matches_full_unpaginated_equity(real_client: TestClient) -> None:
+    """Pin the fold → selected candidate → full equity artifact chain.
+
+    The point window is deliberately shorter than the series. Dashboard cards
+    must use ``summary``, never the last point displayed after pagination.
+    """
+    run_id = ETH_PILOT.name
+    performance = real_client.get(f"/api/v1/runs/{run_id}/performance").json()
+    fold = next(
+        row for row in performance["folds"] if row["method"] == "random_search" and row["fold"] == 0
+    )
+    equity = real_client.get(
+        f"/api/v1/runs/{run_id}/equity",
+        params={"method": "random_search", "fold": 0, "limit": 500, "offset": 0},
+    ).json()
+    summary = equity["summary"]
+
+    assert fold["candidate_id"] == "momentum-f1fa297f04234be9"
+    assert summary["candidate_id"] == fold["candidate_id"]
+    assert summary["final_equity"] == pytest.approx(0.9040595814842268, rel=1e-12)
+    assert fold["final_equity"] == pytest.approx(summary["final_equity"], rel=1e-12)
+    assert summary["n_points_total"] == fold["n_points"] == 2159
+    assert summary["period_start"].startswith("2022-03-31")
+    assert summary["period_end"].startswith("2022-06-28")
+    assert equity["meta"]["returned"] == 500
+    assert equity["meta"]["total"] == summary["n_points_total"]
+    assert equity["points"][-1]["equity"] != summary["final_equity"]
+
+
 def test_eda_figure_path_traversal_rejected(client: TestClient) -> None:
     r = client.get("/api/v1/eda/figures/../secrets")
     assert r.status_code in (400, 404, 422)
+
+
+@pytest.mark.parametrize(
+    "path",
+    (
+        "/api/v1/research/summary?run_id=..",
+        "/api/v1/research/timeline?run_id=..",
+        "/api/v1/methodology/features?run_id=..",
+        "/api/v1/methodology/strategies?run_id=..",
+    ),
+)
+def test_research_query_run_id_path_traversal_rejected(client: TestClient, path: str) -> None:
+    assert client.get(path).status_code == 400
 
 
 def test_research_summary_schema(client: TestClient) -> None:

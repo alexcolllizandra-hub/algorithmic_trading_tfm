@@ -1,3 +1,5 @@
+import { es } from "@/lib/i18n/es";
+
 export interface NavItem {
   href: string;
   label: string;
@@ -8,38 +10,38 @@ export interface NavItem {
 export const NAV: NavItem[] = [
   {
     href: "/",
-    label: "Visión general",
+    label: es.nav.overview.label,
     icon: "\u25C9",
-    description: "Fases, evidencia y advertencias",
+    description: es.nav.overview.description,
   },
   {
     href: "/datos-eda",
-    label: "Datos y EDA",
+    label: es.nav.datosEda.label,
     icon: "\u2637",
-    description: "Cobertura, cronología y hallazgos",
+    description: es.nav.datosEda.description,
   },
   {
     href: "/metodologia",
-    label: "Metodología",
+    label: es.nav.metodologia.label,
     icon: "\u2699",
-    description: "Features, estrategias y validación",
+    description: es.nav.metodologia.description,
   },
   {
     href: "/experimentos",
-    label: "Experimentos",
+    label: es.nav.experimentos.label,
     icon: "\u2263",
-    description: "Búsqueda RS vs GA",
+    description: es.nav.experimentos.description,
   },
   {
     href: "/resultados",
-    label: "Resultados",
+    label: es.nav.resultados.label,
     icon: "\u2197",
-    description: "Equity, drawdown y operaciones",
+    description: es.nav.resultados.description,
   },
   {
     href: "/diagnostico",
-    label: "Diagnóstico",
+    label: es.nav.diagnostico.label,
     icon: "\u25A6",
-    description: "Artefactos y sistema",
+    description: es.nav.diagnostico.description,
   },
 ];
