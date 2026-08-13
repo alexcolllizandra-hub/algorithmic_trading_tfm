@@ -7,8 +7,10 @@ import pytest
 
 from perp_lab.evaluation.multiple_testing import (
     benjamini_hochberg,
+    benjamini_hochberg_correction,
     deflated_sharpe_ratio,
     expected_maximum_sharpe,
+    holm_bonferroni,
     probability_of_backtest_overfitting,
     reality_check,
     stationary_bootstrap_indices,
@@ -238,3 +240,71 @@ def test_snooping_tests_reject_malformed_input() -> None:
         superior_predictive_ability(np.full((10, 2), np.nan), n_bootstrap=10)
     with pytest.raises(ValueError, match="at least 4 observations"):
         superior_predictive_ability(np.zeros((3, 2)) + 1.0, n_bootstrap=10)
+
+
+# --------------------------------------------------------------------------- #
+# Holm (FWER) and the BH variant that also reports adjusted values
+# --------------------------------------------------------------------------- #
+
+
+def test_holm_scales_the_smallest_p_value_by_the_full_family_size() -> None:
+    # The most significant of five tests is multiplied by 5, the next by 4, and
+    # so on; that step-down is the whole difference from plain Bonferroni.
+    result = holm_bonferroni([0.001, 0.008, 0.02, 0.2, 0.9], alpha=0.05)
+    assert result.adjusted_p_values[0] == pytest.approx(0.005)
+    assert result.adjusted_p_values[1] == pytest.approx(0.032)
+    assert result.rejected == (True, True, False, False, False)
+    assert result.n_rejected == 2
+
+
+def test_holm_is_more_conservative_than_benjamini_hochberg() -> None:
+    p_values = [0.001, 0.008, 0.02, 0.2, 0.9]
+    fwer = holm_bonferroni(p_values, alpha=0.05)
+    fdr = benjamini_hochberg_correction(p_values, alpha=0.05)
+    assert fwer.n_rejected <= fdr.n_rejected
+    assert all(a >= b for a, b in zip(fwer.adjusted_p_values, fdr.adjusted_p_values, strict=True))
+
+
+def test_holm_stops_at_the_first_failure_even_if_a_later_test_would_pass() -> None:
+    # 0.04 alone would clear alpha, but Holm cannot reject it while the more
+    # significant 0.03 has already failed its own, stricter threshold.
+    result = holm_bonferroni([0.03, 0.04], alpha=0.05)
+    assert result.rejected == (False, False)
+
+
+def test_adjusted_values_are_returned_in_the_input_order() -> None:
+    shuffled = [0.9, 0.001, 0.2, 0.008]
+    result = holm_bonferroni(shuffled, alpha=0.05)
+    assert result.adjusted_p_values[1] == pytest.approx(0.004)
+    assert result.rejected == (False, True, False, True)
+
+
+def test_bh_correction_agrees_with_the_flag_only_implementation() -> None:
+    p_values = [0.001, 0.008, 0.02, 0.2, 0.9, 0.03, 0.5]
+    assert benjamini_hochberg_correction(p_values, alpha=0.05).rejected == benjamini_hochberg(
+        p_values, alpha=0.05
+    )
+
+
+def test_adjusted_values_never_exceed_one_and_stay_monotone() -> None:
+    p_values = [0.4, 0.5, 0.6, 0.9, 0.95]
+    for result in (
+        holm_bonferroni(p_values, alpha=0.05),
+        benjamini_hochberg_correction(p_values, alpha=0.05),
+    ):
+        adjusted = np.asarray(result.adjusted_p_values)
+        assert adjusted.max() <= 1.0
+        ordered = adjusted[np.argsort(p_values)]
+        assert np.all(np.diff(ordered) >= -1e-12), result.method
+        assert result.n_rejected == 0
+
+
+def test_corrections_handle_an_empty_family_and_reject_bad_input() -> None:
+    for correct in (holm_bonferroni, benjamini_hochberg_correction):
+        empty = correct([])
+        assert empty.n_tests == 0
+        assert empty.rejected == ()
+        with pytest.raises(ValueError, match="alpha"):
+            correct([0.1], alpha=0.0)
+        with pytest.raises(ValueError, match=r"\[0, 1\]"):
+            correct([1.5])

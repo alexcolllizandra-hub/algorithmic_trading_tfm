@@ -1,0 +1,920 @@
+{
+  "report": "study_level_multiple_testing",
+  "generated_at": "2026-08-13T10:40:18+00:00",
+  "git_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
+  "holdout_accessed": false,
+  "primary_symbol": "BTCUSDT",
+  "primary_engine": "random_search",
+  "criteria": {
+    "R2": "Six robustness criteria on Random Search, both assets, majority of 10 seeds (ADR 0013). Momentum re-baselined after the outer-fold leakage fix.",
+    "R3": "All six promotion criteria (positive net OOS return, bootstrap Sharpe CI excluding zero, survives doubled costs, beats buy-and-hold, survives dropping the top five trades, not confined to one fold) on Random Search, on both assets, on at least 6 of 10 seeds; plus a veto below 5 OOS trades (ADR 0015).",
+    "S1": "S1-B screened for mechanical viability only and could not reject on performance; the S1-C promotion criterion (same six, 6/10 seeds, both assets, plus deflated Sharpe > 0.95, PBO < 0.5 and BH at 0.05) was never executed (ADR 0016).",
+    "S2": "S2-B partial-signal trigger: positive compounded net OOS return on at least 2 of 3 seeds, at least 5 OOS trades on each such seed, and not confined to a single fold. It did not fire, so S2-C promotion was never authorised."
+  },
+  "inventory": [
+    {
+      "gate": "R2",
+      "family": "momentum",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 40,
+      "criterion": "Six robustness criteria on Random Search, both assets, majority of 10 seeds (ADR 0013). Momentum re-baselined after the outer-fold leakage fix."
+    },
+    {
+      "gate": "R3",
+      "family": "BTC_ETH_confirmation",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 40,
+      "criterion": "All six promotion criteria (positive net OOS return, bootstrap Sharpe CI excluding zero, survives doubled costs, beats buy-and-hold, survives dropping the top five trades, not confined to one fold) on Random Search, on both assets, on at least 6 of 10 seeds; plus a veto below 5 OOS trades (ADR 0015)."
+    },
+    {
+      "gate": "R3",
+      "family": "breakout",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 40,
+      "criterion": "All six promotion criteria (positive net OOS return, bootstrap Sharpe CI excluding zero, survives doubled costs, beats buy-and-hold, survives dropping the top five trades, not confined to one fold) on Random Search, on both assets, on at least 6 of 10 seeds; plus a veto below 5 OOS trades (ADR 0015)."
+    },
+    {
+      "gate": "R3",
+      "family": "funding",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 40,
+      "criterion": "All six promotion criteria (positive net OOS return, bootstrap Sharpe CI excluding zero, survives doubled costs, beats buy-and-hold, survives dropping the top five trades, not confined to one fold) on Random Search, on both assets, on at least 6 of 10 seeds; plus a veto below 5 OOS trades (ADR 0015)."
+    },
+    {
+      "gate": "R3",
+      "family": "mean_reversion",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 40,
+      "criterion": "All six promotion criteria (positive net OOS return, bootstrap Sharpe CI excluding zero, survives doubled costs, beats buy-and-hold, survives dropping the top five trades, not confined to one fold) on Random Search, on both assets, on at least 6 of 10 seeds; plus a veto below 5 OOS trades (ADR 0015)."
+    },
+    {
+      "gate": "R3",
+      "family": "volatility_breakout",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 40,
+      "criterion": "All six promotion criteria (positive net OOS return, bootstrap Sharpe CI excluding zero, survives doubled costs, beats buy-and-hold, survives dropping the top five trades, not confined to one fold) on Random Search, on both assets, on at least 6 of 10 seeds; plus a veto below 5 OOS trades (ADR 0015)."
+    },
+    {
+      "gate": "S1",
+      "family": "funding_reversal",
+      "symbols": [
+        "BTCUSDT"
+      ],
+      "seeds": [
+        42
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 2,
+      "criterion": "S1-B screened for mechanical viability only and could not reject on performance; the S1-C promotion criterion (same six, 6/10 seeds, both assets, plus deflated Sharpe > 0.95, PBO < 0.5 and BH at 0.05) was never executed (ADR 0016)."
+    },
+    {
+      "gate": "S1",
+      "family": "intraday_seasonality",
+      "symbols": [
+        "BTCUSDT"
+      ],
+      "seeds": [
+        42
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 2,
+      "criterion": "S1-B screened for mechanical viability only and could not reject on performance; the S1-C promotion criterion (same six, 6/10 seeds, both assets, plus deflated Sharpe > 0.95, PBO < 0.5 and BH at 0.05) was never executed (ADR 0016)."
+    },
+    {
+      "gate": "S1",
+      "family": "mtf_trend_consensus",
+      "symbols": [
+        "BTCUSDT"
+      ],
+      "seeds": [
+        42
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 2,
+      "criterion": "S1-B screened for mechanical viability only and could not reject on performance; the S1-C promotion criterion (same six, 6/10 seeds, both assets, plus deflated Sharpe > 0.95, PBO < 0.5 and BH at 0.05) was never executed (ADR 0016)."
+    },
+    {
+      "gate": "S1",
+      "family": "xasset_spread_reversion",
+      "symbols": [
+        "BTCUSDT"
+      ],
+      "seeds": [
+        42
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 2,
+      "criterion": "S1-B screened for mechanical viability only and could not reject on performance; the S1-C promotion criterion (same six, 6/10 seeds, both assets, plus deflated Sharpe > 0.95, PBO < 0.5 and BH at 0.05) was never executed (ADR 0016)."
+    },
+    {
+      "gate": "S2",
+      "family": "flow_price_divergence",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "seeds": [
+        42,
+        43,
+        44
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 12,
+      "criterion": "S2-B partial-signal trigger: positive compounded net OOS return on at least 2 of 3 seeds, at least 5 OOS trades on each such seed, and not confined to a single fold. It did not fire, so S2-C promotion was never authorised."
+    },
+    {
+      "gate": "S2",
+      "family": "illiquidity_reversion",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "seeds": [
+        42,
+        43,
+        44
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 12,
+      "criterion": "S2-B partial-signal trigger: positive compounded net OOS return on at least 2 of 3 seeds, at least 5 OOS trades on each such seed, and not confined to a single fold. It did not fire, so S2-C promotion was never authorised."
+    },
+    {
+      "gate": "S2",
+      "family": "taker_flow_extreme",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "seeds": [
+        42,
+        43,
+        44
+      ],
+      "engines": [
+        "genetic_algorithm",
+        "random_search"
+      ],
+      "n_units": 12,
+      "criterion": "S2-B partial-signal trigger: positive compounded net OOS return on at least 2 of 3 seeds, at least 5 OOS trades on each such seed, and not confined to a single fold. It did not fire, so S2-C promotion was never authorised."
+    }
+  ],
+  "families": [
+    {
+      "gate": "R3",
+      "family": "volatility_breakout",
+      "symbol": "BTCUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": 5.123978252208174e-06,
+      "total_return": 0.06908417288445001,
+      "sharpe_per_observation": 0.0020713362758734847,
+      "sharpe_annualised": 0.19386645289344173,
+      "p_value": 0.3455,
+      "skewness": -0.24133492499359696,
+      "kurtosis": 40.89703306051576,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "S2",
+      "family": "taker_flow_extreme",
+      "symbol": "BTCUSDT",
+      "n_seeds": 3,
+      "n_bars": 32385,
+      "mean_bar_return": 9.073254791307441e-07,
+      "total_return": 0.015035082858129378,
+      "sharpe_per_observation": 0.0009603056870940792,
+      "sharpe_annualised": 0.08987968753254223,
+      "p_value": 0.455,
+      "skewness": -0.47731111710275603,
+      "kurtosis": 240.52928879567347,
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    {
+      "gate": "R2",
+      "family": "momentum",
+      "symbol": "BTCUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -7.478972800034854e-06,
+      "total_return": -0.32383365110916684,
+      "sharpe_per_observation": -0.0024659192144110744,
+      "sharpe_annualised": -0.23079739238287586,
+      "p_value": 0.6525,
+      "skewness": -0.438672714677207,
+      "kurtosis": 41.904982047156274,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "S1",
+      "family": "funding_reversal",
+      "symbol": "BTCUSDT",
+      "n_seeds": 1,
+      "n_bars": 32385,
+      "mean_bar_return": -1.0415102607151633e-05,
+      "total_return": -0.383293830951394,
+      "sharpe_per_observation": -0.0034686528249830676,
+      "sharpe_annualised": -0.32464811596789533,
+      "p_value": 0.738,
+      "skewness": -0.13145612919957922,
+      "kurtosis": 63.75958519469711,
+      "seeds": [
+        42
+      ]
+    },
+    {
+      "gate": "R3",
+      "family": "funding",
+      "symbol": "BTCUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -1.0238015864182393e-05,
+      "total_return": -0.3498869640848724,
+      "sharpe_per_observation": -0.004139708187066821,
+      "sharpe_annualised": -0.3874554564551082,
+      "p_value": 0.7975,
+      "skewness": -0.007701239021337059,
+      "kurtosis": 33.0372349105465,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "S2",
+      "family": "flow_price_divergence",
+      "symbol": "BTCUSDT",
+      "n_seeds": 3,
+      "n_bars": 32385,
+      "mean_bar_return": -2.0511276388779897e-06,
+      "total_return": -0.06698151083638648,
+      "sharpe_per_observation": -0.004840274914181277,
+      "sharpe_annualised": -0.4530249093647153,
+      "p_value": 0.809,
+      "skewness": 4.124512937486611,
+      "kurtosis": 485.74133094759543,
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    {
+      "gate": "S1",
+      "family": "mtf_trend_consensus",
+      "symbol": "BTCUSDT",
+      "n_seeds": 1,
+      "n_bars": 32385,
+      "mean_bar_return": -2.4805527458501234e-05,
+      "total_return": -0.678255543402934,
+      "sharpe_per_observation": -0.005490361793150557,
+      "sharpe_annualised": -0.513869707366042,
+      "p_value": 0.8505,
+      "skewness": -0.03677971166039018,
+      "kurtosis": 26.411693657330535,
+      "seeds": [
+        42
+      ]
+    },
+    {
+      "gate": "R3",
+      "family": "mean_reversion",
+      "symbol": "BTCUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -2.3631366242409475e-05,
+      "total_return": -0.6084260304257398,
+      "sharpe_per_observation": -0.007250087843814532,
+      "sharpe_annualised": -0.678571041224807,
+      "p_value": 0.9015,
+      "skewness": -0.5610179746609234,
+      "kurtosis": 29.462164379667396,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "R3",
+      "family": "BTC_ETH_confirmation",
+      "symbol": "BTCUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -2.2596087645291627e-05,
+      "total_return": -0.5872552892960241,
+      "sharpe_per_observation": -0.00734987115952163,
+      "sharpe_annualised": -0.6879102478516614,
+      "p_value": 0.9135,
+      "skewness": -0.230276871261276,
+      "kurtosis": 32.27895873456637,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "S1",
+      "family": "intraday_seasonality",
+      "symbol": "BTCUSDT",
+      "n_seeds": 1,
+      "n_bars": 32385,
+      "mean_bar_return": -1.5044484515001657e-05,
+      "total_return": -0.42017488150678006,
+      "sharpe_per_observation": -0.007961236518745153,
+      "sharpe_annualised": -0.7451309101821214,
+      "p_value": 0.918,
+      "skewness": 0.3721553629801371,
+      "kurtosis": 123.1482925000183,
+      "seeds": [
+        42
+      ]
+    },
+    {
+      "gate": "R3",
+      "family": "breakout",
+      "symbol": "BTCUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -5.2215074216505616e-06,
+      "total_return": -0.1606548389660617,
+      "sharpe_per_observation": -0.00852960614063764,
+      "sharpe_annualised": -0.7983273919953977,
+      "p_value": 0.943,
+      "skewness": 14.042649967451887,
+      "kurtosis": 1044.8053069677414,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "S1",
+      "family": "xasset_spread_reversion",
+      "symbol": "BTCUSDT",
+      "n_seeds": 1,
+      "n_bars": 32385,
+      "mean_bar_return": -4.970548397863567e-05,
+      "total_return": -0.8397728041122545,
+      "sharpe_per_observation": -0.013453149921065858,
+      "sharpe_annualised": -1.2591458402093012,
+      "p_value": 0.987,
+      "skewness": -0.5304241587359728,
+      "kurtosis": 42.26117334997563,
+      "seeds": [
+        42
+      ]
+    },
+    {
+      "gate": "S2",
+      "family": "illiquidity_reversion",
+      "symbol": "BTCUSDT",
+      "n_seeds": 3,
+      "n_bars": 32385,
+      "mean_bar_return": -1.4044832410467644e-05,
+      "total_return": -0.3757051182367125,
+      "sharpe_per_observation": -0.014014507177319715,
+      "sharpe_annualised": -1.3116860005606363,
+      "p_value": 0.9965,
+      "skewness": -2.1762193232729534,
+      "kurtosis": 135.2891836114229,
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    }
+  ],
+  "secondary": [
+    {
+      "gate": "S2",
+      "family": "taker_flow_extreme",
+      "symbol": "ETHUSDT",
+      "n_seeds": 3,
+      "n_bars": 32385,
+      "mean_bar_return": 1.1144653631995884e-06,
+      "total_return": 0.01363582985382572,
+      "sharpe_per_observation": 0.000943037190839802,
+      "sharpe_annualised": 0.088263444841959,
+      "p_value": 0.4265,
+      "skewness": 3.9736248479176264,
+      "kurtosis": 333.17698775184436,
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    {
+      "gate": "R2",
+      "family": "momentum",
+      "symbol": "ETHUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -1.3219667024849854e-05,
+      "total_return": -0.4742167959323975,
+      "sharpe_per_observation": -0.0036275246602397145,
+      "sharpe_annualised": -0.33951770499823714,
+      "p_value": 0.75,
+      "skewness": 0.7134605928176195,
+      "kurtosis": 50.72210749605767,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "R3",
+      "family": "funding",
+      "symbol": "ETHUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -1.4924695519222909e-05,
+      "total_return": -0.49938331697880944,
+      "sharpe_per_observation": -0.004160400841350249,
+      "sharpe_annualised": -0.38939218277695414,
+      "p_value": 0.7705,
+      "skewness": -0.23929837436072554,
+      "kurtosis": 56.36672232018046,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "S2",
+      "family": "flow_price_divergence",
+      "symbol": "ETHUSDT",
+      "n_seeds": 3,
+      "n_bars": 28067,
+      "mean_bar_return": -2.928854317772376e-06,
+      "total_return": -0.08297450831918285,
+      "sharpe_per_observation": -0.005233005857130607,
+      "sharpe_annualised": -0.4897825115647617,
+      "p_value": 0.7865,
+      "skewness": -11.681417374072558,
+      "kurtosis": 981.600415170063,
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    },
+    {
+      "gate": "R3",
+      "family": "BTC_ETH_confirmation",
+      "symbol": "ETHUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -2.762640421872229e-05,
+      "total_return": -0.6872806231269608,
+      "sharpe_per_observation": -0.006790509373627773,
+      "sharpe_annualised": -0.6355568532925606,
+      "p_value": 0.886,
+      "skewness": 0.4696513835358642,
+      "kurtosis": 34.64262854200009,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "R3",
+      "family": "volatility_breakout",
+      "symbol": "ETHUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -2.2864776070736886e-05,
+      "total_return": -0.5957275844240149,
+      "sharpe_per_observation": -0.007159894637870868,
+      "sharpe_annualised": -0.6701294196904126,
+      "p_value": 0.902,
+      "skewness": 0.025336695337470388,
+      "kurtosis": 65.46140172376008,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "R3",
+      "family": "mean_reversion",
+      "symbol": "ETHUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -4.070837207823872e-05,
+      "total_return": -0.7918146046517939,
+      "sharpe_per_observation": -0.010358416983005722,
+      "sharpe_annualised": -0.9694947080669782,
+      "p_value": 0.969,
+      "skewness": -1.0978506508069144,
+      "kurtosis": 69.49585167476697,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "R3",
+      "family": "breakout",
+      "symbol": "ETHUSDT",
+      "n_seeds": 10,
+      "n_bars": 32385,
+      "mean_bar_return": -9.067407897985902e-06,
+      "total_return": -0.2615076097827562,
+      "sharpe_per_observation": -0.011812682859281741,
+      "sharpe_annualised": -1.1056065361083778,
+      "p_value": 0.981,
+      "skewness": 9.761738782697776,
+      "kurtosis": 785.8414475958045,
+      "seeds": [
+        278037,
+        341110,
+        605142,
+        671194,
+        683778,
+        692467,
+        693857,
+        707014,
+        765570,
+        891022
+      ]
+    },
+    {
+      "gate": "S2",
+      "family": "illiquidity_reversion",
+      "symbol": "ETHUSDT",
+      "n_seeds": 3,
+      "n_bars": 32385,
+      "mean_bar_return": -2.38494015504186e-05,
+      "total_return": -0.5548067108026138,
+      "sharpe_per_observation": -0.01587685286073229,
+      "sharpe_annualised": -1.4859920057757263,
+      "p_value": 0.9935,
+      "skewness": -8.588136721695308,
+      "kurtosis": 513.6291698819009,
+      "seeds": [
+        42,
+        43,
+        44
+      ]
+    }
+  ],
+  "corrections": {
+    "alpha": 0.05,
+    "n_tests": 13,
+    "best_family": "volatility_breakout",
+    "holm_bonferroni": {
+      "method": "holm_bonferroni",
+      "alpha": 0.05,
+      "n_tests": 13,
+      "n_rejected": 0,
+      "adjusted_p_values": {
+        "volatility_breakout": 1.0,
+        "taker_flow_extreme": 1.0,
+        "momentum": 1.0,
+        "funding_reversal": 1.0,
+        "funding": 1.0,
+        "flow_price_divergence": 1.0,
+        "mtf_trend_consensus": 1.0,
+        "mean_reversion": 1.0,
+        "BTC_ETH_confirmation": 1.0,
+        "intraday_seasonality": 1.0,
+        "breakout": 1.0,
+        "xasset_spread_reversion": 1.0,
+        "illiquidity_reversion": 1.0
+      },
+      "rejected": {
+        "volatility_breakout": false,
+        "taker_flow_extreme": false,
+        "momentum": false,
+        "funding_reversal": false,
+        "funding": false,
+        "flow_price_divergence": false,
+        "mtf_trend_consensus": false,
+        "mean_reversion": false,
+        "BTC_ETH_confirmation": false,
+        "intraday_seasonality": false,
+        "breakout": false,
+        "xasset_spread_reversion": false,
+        "illiquidity_reversion": false
+      }
+    },
+    "benjamini_hochberg": {
+      "method": "benjamini_hochberg",
+      "alpha": 0.05,
+      "n_tests": 13,
+      "n_rejected": 0,
+      "adjusted_p_values": {
+        "volatility_breakout": 0.9965,
+        "taker_flow_extreme": 0.9965,
+        "momentum": 0.9965,
+        "funding_reversal": 0.9965,
+        "funding": 0.9965,
+        "flow_price_divergence": 0.9965,
+        "mtf_trend_consensus": 0.9965,
+        "mean_reversion": 0.9965,
+        "BTC_ETH_confirmation": 0.9965,
+        "intraday_seasonality": 0.9965,
+        "breakout": 0.9965,
+        "xasset_spread_reversion": 0.9965,
+        "illiquidity_reversion": 0.9965
+      },
+      "rejected": {
+        "volatility_breakout": false,
+        "taker_flow_extreme": false,
+        "momentum": false,
+        "funding_reversal": false,
+        "funding": false,
+        "flow_price_divergence": false,
+        "mtf_trend_consensus": false,
+        "mean_reversion": false,
+        "BTC_ETH_confirmation": false,
+        "intraday_seasonality": false,
+        "breakout": false,
+        "xasset_spread_reversion": false,
+        "illiquidity_reversion": false
+      }
+    },
+    "deflated_sharpe": {
+      "family_selection": {
+        "n_trials": 13,
+        "observed_sharpe_per_observation": 0.0020713362758734847,
+        "benchmark_sharpe_per_observation": 0.008089162070073125,
+        "deflated_sharpe": 0.13948247412574422,
+        "probability_best_is_spurious": 0.8605175258742558
+      },
+      "all_configurations_evaluated": {
+        "n_trials": 496500,
+        "observed_sharpe_per_observation": 0.0020713362758734847,
+        "benchmark_sharpe_per_observation": 0.02245109861733531,
+        "deflated_sharpe": 0.0001229673073128712,
+        "probability_best_is_spurious": 0.9998770326926871
+      }
+    },
+    "probability_of_backtest_overfitting": {
+      "available": true,
+      "pbo": 0.4857142857142857,
+      "n_splits": 70,
+      "n_partitions": 8,
+      "n_observations": 32385,
+      "n_configurations": 13
+    },
+    "n_configurations_evaluated": 496500
+  },
+  "sensitivity": {
+    "families": {
+      "n_tests": 13,
+      "bonferroni_threshold": 0.0038461538461538464,
+      "smallest_raw_p_value": 0.3455,
+      "any_survive": false
+    },
+    "family_x_asset": {
+      "n_tests": 22,
+      "bonferroni_threshold": 0.002272727272727273,
+      "smallest_raw_p_value": 0.3455,
+      "any_survive": false
+    },
+    "family_x_asset_x_seed": {
+      "n_tests": 142,
+      "bonferroni_threshold": 0.00035211267605633805,
+      "smallest_raw_p_value": 0.3455,
+      "any_survive": false
+    },
+    "all_configurations_evaluated": {
+      "n_tests": 496500,
+      "bonferroni_threshold": 1.0070493454179255e-07,
+      "smallest_raw_p_value": 0.3455,
+      "any_survive": false
+    }
+  },
+  "conclusion": "Across the 13 strategy families the study tested, and against the 496,500 configurations actually evaluated to produce them, no family survives family-wise error control at alpha = 0.05; the probability of backtest overfitting is 0.486, and the probability that the best family is a product of selection rather than of edge is 1.000."
+}
