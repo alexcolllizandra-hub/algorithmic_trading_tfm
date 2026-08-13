@@ -64,6 +64,12 @@ node scripts/screenshots.mjs   # -> docs/platform/screenshots/
 - `output: "standalone"` is enabled for the Docker image (`node server.js`).
   `next start` prints a warning under standalone output but still serves the
   build for local E2E.
+- `/estudio` renders study-level closure evidence (all family × asset backtests,
+  multiple-testing corrections, regime cells). The frozen holdout is shown as a
+  **status only** (`HOLDOUT_LOCKED`): its reading is unaudited, so no holdout
+  metric is rendered even if `/study/holdout` still carries `result`,
+  `buy_and_hold` or `provenance`. Backend statuses are mapped to Spanish labels
+  and badge tones in `src/lib/study.ts` (`STATUS_VOCABULARY`).
 - Fixtures under `src/mock/` are **synthetic** and used only for tests; every
   run surfaced in the UI carries a run-kind badge (synthetic smoke vs
   development) so fixtures can never be confused with research results.

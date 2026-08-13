@@ -432,6 +432,282 @@ export interface MethodologyResponse {
   source_run_id: string | null;
 }
 
+// --------------------------------------------------------------------------- //
+// Study closure — the whole study rather than a single run
+// --------------------------------------------------------------------------- //
+
+/** One of the six R3 promotion criteria, as scored across seeds. */
+export interface StudyCriterion {
+  key: string;
+  label: string;
+  passed: number;
+  of: number;
+  required: number;
+  met: boolean;
+}
+
+/** One family on one asset, without its curves. */
+export interface StudyFamilySummary {
+  /** `family|SYMBOL` — contains a pipe, so encode it before putting it in a URL. */
+  key: string;
+  family: string;
+  /** R2 | R3 | S1 | S2 */
+  gate: string;
+  symbol: string;
+  thesis: string;
+  n_seeds: number;
+  n_bars: number;
+  total_return: number;
+  sharpe: number;
+  max_drawdown: number;
+  p_value: number | null;
+  holm_adjusted_p: number | null;
+  bh_adjusted_p: number | null;
+  survives_correction: boolean;
+  verdict: string;
+  gate_note: string | null;
+  criteria: StudyCriterion[] | null;
+  buy_and_hold_return: number | null;
+}
+
+export interface StudyEquityPoint {
+  t: string;
+  equity: number;
+}
+
+export interface StudySeedResult {
+  seed: number;
+  total_return: number;
+  sharpe: number;
+  max_drawdown: number;
+  n_bars: number;
+  equity: StudyEquityPoint[];
+}
+
+export interface StudyMonteCarloTerminal {
+  observed_total_return: number;
+  p05: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  p95: number;
+  probability_positive: number;
+}
+
+/**
+ * Resampling fan over the family's own returns. `measures` is part of the
+ * contract, not decoration: the fan quantifies PATH RISK and cannot establish
+ * that the mean is real, because resampling the observed series carries the
+ * observed mean with it.
+ */
+export interface StudyMonteCarlo {
+  method: string;
+  n_paths: number;
+  expected_block_bars: number;
+  seed: number;
+  /** e.g. `path_risk_not_significance` */
+  measures: string;
+  checkpoint_index: number[];
+  bands: Record<string, number[]>;
+  observed: number[];
+  terminal: StudyMonteCarloTerminal;
+}
+
+/** Served as `dict[str, Any]`; the keys the closure report writes. */
+export interface StudyMinTradesVeto {
+  passed?: number;
+  of?: number;
+  triggered?: boolean;
+}
+
+export interface StudyFamilyDetail extends StudyFamilySummary {
+  equity: StudyEquityPoint[];
+  seeds: StudySeedResult[];
+  monte_carlo: StudyMonteCarlo;
+  min_trades_veto: StudyMinTradesVeto | null;
+}
+
+/** Served as `dict[str, Any]`; shape of the Holm / BH blocks. */
+export interface StudyAdjustment {
+  n_rejected?: number;
+  adjusted_p_values?: Record<string, number>;
+}
+
+/** Served as `dict[str, Any]`; probability of backtest overfitting. */
+export interface StudyPbo {
+  available?: boolean;
+  pbo?: number | null;
+  n_splits?: number;
+  n_partitions?: number;
+  n_observations?: number;
+  n_configurations?: number;
+}
+
+export interface StudyDeflatedSharpeEntry {
+  n_trials?: number;
+  observed_sharpe_per_observation?: number;
+  benchmark_sharpe_per_observation?: number;
+  deflated_sharpe?: number;
+  probability_best_is_spurious?: number;
+}
+
+export interface StudySensitivityRow {
+  n_tests?: number;
+  bonferroni_threshold?: number;
+  smallest_raw_p_value?: number;
+  any_survive?: boolean;
+}
+
+export interface StudyCorrections {
+  n_families: number;
+  n_units: number;
+  n_configurations_evaluated: number;
+  alpha: number;
+  best_family: string;
+  holm: StudyAdjustment;
+  benjamini_hochberg: StudyAdjustment;
+  pbo: StudyPbo;
+  /** Keyed by trial-counting rule (e.g. `family_selection`). */
+  deflated_sharpe: Record<string, StudyDeflatedSharpeEntry>;
+  /** Keyed by counting rule (e.g. `family_x_asset`). */
+  sensitivity: Record<string, StudySensitivityRow>;
+  criteria_by_gate: Record<string, string>;
+  conclusion: string;
+  source_commit: string | null;
+}
+
+export interface StudySummaryResponse {
+  generated_at: string;
+  schema_version: number;
+  primary_symbol: string;
+  secondary_symbol: string;
+  primary_engine: string;
+  timeframe: string;
+  study: StudyCorrections;
+  families: StudyFamilySummary[];
+  holdout_opened: boolean;
+}
+
+/** Served as `dict[str, Any]`; one family x regime cell. */
+export interface StudyRegimeCell {
+  family?: string;
+  gate?: string;
+  dimension?: string;
+  regime?: string;
+  n_bars?: number;
+  share_of_bars?: number;
+  mean_bar_return?: number;
+  total_return?: number;
+  sharpe_annualised?: number;
+  p_value?: number | null;
+}
+
+/** Served as `dict[str, Any]`; the correction applied inside the regime block. */
+export interface StudyRegimeCorrection {
+  alpha?: number;
+  n_cells?: number;
+  n_testable_cells?: number;
+  n_excluded_small_cells?: number;
+  min_cell_bars?: number;
+  holm_bonferroni?: StudyAdjustment;
+  benjamini_hochberg?: StudyAdjustment;
+  survivors?: unknown[];
+}
+
+/** Exploratory by construction; the flag travels with the data. */
+export interface StudyRegimesResponse {
+  exploratory: boolean;
+  cells: StudyRegimeCell[];
+  correction: StudyRegimeCorrection;
+  candidate: Record<string, unknown> | null;
+  conclusion: string | null;
+}
+
+/** Served as `dict[str, Any]`; the metric block written by the backtester. */
+export interface StudyHoldoutMetrics {
+  n_bars?: number;
+  total_return?: number;
+  ann_return?: number;
+  ann_volatility?: number;
+  sharpe?: number;
+  sortino?: number;
+  max_drawdown?: number;
+  calmar?: number;
+  time_in_drawdown?: number;
+  ulcer_index?: number;
+  exposure?: number;
+  hit_rate?: number;
+  turnover?: number;
+  n_trades?: number;
+  funding_total?: number;
+  gross_return_total?: number;
+}
+
+export interface StudyHoldoutMember {
+  seed?: number;
+  selection_fingerprint?: string | null;
+  metrics?: StudyHoldoutMetrics;
+}
+
+export interface StudyHoldoutResult {
+  combined?: StudyHoldoutMetrics;
+  costs_paid?: { fees_and_slippage?: number; funding?: number; total?: number };
+  per_member?: StudyHoldoutMember[];
+  n_bars?: number;
+  window?: { start?: string | null; end?: string | null };
+}
+
+export interface StudyHoldoutProvenance {
+  opened_at?: string;
+  partition_evaluated?: string;
+  is_research_result?: boolean;
+  git?: {
+    commit?: string;
+    branch?: string;
+    worktree_clean?: boolean;
+    dirty_paths?: string[];
+  };
+  candidate?: {
+    family?: string;
+    symbol?: string;
+    timeframe?: string;
+    engine?: string;
+    fold?: number;
+    n_members?: number;
+  };
+  dataset_hashes?: Record<string, { sha256?: string; rows?: number; role?: string }>;
+  costs?: {
+    fee_bps_per_side?: number;
+    slippage_bps_per_side?: number;
+    funding_treatment?: string;
+    provisional?: boolean;
+  };
+  annualization_days?: number;
+}
+
+/**
+ * State of the frozen partition. The reading is UNAUDITED, so the payload is
+ * locked: `provenance`, `result` and `buy_and_hold` must never be rendered,
+ * whether or not they arrive populated.
+ */
+export interface StudyHoldoutResponse {
+  /** Expected `HOLDOUT_LOCKED`; part of the shared status vocabulary. */
+  status: string;
+  opened: boolean;
+  /** Reserved window, described but not evaluated in the UI. */
+  period: string | null;
+  /** Why the partition stays isolated. */
+  reason: string | null;
+  /** What must be verified before any holdout number may be published. */
+  requirements: string[];
+  /** Present in the contract; deliberately never displayed. */
+  provenance: StudyHoldoutProvenance | null;
+  /** Present in the contract; deliberately never displayed. */
+  result: StudyHoldoutResult | null;
+  /** Present in the contract; deliberately never displayed. */
+  buy_and_hold: StudyHoldoutMetrics | null;
+}
+
 /** Shared selection context for Results views — must stay synchronized. */
 export interface FoldSelection {
   runId: string;

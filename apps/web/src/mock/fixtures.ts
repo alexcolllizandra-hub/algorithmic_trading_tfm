@@ -24,6 +24,421 @@ const runSummary = {
 const warning =
   "EXPLORATORY fixture result (synthetic). Not real BTC/ETH performance and not final holdout.";
 
+const FIXTURE_TAG = "FIXTURE SINTÉTICO — no es un resultado de investigación";
+
+/** Deterministic curve so the fixtures never change between runs. */
+function studyCurve(n: number, drift: number, wobble: number, offset: number) {
+  const points: { t: string; equity: number }[] = [];
+  let equity = 1;
+  for (let i = 0; i < n; i += 1) {
+    equity *= 1 + drift + wobble * Math.sin(i * 0.9 + offset);
+    points.push({
+      t: new Date(Date.UTC(2024, 0, 1 + i)).toISOString(),
+      equity: Number(equity.toFixed(6)),
+    });
+  }
+  return points;
+}
+
+function studyFan(drift: number, offset: number) {
+  const n = 12;
+  const checkpoint_index: number[] = [];
+  const bands: Record<string, number[]> = { p05: [], p25: [], p50: [], p75: [], p95: [] };
+  const observed: number[] = [];
+  for (let i = 0; i < n; i += 1) {
+    const t = i / (n - 1);
+    const center = 1 + drift * i;
+    const width = 0.02 + 0.12 * t;
+    checkpoint_index.push(i * 24);
+    bands.p05.push(Number((center - 2 * width).toFixed(6)));
+    bands.p25.push(Number((center - width).toFixed(6)));
+    bands.p50.push(Number(center.toFixed(6)));
+    bands.p75.push(Number((center + width).toFixed(6)));
+    bands.p95.push(Number((center + 2 * width).toFixed(6)));
+    observed.push(Number((center + 0.4 * width * Math.sin(i + offset)).toFixed(6)));
+  }
+  return { checkpoint_index, bands, observed };
+}
+
+function studySeeds(seeds: number[], drift: number) {
+  return seeds.map((seed, i) => {
+    const equity = studyCurve(24, drift + (i - 1) * 0.004, 0.006, seed % 7);
+    const last = equity[equity.length - 1].equity;
+    return {
+      seed,
+      total_return: Number((last - 1).toFixed(6)),
+      sharpe: Number((-0.4 + i * 0.35).toFixed(4)),
+      max_drawdown: Number((-0.05 - i * 0.03).toFixed(4)),
+      n_bars: 24,
+      equity,
+    };
+  });
+}
+
+const fixtureCriteria = [
+  {
+    key: "positive_total_return",
+    label: "C1 positive return",
+    passed: 6,
+    of: 10,
+    required: 6,
+    met: true,
+  },
+  {
+    key: "bootstrap_sharpe_ci_excludes_zero",
+    label: "C2 bootstrap Sharpe CI",
+    passed: 1,
+    of: 10,
+    required: 6,
+    met: false,
+  },
+  {
+    key: "survives_double_costs",
+    label: "C3 survives 2x costs",
+    passed: 3,
+    of: 10,
+    required: 6,
+    met: false,
+  },
+  {
+    key: "beats_buy_and_hold",
+    label: "C4 beats buy-and-hold",
+    passed: 2,
+    of: 10,
+    required: 6,
+    met: false,
+  },
+  {
+    key: "survives_drop_top_trades",
+    label: "C5 drop top 5 trades",
+    passed: 0,
+    of: 10,
+    required: 6,
+    met: false,
+  },
+  {
+    key: "not_confined_to_one_fold",
+    label: "C6 fold locality",
+    passed: 7,
+    of: 10,
+    required: 6,
+    met: true,
+  },
+];
+
+interface StudyFixtureFamily {
+  key: string;
+  family: string;
+  gate: string;
+  symbol: string;
+  thesis: string;
+  n_seeds: number;
+  n_bars: number;
+  total_return: number;
+  sharpe: number;
+  max_drawdown: number;
+  p_value: number | null;
+  holm_adjusted_p: number | null;
+  bh_adjusted_p: number | null;
+  survives_correction: boolean;
+  verdict: string;
+  gate_note: string | null;
+  criteria: typeof fixtureCriteria | null;
+  buy_and_hold_return: number | null;
+  equity: { t: string; equity: number }[];
+  seeds: ReturnType<typeof studySeeds>;
+  monte_carlo: Record<string, unknown>;
+  min_trades_veto: { passed: number; of: number; triggered: boolean } | null;
+}
+
+function studyFamily(
+  overrides: Partial<StudyFixtureFamily> & {
+    family: string;
+    gate: string;
+    symbol: string;
+    total_return: number;
+  }
+): StudyFixtureFamily {
+  const drift = overrides.total_return / 24;
+  const fan = studyFan(drift, overrides.symbol === "ETHUSDT" ? 2 : 0);
+  return {
+    key: `${overrides.family}|${overrides.symbol}`,
+    thesis: `${FIXTURE_TAG}: hipótesis de ejemplo para ${overrides.family}.`,
+    n_seeds: 3,
+    n_bars: 24,
+    sharpe: -0.5,
+    max_drawdown: -0.18,
+    p_value: 0.42,
+    holm_adjusted_p: 1.0,
+    bh_adjusted_p: 0.99,
+    survives_correction: false,
+    verdict: "REJECTED",
+    gate_note: null,
+    criteria: null,
+    buy_and_hold_return: 0.1234,
+    equity: studyCurve(24, drift, 0.004, overrides.symbol === "ETHUSDT" ? 1.5 : 0),
+    seeds: studySeeds([101, 202, 303], drift),
+    monte_carlo: {
+      method: "stationary_bootstrap",
+      n_paths: 100,
+      expected_block_bars: 24,
+      seed: 20260813,
+      measures: "path_risk_not_significance",
+      ...fan,
+      terminal: {
+        observed_total_return: overrides.total_return,
+        p05: Number((overrides.total_return - 0.3).toFixed(4)),
+        p25: Number((overrides.total_return - 0.12).toFixed(4)),
+        p50: Number((overrides.total_return + 0.01).toFixed(4)),
+        p75: Number((overrides.total_return + 0.15).toFixed(4)),
+        p95: Number((overrides.total_return + 0.42).toFixed(4)),
+        probability_positive: 0.51,
+      },
+    },
+    min_trades_veto: null,
+    ...overrides,
+  };
+}
+
+const STUDY_FAMILIES: StudyFixtureFamily[] = [
+  studyFamily({
+    family: "volatility_breakout",
+    gate: "R3",
+    symbol: "BTCUSDT",
+    total_return: 0.0421,
+    sharpe: 0.18,
+    p_value: 0.312,
+    holm_adjusted_p: 1.0,
+    bh_adjusted_p: 0.984,
+    gate_note: "partial non-robust signal (not promotion-eligible)",
+    criteria: fixtureCriteria,
+    min_trades_veto: { passed: 9, of: 10, triggered: false },
+  }),
+  studyFamily({
+    family: "taker_flow_extreme",
+    gate: "S2",
+    symbol: "BTCUSDT",
+    total_return: 0.0087,
+    sharpe: 0.05,
+    p_value: 0.463,
+  }),
+  studyFamily({
+    family: "momentum",
+    gate: "R2",
+    symbol: "BTCUSDT",
+    total_return: -0.1533,
+    sharpe: -0.24,
+    p_value: 0.671,
+  }),
+  studyFamily({
+    family: "volatility_breakout",
+    gate: "R3",
+    symbol: "ETHUSDT",
+    total_return: -0.2718,
+    sharpe: -0.63,
+    p_value: 0.905,
+    holm_adjusted_p: null,
+    bh_adjusted_p: null,
+    criteria: fixtureCriteria,
+    min_trades_veto: { passed: 10, of: 10, triggered: false },
+  }),
+];
+
+const STUDY_FAMILY_BY_KEY: Record<string, StudyFixtureFamily> = Object.fromEntries(
+  STUDY_FAMILIES.map((f) => [f.key, f])
+);
+
+const adjusted = (value: number) => ({
+  volatility_breakout: value,
+  taker_flow_extreme: value,
+  momentum: value,
+});
+
+const studySummaryFixture = {
+  generated_at: "2026-08-13T10:00:00+00:00",
+  schema_version: 1,
+  primary_symbol: "BTCUSDT",
+  secondary_symbol: "ETHUSDT",
+  primary_engine: "random_search",
+  timeframe: "1h",
+  study: {
+    n_families: 3,
+    n_units: 22,
+    n_configurations_evaluated: 12345,
+    alpha: 0.05,
+    best_family: "volatility_breakout",
+    holm: { n_rejected: 0, adjusted_p_values: adjusted(1.0) },
+    benjamini_hochberg: { n_rejected: 0, adjusted_p_values: adjusted(0.984) },
+    pbo: {
+      available: true,
+      pbo: 0.472,
+      n_splits: 70,
+      n_partitions: 8,
+      n_observations: 24,
+      n_configurations: 3,
+    },
+    deflated_sharpe: {
+      family_selection: {
+        n_trials: 3,
+        observed_sharpe_per_observation: 0.0019,
+        benchmark_sharpe_per_observation: 0.0071,
+        deflated_sharpe: 0.1421,
+        probability_best_is_spurious: 0.8579,
+      },
+      all_configurations_evaluated: {
+        n_trials: 12345,
+        observed_sharpe_per_observation: 0.0019,
+        benchmark_sharpe_per_observation: 0.0198,
+        deflated_sharpe: 0.0012,
+        probability_best_is_spurious: 0.9988,
+      },
+    },
+    sensitivity: {
+      families: {
+        n_tests: 3,
+        bonferroni_threshold: 0.0166,
+        smallest_raw_p_value: 0.312,
+        any_survive: false,
+      },
+      family_x_asset: {
+        n_tests: 4,
+        bonferroni_threshold: 0.0125,
+        smallest_raw_p_value: 0.312,
+        any_survive: false,
+      },
+    },
+    criteria_by_gate: {
+      R2: `${FIXTURE_TAG}: criterio de ejemplo para la ronda R2.`,
+      R3: `${FIXTURE_TAG}: criterio de ejemplo para la ronda R3.`,
+      S2: `${FIXTURE_TAG}: criterio de ejemplo para la ronda S2.`,
+    },
+    conclusion: `${FIXTURE_TAG}. Ninguna familia de este fixture sobrevive a la corrección; los valores son inventados para probar la interfaz.`,
+    source_commit: "0000000fixture",
+  },
+  // Mirrors the API, which strips curves, seeds and the fan from the summary.
+  families: STUDY_FAMILIES.map((f) => ({
+    key: f.key,
+    family: f.family,
+    gate: f.gate,
+    symbol: f.symbol,
+    thesis: f.thesis,
+    n_seeds: f.n_seeds,
+    n_bars: f.n_bars,
+    total_return: f.total_return,
+    sharpe: f.sharpe,
+    max_drawdown: f.max_drawdown,
+    p_value: f.p_value,
+    holm_adjusted_p: f.holm_adjusted_p,
+    bh_adjusted_p: f.bh_adjusted_p,
+    survives_correction: f.survives_correction,
+    verdict: f.verdict,
+    gate_note: f.gate_note,
+    criteria: f.criteria,
+    buy_and_hold_return: f.buy_and_hold_return,
+  })),
+  holdout_opened: false,
+};
+
+const studyRegimesFixture = {
+  exploratory: true,
+  cells: [
+    {
+      family: "volatility_breakout",
+      gate: "R3",
+      dimension: "volatility",
+      regime: "high",
+      n_bars: 900,
+      share_of_bars: 0.18,
+      mean_bar_return: -0.00002,
+      total_return: -0.041,
+      sharpe_annualised: -0.52,
+      p_value: 0.72,
+    },
+    {
+      family: "volatility_breakout",
+      gate: "R3",
+      dimension: "trend",
+      regime: "up",
+      n_bars: 2600,
+      share_of_bars: 0.52,
+      mean_bar_return: 0.00001,
+      total_return: 0.031,
+      sharpe_annualised: 0.28,
+      p_value: 0.34,
+    },
+    {
+      family: "momentum",
+      gate: "R2",
+      dimension: "volatility",
+      regime: "low",
+      n_bars: 2100,
+      share_of_bars: 0.42,
+      mean_bar_return: -0.00003,
+      total_return: -0.078,
+      sharpe_annualised: -0.61,
+      p_value: 0.81,
+    },
+    {
+      family: "momentum",
+      gate: "R2",
+      dimension: "trend",
+      regime: "down",
+      n_bars: 1900,
+      share_of_bars: 0.38,
+      mean_bar_return: -0.00004,
+      total_return: -0.112,
+      sharpe_annualised: -0.94,
+      p_value: 0.93,
+    },
+  ],
+  correction: {
+    alpha: 0.05,
+    n_cells: 4,
+    n_testable_cells: 4,
+    n_excluded_small_cells: 0,
+    min_cell_bars: 500,
+    holm_bonferroni: {
+      n_rejected: 0,
+      adjusted_p_values: {
+        "volatility_breakout|volatility|high": 1.0,
+        "volatility_breakout|trend|up": 1.0,
+        "momentum|volatility|low": 1.0,
+        "momentum|trend|down": 1.0,
+      },
+    },
+    benjamini_hochberg: {
+      n_rejected: 0,
+      adjusted_p_values: {
+        "volatility_breakout|volatility|high": 0.93,
+        "volatility_breakout|trend|up": 0.93,
+        "momentum|volatility|low": 0.93,
+        "momentum|trend|down": 0.93,
+      },
+    },
+    survivors: [],
+  },
+  candidate: null,
+  conclusion: `${FIXTURE_TAG}: ninguna celda de ejemplo sobrevive a la corrección dentro de este bloque exploratorio.`,
+};
+
+// The frozen partition is UNAUDITED: the locked payload carries no metrics at
+// all, and the UI must not render provenance/result/buy_and_hold even if sent.
+const studyHoldoutFixture = {
+  status: "HOLDOUT_LOCKED",
+  opened: false,
+  period: "2026-01-01 .. 2026-06-30 (ventana reservada, FIXTURE)",
+  reason: `${FIXTURE_TAG}: la partición congelada permanece aislada porque su evaluación no ha sido auditada.`,
+  requirements: [
+    "Auditoría independiente del pipeline de evaluación del holdout.",
+    "Verificación de que el candidato quedó congelado antes de abrir la partición.",
+    "Comprobación de hashes SHA-256 de los datasets usados en la evaluación.",
+    "Registro de commit, entorno y configuración resuelta en el momento de la apertura.",
+  ],
+  provenance: null,
+  result: null,
+  buy_and_hold: null,
+};
+
 export const FIXTURES: Record<string, unknown> = {
   "/health": {
     status: "ok",
@@ -456,6 +871,10 @@ export const FIXTURES: Record<string, unknown> = {
     genetic_algorithm_evaluated: 16,
     equal_effective_evaluations: false,
   },
+  "/study/summary": studySummaryFixture,
+  "/study/regimes": studyRegimesFixture,
+  "/study/holdout": studyHoldoutFixture,
+  ...Object.fromEntries(STUDY_FAMILIES.map((f) => [`/study/families/${f.key}`, f])),
 };
 
 export function resolveFixture(pathname: string, searchParams?: URLSearchParams): unknown {
@@ -470,6 +889,11 @@ export function resolveFixture(pathname: string, searchParams?: URLSearchParams)
   else if (path.startsWith("/runs/") && path.endsWith("/performance"))
     data = FIXTURES[`/runs/${RUN_ID}/performance`];
   else if (path.startsWith("/methodology/")) data = FIXTURES["/methodology/features"];
+  else if (path.startsWith("/study/families/")) {
+    // The family key contains a pipe and arrives percent-decoded by the router.
+    const key = decodeURIComponent(path.slice("/study/families/".length));
+    data = STUDY_FAMILY_BY_KEY[key] ?? null;
+  }
 
   if (path === "/eda/figures" && data && searchParams?.get("key_only") === "true") {
     const body = data as {

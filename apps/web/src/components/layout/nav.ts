@@ -37,6 +37,12 @@ export const NAV: NavItem[] = [
     description: "Equity, drawdown y operaciones",
   },
   {
+    href: "/estudio",
+    label: "Cierre del estudio",
+    icon: "\u2696",
+    description: "13 familias, corrección múltiple y holdout",
+  },
+  {
     href: "/diagnostico",
     label: "Diagnóstico",
     icon: "\u25A6",
