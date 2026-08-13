@@ -3,7 +3,12 @@
 Read-only, versioned (``/api/v1``) adapter over run artifacts and validated
 market manifests. Adds CORS (narrowly configured), structured request logging
 with a per-request id, and typed error responses. It never exposes the artifact
-filesystem directly and never serves frozen-holdout observations.
+filesystem directly.
+
+It serves no frozen-holdout observation. The ``/study/holdout`` endpoint returns
+the *published result* of the single sanctioned reading of that partition — the
+metrics and provenance recorded in Phase H — not the bars themselves, which
+remain unavailable through every market and run endpoint.
 """
 
 from __future__ import annotations
@@ -17,7 +22,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from perp_lab.api import API_VERSION
-from perp_lab.api.routers import eda, health, market, research, runs
+from perp_lab.api.routers import eda, health, market, research, runs, study
 from perp_lab.api.settings import get_settings
 
 _log = logging.getLogger("perp_lab.api")
@@ -82,6 +87,7 @@ def create_app() -> FastAPI:
     app.include_router(market.router, prefix=API_PREFIX)
     app.include_router(research.router, prefix=API_PREFIX)
     app.include_router(eda.router, prefix=API_PREFIX)
+    app.include_router(study.router, prefix=API_PREFIX)
 
     @app.get("/", include_in_schema=False)
     def root() -> dict[str, str]:

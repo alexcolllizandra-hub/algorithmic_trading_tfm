@@ -457,3 +457,139 @@ class MethodologyResponse(BaseModel):
     features: list[FeatureDocModel]
     strategies: list[StrategyDocModel]
     source_run_id: str | None = None
+
+
+# --------------------------------------------------------------------------- #
+# Study closure — the whole study rather than a single run
+# --------------------------------------------------------------------------- #
+
+
+class StudyCriterion(BaseModel):
+    """One of the six R3 promotion criteria, as scored across seeds."""
+
+    key: str
+    label: str
+    passed: int
+    of: int
+    required: int
+    met: bool
+
+
+class StudyFamilySummary(BaseModel):
+    """One family on one asset, without its curves."""
+
+    key: str = Field(description="family|SYMBOL")
+    family: str
+    gate: str = Field(description="R2 | R3 | S1 | S2")
+    symbol: str
+    thesis: str = ""
+    n_seeds: int
+    n_bars: float
+    total_return: float
+    sharpe: float
+    max_drawdown: float
+    p_value: float | None = None
+    holm_adjusted_p: float | None = None
+    bh_adjusted_p: float | None = None
+    survives_correction: bool
+    verdict: str
+    gate_note: str | None = None
+    criteria: list[StudyCriterion] | None = None
+    buy_and_hold_return: float | None = None
+
+
+class StudyEquityPoint(BaseModel):
+    t: str
+    equity: float
+
+
+class StudySeedResult(BaseModel):
+    seed: int
+    total_return: float
+    sharpe: float
+    max_drawdown: float
+    n_bars: float
+    equity: list[StudyEquityPoint]
+
+
+class StudyMonteCarloTerminal(BaseModel):
+    observed_total_return: float
+    p05: float
+    p25: float
+    p50: float
+    p75: float
+    p95: float
+    probability_positive: float
+
+
+class StudyMonteCarlo(BaseModel):
+    """Resampling fan over the family's own returns.
+
+    ``measures`` is part of the contract, not decoration: the fan quantifies
+    path risk and cannot establish that the mean is real, because resampling the
+    observed series carries the observed mean with it.
+    """
+
+    method: str
+    n_paths: int
+    expected_block_bars: float
+    seed: int
+    measures: str
+    checkpoint_index: list[int]
+    bands: dict[str, list[float]]
+    observed: list[float]
+    terminal: StudyMonteCarloTerminal
+
+
+class StudyFamilyDetail(StudyFamilySummary):
+    equity: list[StudyEquityPoint]
+    seeds: list[StudySeedResult]
+    monte_carlo: StudyMonteCarlo
+    min_trades_veto: dict[str, Any] | None = None
+
+
+class StudyCorrections(BaseModel):
+    n_families: int
+    n_units: int
+    n_configurations_evaluated: int
+    alpha: float
+    best_family: str
+    holm: dict[str, Any]
+    benjamini_hochberg: dict[str, Any]
+    pbo: dict[str, Any]
+    deflated_sharpe: dict[str, Any]
+    sensitivity: dict[str, Any]
+    criteria_by_gate: dict[str, str]
+    conclusion: str
+    source_commit: str | None = None
+
+
+class StudySummaryResponse(BaseModel):
+    generated_at: str
+    schema_version: int
+    primary_symbol: str
+    secondary_symbol: str
+    primary_engine: str
+    timeframe: str
+    study: StudyCorrections
+    families: list[StudyFamilySummary]
+    holdout_opened: bool
+
+
+class StudyRegimesResponse(BaseModel):
+    """Exploratory by construction; the flag travels with the data."""
+
+    exploratory: bool = True
+    cells: list[dict[str, Any]]
+    correction: dict[str, Any]
+    candidate: dict[str, Any] | None = None
+    conclusion: str | None = None
+
+
+class StudyHoldoutResponse(BaseModel):
+    """The single sanctioned reading of the frozen partition."""
+
+    opened: bool
+    provenance: dict[str, Any] | None = None
+    result: dict[str, Any] | None = None
+    buy_and_hold: dict[str, Any] | None = None

@@ -24,6 +24,7 @@ class ApiSettings:
     max_page_size: int
     eda_figures_dir: Path
     eda_metadata_dir: Path
+    study_dashboard_path: Path
     environment: str
 
     @property
@@ -56,6 +57,12 @@ def get_settings() -> ApiSettings:
         ).resolve(),
         eda_metadata_dir=Path(
             os.environ.get("PERP_LAB_EDA_METADATA_DIR", "reports/metadata/eda")
+        ).resolve(),
+        study_dashboard_path=Path(
+            os.environ.get(
+                "PERP_LAB_STUDY_DASHBOARD",
+                "reports/study_closure/study_dashboard.json",
+            )
         ).resolve(),
         environment=os.environ.get("PERP_LAB_ENV", "development"),
     )
