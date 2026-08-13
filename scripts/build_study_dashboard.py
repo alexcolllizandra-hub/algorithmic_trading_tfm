@@ -31,9 +31,17 @@ def main() -> int:
         type=Path,
         default=Path("reports/study_closure/study_dashboard.json"),
     )
+    parser.add_argument(
+        "--include-holdout",
+        action="store_true",
+        help=(
+            "Embed the holdout reading. Only for an audited publication; the "
+            "API gates it independently and will still withhold it by default."
+        ),
+    )
     args = parser.parse_args()
 
-    payload = build_payload(args.root)
+    payload = build_payload(args.root, include_holdout=args.include_holdout)
 
     output = args.root / args.output
     output.parent.mkdir(parents=True, exist_ok=True)

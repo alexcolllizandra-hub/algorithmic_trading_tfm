@@ -19,6 +19,9 @@ from typing import Any
 
 from perp_lab.api import models as m
 from perp_lab.api.settings import ApiSettings
+from perp_lab.catalog.status import ResultStatus
+
+HOLDOUT_PERIOD = "[2026-01-01, 2026-07-01)"
 
 
 class StudyPayloadMissingError(FileNotFoundError):
@@ -88,12 +91,61 @@ def study_regimes(settings: ApiSettings) -> m.StudyRegimesResponse:
     )
 
 
+HOLDOUT_ISOLATION_REASON = (
+    "La partición [2026-01-01, 2026-07-01) se congeló antes de cualquier EDA, "
+    "selección de familias o ajuste de parámetros. Se abre una sola vez y su "
+    "lectura no se publica hasta que su procedencia esté auditada: publicar un "
+    "número antes de comprobar que el candidato estaba congelado convertiría la "
+    "prueba confirmatoria en una prueba más del estudio."
+)
+
+HOLDOUT_AUDIT_REQUIREMENTS: tuple[str, ...] = (
+    "Autorización explícita OPEN_FINAL_HOLDOUT registrada.",
+    "Commit anterior a la apertura que contenga la regla de selección y el candidato.",
+    "Candidato congelado con sus parámetros exactos y su huella de selección.",
+    "Configuración resuelta del experimento (costes, ejecución, anualización).",
+    "SHA-256 del dataset de holdout coincidente con el registrado antes de abrir.",
+    "Comando ejecutado y logs de la ejecución.",
+    "Artefactos generados por la lectura.",
+    "Commit posterior que registre el resultado.",
+    "Ausencia de modificaciones retrospectivas entre ambos commits.",
+)
+
+
 def study_holdout(settings: ApiSettings) -> m.StudyHoldoutResponse:
+    """The holdout's publication state, locked unless the audit has been recorded.
+
+    The gate is deliberately on the serving side rather than only in the
+    consolidation script. The reading exists on disk as evidence and must keep
+    existing; what is controlled here is whether it reaches a screen. Two
+    independent things have to be true to publish — the payload must contain a
+    reading and the environment must assert the audit passed — so neither a
+    rebuilt artifact nor a forgotten flag can publish it on its own.
+    """
     holdout = _payload(settings).get("holdout")
+    opened = holdout is not None
+
+    if not settings.holdout_audited:
+        return m.StudyHoldoutResponse(
+            status=ResultStatus.HOLDOUT_LOCKED,
+            opened=opened,
+            period=HOLDOUT_PERIOD,
+            reason=HOLDOUT_ISOLATION_REASON,
+            requirements=list(HOLDOUT_AUDIT_REQUIREMENTS),
+        )
+
     if holdout is None:
-        return m.StudyHoldoutResponse(opened=False)
+        return m.StudyHoldoutResponse(
+            status=ResultStatus.NOT_EXECUTED,
+            opened=False,
+            period=HOLDOUT_PERIOD,
+            reason="La partición sigue cerrada: no existe ninguna lectura registrada.",
+        )
+
     return m.StudyHoldoutResponse(
+        status=ResultStatus.AUDITED,
         opened=True,
+        period=HOLDOUT_PERIOD,
         provenance=holdout.get("provenance"),
         result=holdout.get("result"),
         buy_and_hold=holdout.get("buy_and_hold"),

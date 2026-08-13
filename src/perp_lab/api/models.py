@@ -587,9 +587,19 @@ class StudyRegimesResponse(BaseModel):
 
 
 class StudyHoldoutResponse(BaseModel):
-    """The single sanctioned reading of the frozen partition."""
+    """The frozen partition's publication state.
 
-    opened: bool
+    Locked by default. A reading of the holdout exists on disk, but it is not
+    published until its provenance has been audited, so this response normally
+    carries the reason and the audit requirements and no metrics at all. The
+    absence of numbers here is a deliberate result, not a failure to load.
+    """
+
+    status: str = Field(description="HOLDOUT_LOCKED | AUDITED | NOT_EXECUTED")
+    opened: bool = Field(description="Whether a reading exists at all, regardless of publication.")
+    period: str | None = None
+    reason: str | None = None
+    requirements: list[str] = Field(default_factory=list)
     provenance: dict[str, Any] | None = None
     result: dict[str, Any] | None = None
     buy_and_hold: dict[str, Any] | None = None

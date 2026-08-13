@@ -364,8 +364,14 @@ def _family_payload(
     }
 
 
-def build_payload(root: Path) -> dict[str, Any]:
-    """Everything the study terminal needs, in one JSON-serialisable payload."""
+def build_payload(root: Path, *, include_holdout: bool = False) -> dict[str, Any]:
+    """Everything the study terminal needs, in one JSON-serialisable payload.
+
+    The holdout reading is excluded unless asked for. It exists on disk as
+    evidence and stays there, but it is not published until its provenance has
+    been audited, and the cheapest way to guarantee that is to not put it in the
+    file the API reads. The serving layer gates it a second time.
+    """
     units = build_inventory(root)
     study = _read_json(root / STUDY_LEVEL_REPORT)
     regimes = _read_json(root / REGIME_REPORT)
@@ -390,7 +396,7 @@ def build_payload(root: Path) -> dict[str, Any]:
             )
 
     holdout_path = root / HOLDOUT_REPORT
-    holdout = _read_json(holdout_path) if holdout_path.exists() else None
+    holdout = _read_json(holdout_path) if include_holdout and holdout_path.exists() else None
 
     return {
         "report": "study_dashboard",
@@ -430,6 +436,7 @@ def build_payload(root: Path) -> dict[str, Any]:
             "exploratory": True,
         },
         "holdout": holdout,
+        "holdout_publication": "AUDIT_PENDING" if holdout is None else "INCLUDED",
     }
 
 

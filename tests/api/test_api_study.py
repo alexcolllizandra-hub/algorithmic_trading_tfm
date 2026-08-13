@@ -255,19 +255,96 @@ def test_the_regime_block_is_flagged_exploratory_in_the_payload(study_client: Te
     assert body["candidate"] is None
 
 
-def test_the_holdout_endpoint_serves_the_published_result(study_client: TestClient) -> None:
-    body = study_client.get(f"{BASE}/study/holdout").json()
-    assert body["opened"] is True
-    assert body["result"]["combined"]["total_return"] == pytest.approx(-0.12)
-    assert body["buy_and_hold"]["total_return"] == pytest.approx(-0.33)
+class TestHoldoutIsLockedUntilAudited:
+    """The gate that decides whether a holdout number may reach a screen.
 
+    A reading of the partition exists. Whether it is *publishable* is a separate
+    question from whether it happened, and the API answers the second one only
+    after the first has been audited. Both halves are tested because the failure
+    that matters is silent publication, not a missing panel.
+    """
 
-def test_the_holdout_endpoint_serves_no_holdout_observations(study_client: TestClient) -> None:
-    """Metrics about the partition are publishable; the bars are not."""
-    body = study_client.get(f"{BASE}/study/holdout").json()
-    assert set(body) == {"opened", "provenance", "result", "buy_and_hold"}
-    assert "ledger" not in json.dumps(body)
-    assert "open_time" not in json.dumps(body)
+    def test_a_reading_present_in_the_payload_is_still_withheld(
+        self, study_client: TestClient
+    ) -> None:
+        body = study_client.get(f"{BASE}/study/holdout").json()
+
+        assert body["status"] == "HOLDOUT_LOCKED"
+        assert body["result"] is None
+        assert body["buy_and_hold"] is None
+        assert body["provenance"] is None
+
+    def test_the_lock_explains_itself_instead_of_looking_like_a_loading_failure(
+        self, study_client: TestClient
+    ) -> None:
+        body = study_client.get(f"{BASE}/study/holdout").json()
+
+        assert body["period"] == "[2026-01-01, 2026-07-01)"
+        assert body["reason"]
+        assert len(body["requirements"]) >= 5
+        assert any("OPEN_FINAL_HOLDOUT" in req for req in body["requirements"])
+
+    def test_no_holdout_figure_survives_anywhere_in_the_locked_response(
+        self, study_client: TestClient
+    ) -> None:
+        blob = json.dumps(study_client.get(f"{BASE}/study/holdout").json())
+        # The fixture's holdout numbers must not leak through any field,
+        # including ones added later without thinking about this gate.
+        assert "-0.12" not in blob
+        assert "-0.33" not in blob
+        assert "ledger" not in blob
+        assert "open_time" not in blob
+
+    def test_a_truthy_flag_is_not_enough_to_unlock_it(
+        self, study_client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from perp_lab.api.settings import get_settings
+
+        for careless in ("1", "true", "yes", "AUDITED", "OPEN_FINAL_HOLDOUT"):
+            monkeypatch.setenv("PERP_LAB_HOLDOUT_PUBLICATION", careless)
+            get_settings.cache_clear()
+            body = study_client.get(f"{BASE}/study/holdout").json()
+            assert body["status"] == "HOLDOUT_LOCKED", careless
+        get_settings.cache_clear()
+
+    def test_the_recorded_audit_publishes_the_result_and_nothing_more(
+        self, study_client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from perp_lab.api.settings import get_settings
+
+        monkeypatch.setenv("PERP_LAB_HOLDOUT_PUBLICATION", "AUDITED_OPEN_FINAL_HOLDOUT")
+        get_settings.cache_clear()
+        body = study_client.get(f"{BASE}/study/holdout").json()
+        get_settings.cache_clear()
+
+        assert body["status"] == "AUDITED"
+        assert body["result"]["combined"]["total_return"] == pytest.approx(-0.12)
+        # Even when published, the partition's observations stay unreachable:
+        # what is served is the recorded measurement, not the bars.
+        blob = json.dumps(body)
+        assert "ledger" not in blob
+        assert "open_time" not in blob
+
+    def test_an_authorised_reader_facing_no_reading_is_told_so(
+        self, studyless_client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from perp_lab.api.settings import get_settings
+
+        payload = _payload()
+        payload["holdout"] = None
+        path = tmp_path / "no_holdout.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        monkeypatch.setenv("PERP_LAB_STUDY_DASHBOARD", str(path))
+        monkeypatch.setenv("PERP_LAB_HOLDOUT_PUBLICATION", "AUDITED_OPEN_FINAL_HOLDOUT")
+        get_settings.cache_clear()
+
+        body = studyless_client.get(f"{BASE}/study/holdout").json()
+        get_settings.cache_clear()
+
+        # "Nobody has opened it" and "it is opened but withheld" are different
+        # claims and must not collapse into the same screen.
+        assert body["status"] == "NOT_EXECUTED"
+        assert body["opened"] is False
 
 
 def test_a_study_that_was_never_built_says_so_instead_of_inventing_one(
