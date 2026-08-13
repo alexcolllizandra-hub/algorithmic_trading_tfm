@@ -134,4 +134,139 @@ reported the same way if it is not.
 
 ---
 
-*Sections 5 onward are added after the holdout is opened, in a separate commit.*
+## 5. The result
+
+**Holdout status: OPENED, once, on 2026-08-13T11:13:37Z, from commit
+`31c241f`.** Everything above this line was committed at `02b79f1`, before the
+partition was read; the ordering is verifiable with `git log`.
+
+> **This is the honest result of the best available candidate.** It is not a
+> promoted strategy. No threshold is attached to it, because nothing was
+> promoted.
+
+Window: 2026-01-01 .. 2026-06-30, 4,343 bars. Datasets and their SHA-256 are
+recorded in [`reports/study_closure/final_holdout.md`](../../reports/study_closure/final_holdout.md);
+the holdout hash matches the one pre-recorded in section 3.
+
+| Metric | Candidate on holdout | Buy and hold, same window | Family on development |
+|---|---:|---:|---:|
+| Total net return | **−12.17%** | −33.23% | +6.9% |
+| Annualised return | −23.02% | −55.72% | — |
+| Sharpe | **−1.34** | −1.51 | +0.19 |
+| Sortino | −1.80 | −1.97 | — |
+| Maximum drawdown | −14.40% | −40.32% | — |
+| Annualised volatility | 18.22% | 46.62% | — |
+| Hit rate | 49.1% | 49.2% | — |
+| Time in drawdown | 98.8% | 99.2% | — |
+| Trades | 281 | — | — |
+
+Costs actually paid: 2.17% in fees and slippage, 0.12% in funding, **2.29% of
+equity in total**. The candidate would have lost money before costs as well;
+costs are not the explanation.
+
+**The development result did not transfer.** The family was selected as the
+least-rejected of thirteen on the strength of +6.9% and a Sharpe of +0.19 out of
+sample in development. On the holdout it returns −12.17% at a Sharpe of −1.34.
+The sign of the effect reverses. That is the outcome the study-level accounting
+predicted: with a raw p-value of 0.345 and a probability of backtest overfitting
+of 0.486, +6.9% was never distinguishable from noise, and noise does not repeat.
+
+### The dispersion across seeds is the finding
+
+| Seed | Total return | Sharpe | Trades |
+|---|---:|---:|---:|
+| 693857 | **+66.73%** | +2.46 | 7 |
+| 683778 | +1.58% | +1.00 | 26 |
+| 278037 | −0.19% | −0.12 | 20 |
+| 605142 | −3.19% | −1.00 | 76 |
+| 671194 | −3.92% | −1.07 | 42 |
+| 765570 | −15.34% | −2.21 | 254 |
+| 341110 | −34.88% | −1.62 | 1 |
+| 692467 / 707014 / 891022 | −36.20% | −1.72 | 1 |
+
+Ten runs of the same family, differing only in the random seed of the parameter
+search, span **103 percentage points** on the same six months of the same
+instrument. One seed returns +66.7% on seven trades; three others buy once and
+ride the market down. Under a real effect the seeds would agree, because they
+would all be estimating the same thing. They do not agree, so what the search
+selected was seed-specific noise. A study that had opened the holdout on a
+single seed could have reported either +66.7% or −36.2% with equal honesty and
+equal meaninglessness — which is precisely why the combination rule was fixed in
+advance.
+
+### What must not be read into this
+
+The candidate lost 12% while the market lost 33%, with a third of the
+volatility. **This is not a defensive property and is not claimed as one.** It
+is mostly the arithmetic of averaging ten members that disagree with each other:
+the offsetting positions cancel, which lowers the combined volatility by
+construction. No individual member shows the pattern, the candidate was never
+selected for downside behaviour, and one window is not evidence of anything. The
+protocol forbids re-reading the result as a success on a criterion it was never
+asked to meet.
+
+**Provenance note.** The run recorded `worktree clean: false`. The only tracked
+modifications at that moment were two files with line-ending differences and an
+empty content diff (`git diff` returns nothing for them); the rest were untracked
+report outputs. Neither is on the evaluation path. The state is recorded as
+measured rather than presented as clean.
+
+---
+
+## 6. The conclusion of the arc
+
+**What was tested.** Thirteen strategy families across four rounds (R2, R3, S1,
+S2), on BTCUSDT and ETHUSDT perpetuals at 1h, under walk-forward validation with
+purging and embargo, ten seeds per family, and a cost model applied inside the
+selection rather than after it. 496,500 configurations were actually scored.
+
+**What survived correction.** Nothing. No family survives Holm at α = 0.05, nor
+Benjamini–Hochberg, nor an uncorrected threshold: the smallest raw p-value in the
+entire study is 0.345, which misses significance by a factor of seven even with
+no correction at all. The probability of backtest overfitting is 0.486, against
+0.5 expected under pure noise.
+
+**What the regime conditioning added.** Nothing either, and that is informative:
+none of the 65 family-by-regime cells survives correction within its own block,
+so the negative result is not an artifact of averaging a real effect away across
+market states. There was no high-volatility corner where the edge was hiding.
+
+**What the holdout said.** The best available candidate, frozen in writing
+before the partition was read, lost 12.17% at a Sharpe of −1.34 over six months,
+reversing the sign of its development result. The rejection is confirmed on data
+that informed none of it.
+
+**The reading.** The value of this arc is not a strategy; it is a rigorous map of
+where the edge is not, drawn with a method whose rejection behaviour is
+documented rather than assumed. Phase-1 EDA had already drawn the outline of that
+map, and it did so with more precision than a blanket pessimism would suggest.
+
+What it predicted, it predicted correctly. Lag-1 autocorrelation of 1h raw
+returns is −0.017 on BTC and −0.008 on ETH — statistically detectable under
+Ljung-Box, but **economically negligible**, which is how finding F5 recorded it.
+On that basis `scientific_questions.md` stated in advance that "simple linear
+trend-following on raw returns should not work" and entered momentum as "a
+falsifiable baseline, not a favourite". Momentum returned −32.4% out of sample.
+The prediction held.
+
+What it could not predict is the more interesting half. The same EDA found
+volatility strongly persistent — |r| lag-1 ACF ≈ 0.29, rolling-volatility
+persistence 0.99, ARCH-LM rejecting at machine precision — and concluded that
+families conditioning on *magnitude* rather than direction were **better
+motivated**. `volatility_breakout` is exactly such a family. It was the
+best-motivated candidate the EDA produced, it was the least-rejected of the
+thirteen, it was the one carried to the holdout, and it lost 12.17% there. So the
+finding is not merely "the EDA said no and the strategies failed". It is sharper:
+**predictable volatility did not convert into predictable, cost-surviving
+returns**, even when the strategy family was designed around the one property the
+data genuinely has. Persistence of magnitude is not an edge in direction, and
+after 2.29% of costs on a six-month window it did not become one.
+
+That is the result — a negative result that is stable across families, assets,
+seeds, regimes, counting rules and, finally, across the frozen holdout itself,
+and that is consistent in both directions with what the data said before any
+strategy was written.
+
+**The holdout is now spent.** It cannot be used again in this study. Nothing in
+this document licenses a re-ranking of the other twelve families, a variant of
+the candidate, or a second window.
