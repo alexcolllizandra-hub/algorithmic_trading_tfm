@@ -14,11 +14,25 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 
-from perp_lab.config.experiment import ExperimentConfig
+from perp_lab.config.experiment import CrtIntradayGrid, ExperimentConfig
+from perp_lab.crt.strategies import (
+    CRT_ROUND_TAG,
+    FamilyMechanics,
+    crt_htf_range_reversal,
+    crt_three_candle_model,
+    double_sweep_reversal,
+    failed_breakout_reversal,
+    opening_range_breakout_retest,
+    pdh_reclaim_short,
+    pdl_reclaim_long,
+    session_liquidity_sweep,
+    session_range_rotation,
+)
 from perp_lab.features.spec import FeatureItemLike
 from perp_lab.search.space import (
     BoolParam,
     CategoricalParam,
+    Param,
     ParamValue,
     SearchSpace,
 )
@@ -56,7 +70,28 @@ S1_FAMILIES: tuple[str, ...] = (
     "xasset_spread_reversion",
 )
 
-FAMILIES: tuple[str, ...] = (*R3_CLOSED_FAMILIES, *S1_FAMILIES)
+# Round CRT_INTRADAY_V1: the Candle Range Theory batch, pre-specified as a
+# separate round. Registered here so both engines can reach it; deliberately not
+# added to R2 or R3, whose family sets are closed.
+CRT_INTRADAY_V1_FAMILIES: tuple[str, ...] = (
+    "crt_htf_range_reversal",
+    "pdl_reclaim_long",
+    "pdh_reclaim_short",
+    "session_liquidity_sweep",
+    "session_range_rotation",
+    "opening_range_breakout_retest",
+    "failed_breakout_reversal",
+    "double_sweep_reversal",
+    "crt_three_candle_model",
+)
+
+ROUND_TAGS: dict[str, str] = {
+    **dict.fromkeys(R3_CLOSED_FAMILIES, "R3"),
+    **dict.fromkeys(S1_FAMILIES, "S1"),
+    **dict.fromkeys(CRT_INTRADAY_V1_FAMILIES, CRT_ROUND_TAG),
+}
+
+FAMILIES: tuple[str, ...] = (*R3_CLOSED_FAMILIES, *S1_FAMILIES, *CRT_INTRADAY_V1_FAMILIES)
 
 
 class _FeatureItem:
@@ -603,6 +638,293 @@ def _xasset_spread_reversion_space(exp: ExperimentConfig, symbol: str) -> Search
     )
 
 
+# --------------------------------------------------------------------------- #
+# Round CRT_INTRADAY_V1
+#
+# Nine families, one engine. Each space is the shared grid plus the one or two
+# dimensions that actually distinguish the family, because every extra
+# configuration is paid for in the multiple-testing correction.
+# --------------------------------------------------------------------------- #
+
+
+def _crt_mechanics(exp: ExperimentConfig) -> FamilyMechanics:
+    mech = exp.strategies.families.crt_intraday.mechanics
+    return FamilyMechanics(
+        stop_buffer_bps=mech.stop_buffer_bps,
+        stop_atr_multiple=mech.stop_atr_multiple,
+        max_wait_bars=mech.max_wait_bars,
+        reclaim_within_bars=mech.reclaim_within_bars,
+        reclaim_confirmation_closes=mech.reclaim_confirmation_closes,
+        acceptance_closes=mech.acceptance_closes,
+        acceptance_bps=mech.acceptance_bps,
+        retest_tolerance_bps=mech.retest_tolerance_bps,
+        max_bars_active=mech.max_bars_active,
+        displacement_atr=mech.displacement_atr,
+        cost_bps_per_side=exp.costs.fee_bps_per_side + exp.costs.slippage.baseline_bps,
+        breakeven_after_first_target=mech.breakeven_after_first_target,
+        atr_window=mech.atr_window,
+    )
+
+
+def _crt_shared_params(
+    grid: CrtIntradayGrid,
+    *,
+    directions: tuple[str, ...] | None,
+    include_sweep: bool = True,
+    target_plans: tuple[str, ...] | None = None,
+) -> tuple[Param, ...]:
+    params: list[Param] = []
+    if include_sweep:
+        params.append(CategoricalParam("sweep_bps", tuple(grid.sweep_bps)))
+    params.extend(
+        (
+            CategoricalParam("stop_kind", tuple(grid.stop_kind)),
+            CategoricalParam("target_plan", tuple(target_plans or grid.target_plan)),
+            CategoricalParam("time_stop_bars", tuple(grid.time_stop_bars)),
+            CategoricalParam("min_net_reward_risk", tuple(grid.min_net_reward_risk)),
+        )
+    )
+    if directions is not None:
+        params.append(CategoricalParam("direction", tuple(directions)))
+    return tuple(params)
+
+
+def _crt_shared_kwargs(v: Mapping[str, ParamValue]) -> dict[str, ParamValue]:
+    shared: dict[str, ParamValue] = {
+        "stop_kind": str(v["stop_kind"]),
+        "target_plan": str(v["target_plan"]),
+        "time_stop_bars": int(v["time_stop_bars"]),  # type: ignore[arg-type]
+        "min_net_reward_risk": float(v["min_net_reward_risk"]),  # type: ignore[arg-type]
+    }
+    if "sweep_bps" in v:
+        shared["sweep_bps"] = float(v["sweep_bps"])  # type: ignore[arg-type]
+    if "direction" in v:
+        shared["direction"] = str(v["direction"])
+    return shared
+
+
+def _no_repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+    return v
+
+
+def _always_valid(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+    return True, None
+
+
+def _crt_htf_range_reversal_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.htf_range_reversal
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("candle_timeframe", tuple(fam.candle_timeframe)),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return crt_htf_range_reversal(
+            candle_timeframe=str(v["candle_timeframe"]),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "crt_htf_range_reversal", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
+def _crt_previous_day_space(exp: ExperimentConfig, family: str) -> SearchSpace:
+    """PDL long and PDH short share one space; only the fixed side differs."""
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.previous_day_reclaim
+    mechanics = _crt_mechanics(exp)
+    builder = pdl_reclaim_long if family == "pdl_reclaim_long" else pdh_reclaim_short
+    params = (
+        *_crt_shared_params(crt.grid, directions=None),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+        CategoricalParam("min_sweep_bps", tuple(fam.min_sweep_bps)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return builder(
+            entry_rule=str(v["entry_rule"]),
+            min_sweep_bps=float(v["min_sweep_bps"]),  # type: ignore[arg-type]
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),
+        )
+
+    return SearchSpace(family, SPACE_VERSION, params, build, _no_repair, _always_valid, ())
+
+
+def _crt_session_liquidity_sweep_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.session_liquidity_sweep
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("session_pair", tuple(fam.session_pairs)),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        pair = v["session_pair"]
+        assert isinstance(pair, tuple)
+        return session_liquidity_sweep(
+            swept_session=str(pair[0]),
+            trading_session=str(pair[1]),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        pair = v["session_pair"]
+        if not isinstance(pair, tuple) or len(pair) != 2 or pair[0] == pair[1]:
+            return False, "a session cannot sweep its own range"
+        return True, None
+
+    return SearchSpace(
+        "session_liquidity_sweep", SPACE_VERSION, params, build, _no_repair, validate, ()
+    )
+
+
+def _crt_session_range_rotation_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.session_range_rotation
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("session", tuple(fam.session)),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return session_range_rotation(
+            session=str(v["session"]),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "session_range_rotation", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
+def _crt_opening_range_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.opening_range_breakout_retest
+    mechanics = _crt_mechanics(exp)
+    # No sweep depth: a continuation setup is defined by a close beyond the
+    # level, not by how far the wick went.
+    params = (
+        *_crt_shared_params(
+            crt.grid,
+            directions=exp.strategies.allowed_directions,
+            include_sweep=False,
+            target_plans=tuple(fam.target_plan),
+        ),
+        CategoricalParam("minutes", tuple(fam.minutes)),
+        CategoricalParam("session", tuple(fam.session)),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return opening_range_breakout_retest(
+            minutes=int(v["minutes"]),  # type: ignore[arg-type]
+            session=str(v["session"]),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "opening_range_breakout_retest", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
+def _crt_failed_breakout_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.failed_breakout_reversal
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("reference_kind", tuple(fam.reference_kind)),
+        CategoricalParam(
+            "candle_timeframe",
+            tuple(fam.candle_timeframe),
+            active_when=("reference_kind", "previous_candle"),
+        ),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return failed_breakout_reversal(
+            reference_kind=str(v["reference_kind"]),
+            candle_timeframe=str(v.get("candle_timeframe", fam.candle_timeframe[0])),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "failed_breakout_reversal", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
+def _crt_double_sweep_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.double_sweep_reversal
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("reference_kind", tuple(fam.reference_kind)),
+        CategoricalParam(
+            "candle_timeframe",
+            tuple(fam.candle_timeframe),
+            active_when=("reference_kind", "previous_candle"),
+        ),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return double_sweep_reversal(
+            reference_kind=str(v["reference_kind"]),
+            candle_timeframe=str(v.get("candle_timeframe", fam.candle_timeframe[0])),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "double_sweep_reversal", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
+def _crt_three_candle_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.three_candle_model
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("candle_timeframe", tuple(fam.candle_timeframe)),
+        CategoricalParam("displacement_atr", tuple(fam.displacement_atr)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return crt_three_candle_model(
+            candle_timeframe=str(v["candle_timeframe"]),
+            displacement_atr=float(v["displacement_atr"]),  # type: ignore[arg-type]
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "crt_three_candle_model", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
 _BUILDERS: dict[str, Callable[[ExperimentConfig, str], SearchSpace]] = {
     "momentum": _momentum_space,
     "breakout": _breakout_space,
@@ -614,6 +936,15 @@ _BUILDERS: dict[str, Callable[[ExperimentConfig, str], SearchSpace]] = {
     "funding_reversal": _funding_reversal_space,
     "intraday_seasonality": _intraday_seasonality_space,
     "xasset_spread_reversion": _xasset_spread_reversion_space,
+    "crt_htf_range_reversal": _crt_htf_range_reversal_space,
+    "pdl_reclaim_long": lambda exp, _symbol: _crt_previous_day_space(exp, "pdl_reclaim_long"),
+    "pdh_reclaim_short": lambda exp, _symbol: _crt_previous_day_space(exp, "pdh_reclaim_short"),
+    "session_liquidity_sweep": _crt_session_liquidity_sweep_space,
+    "session_range_rotation": _crt_session_range_rotation_space,
+    "opening_range_breakout_retest": _crt_opening_range_space,
+    "failed_breakout_reversal": _crt_failed_breakout_space,
+    "double_sweep_reversal": _crt_double_sweep_space,
+    "crt_three_candle_model": _crt_three_candle_space,
 }
 
 

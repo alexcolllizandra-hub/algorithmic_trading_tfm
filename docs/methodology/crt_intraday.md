@@ -1,7 +1,7 @@
 # CRT intradía: de la lectura discrecional a una hipótesis falsable
 
-**Estado: motor implementado y testeado. Ninguna estrategia ejecutada. Ningún
-resultado de rendimiento existe todavía.**
+**Estado: motor y nueve familias implementados y testeados. Ninguna estrategia
+ejecutada sobre datos reales. Ningún resultado de rendimiento existe todavía.**
 
 Este documento describe el módulo `src/perp_lab/crt/` y registra la ronda
 experimental `CRT_INTRADAY_V1`. No contiene métricas porque los experimentos no
@@ -225,6 +225,9 @@ esto.
 | `src/perp_lab/crt/sessions.py` | Sesiones con zonas IANA, DST y cruce de medianoche. |
 | `src/perp_lab/crt/ranges.py` | Rangos de referencia y niveles, con `available_from`. |
 | `src/perp_lab/crt/states.py` | Máquina de estados de liquidez y definiciones mecánicas. |
-| `tests/unit/test_crt_sessions.py` | DST, medianoche, solapes, validación de definiciones. |
-| `tests/unit/test_crt_ranges.py` | Causalidad de niveles, invariancia por truncamiento del ATR. |
-| `tests/unit/test_crt_states.py` | Cada transición sobre velas sintéticas, simetría largo/corto. |
+| `src/perp_lab/crt/signals.py` | Pipeline de eventos y señales, sin duplicados. |
+| `src/perp_lab/crt/entries.py` | Reglas de entrada comparables, pivotes causales. |
+| `src/perp_lab/crt/exits.py` | Stops, objetivos, parciales, ambigüedad intrabar. |
+| `src/perp_lab/crt/risk.py` | Dimensionado y límites, separado de la señal. |
+| `src/perp_lab/crt/strategies.py` | Nueve familias, largo y corto por `Side`. |
+| `tests/unit/test_crt_*.py` | Causalidad, simetría, ambigüedad, límites de riesgo. |

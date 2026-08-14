@@ -553,6 +553,287 @@ class CrossAssetSpreadFamily(_Strict):
         return self
 
 
+# --------------------------------------------------------------------------- #
+# Round CRT_INTRADAY_V1: Candle Range Theory families.
+#
+# The grids below are deliberately short. Every distinct configuration counts
+# towards the study's multiple-testing correction, so a parameter earns its place
+# by separating genuinely different behaviour, not by filling the interval.
+# Mechanics that are *fixed* rather than searched are declared as scalars in
+# ``CrtIntradayMechanics`` so they remain configuration rather than constants
+# buried in code.
+# --------------------------------------------------------------------------- #
+
+# Mirrored from perp_lab.crt.exits.StopKind and perp_lab.crt.strategies.TARGET_PLANS.
+# Repeated here so the config layer does not import the strategy layer; a unit
+# test asserts the two stay identical.
+_CRT_STOP_KINDS: frozenset[str] = frozenset(
+    {"wick_extreme", "range_extreme", "atr_distance", "fixed_pct", "structural"}
+)
+_CRT_TARGET_PLANS: frozenset[str] = frozenset(
+    {
+        "mid",
+        "mid_then_opposite",
+        "q_then_mid",
+        "r_multiple_2",
+        "atr_multiple_2",
+        "r1_then_r3",
+        "thirds_r",
+        "next_liquidity",
+        "daily_open",
+        "session_open",
+    }
+)
+_CRT_ENTRY_RULES: frozenset[str] = frozenset(
+    {
+        "reclaim_close",
+        "next_bar_open",
+        "first_retest",
+        "retest_with_rejection",
+        "displacement_confirmation",
+        "structure_break",
+    }
+)
+_CRT_SESSIONS: frozenset[str] = frozenset(
+    {"asia", "london", "new_york", "london_new_york_overlap", "crypto_day"}
+)
+
+
+def _check_membership(values: tuple[str, ...], allowed: frozenset[str], field_name: str) -> None:
+    if not values:
+        raise ValueError(f"{field_name} must offer at least one choice.")
+    unknown = sorted(set(values) - allowed)
+    if unknown:
+        raise ValueError(f"{field_name} has unknown entries {unknown}; known: {sorted(allowed)}.")
+
+
+class CrtIntradayMechanics(_Strict):
+    """Definitions every CRT family shares, fixed rather than searched."""
+
+    pierce_bps: float = Field(default=0.0, ge=0)
+    reclaim_within_bars: int = Field(default=3, ge=1)
+    reclaim_confirmation_closes: int = Field(default=1, ge=1)
+    acceptance_closes: int = Field(default=3, ge=1)
+    acceptance_bps: float = Field(default=10.0, ge=0)
+    retest_tolerance_bps: float = Field(default=10.0, ge=0)
+    max_bars_active: int = Field(default=96, ge=1)
+    max_wait_bars: int = Field(default=6, ge=1)
+    stop_buffer_bps: float = Field(default=5.0, ge=0)
+    stop_atr_multiple: float = Field(default=1.0, gt=0)
+    displacement_atr: float = Field(default=0.5, gt=0)
+    pivot_span: int = Field(default=2, ge=1)
+    atr_window: int = Field(default=14, ge=2)
+    breakeven_after_first_target: bool = True
+
+
+class CrtIntradayGrid(_Strict):
+    """The searched dimensions common to the reversal families."""
+
+    sweep_bps: tuple[float, ...] = (5.0, 20.0)
+    stop_kind: tuple[str, ...] = ("wick_extreme", "atr_distance")
+    target_plan: tuple[str, ...] = ("mid", "mid_then_opposite", "r_multiple_2")
+    time_stop_bars: _PosIntTuple = (12, 48)
+    min_net_reward_risk: tuple[float, ...] = (1.0, 1.5)
+
+    @field_validator("sweep_bps")
+    @classmethod
+    def _depths(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        return _ensure_positive_floats(v, "crt sweep_bps")
+
+    @field_validator("time_stop_bars")
+    @classmethod
+    def _holding(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "crt time_stop_bars")
+
+    @field_validator("min_net_reward_risk")
+    @classmethod
+    def _reward_risk(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        return _ensure_positive_floats(v, "crt min_net_reward_risk")
+
+    @field_validator("stop_kind")
+    @classmethod
+    def _stops(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        _check_membership(v, _CRT_STOP_KINDS, "crt stop_kind")
+        return v
+
+    @field_validator("target_plan")
+    @classmethod
+    def _targets(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        _check_membership(v, _CRT_TARGET_PLANS, "crt target_plan")
+        return v
+
+
+class _CrtEntryRules(_Strict):
+    entry_rule: tuple[str, ...] = ("reclaim_close", "first_retest")
+
+    @field_validator("entry_rule")
+    @classmethod
+    def _rules(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        _check_membership(v, _CRT_ENTRY_RULES, "crt entry_rule")
+        return v
+
+
+class CrtHtfRangeReversalFamily(_CrtEntryRules):
+    """A closed H1/H4/D candle's range, swept and reclaimed."""
+
+    candle_timeframe: tuple[str, ...] = ("1h", "4h", "1d")
+
+    @field_validator("candle_timeframe")
+    @classmethod
+    def _known(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        bad = [tf for tf in v if tf not in TIMEFRAME_TO_MS]
+        if bad:
+            raise ValueError(f"crt candle_timeframe has unknown timeframes {bad}.")
+        return v
+
+
+class CrtPreviousDayReclaimFamily(_CrtEntryRules):
+    """PDL reclaimed long and PDH reclaimed short: one family, two fixed sides."""
+
+    min_sweep_bps: tuple[float, ...] = (5.0, 25.0)
+
+    @field_validator("min_sweep_bps")
+    @classmethod
+    def _depths(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        return _ensure_positive_floats(v, "crt previous-day min_sweep_bps")
+
+
+class CrtSessionLiquiditySweepFamily(_CrtEntryRules):
+    """One session takes the liquidity resting at another's closed extreme."""
+
+    session_pairs: tuple[tuple[str, str], ...] = (
+        ("asia", "london"),
+        ("asia", "new_york"),
+        ("london", "new_york"),
+    )
+
+    @field_validator("session_pairs")
+    @classmethod
+    def _pairs(cls, v: tuple[tuple[str, str], ...]) -> tuple[tuple[str, str], ...]:
+        if not v:
+            raise ValueError("crt session_pairs must offer at least one pair.")
+        for swept, trading in v:
+            _check_membership((swept, trading), _CRT_SESSIONS, "crt session_pairs")
+            if swept == trading:
+                raise ValueError(
+                    f"A session cannot sweep its own closed range ({swept}); the level would "
+                    "not exist yet when the trade is taken."
+                )
+        return v
+
+
+class CrtSessionRangeRotationFamily(_CrtEntryRules):
+    """Rejection at one edge of a closed session range, rotating to the other."""
+
+    entry_rule: tuple[str, ...] = ("reclaim_close", "retest_with_rejection")
+    session: tuple[str, ...] = ("asia", "london", "new_york")
+
+    @field_validator("session")
+    @classmethod
+    def _sessions(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        _check_membership(v, _CRT_SESSIONS, "crt session_range_rotation session")
+        return v
+
+
+class CrtOpeningRangeBreakoutFamily(_CrtEntryRules):
+    """A closing break of the opening range, then acceptance or a retest.
+
+    ``minutes`` must be at least one bar of the execution timeframe: a
+    30-minute opening range cannot be built from hourly bars, so the default
+    grid suits the primary (1h) timeframe. Finer lengths belong to a run on the
+    secondary timeframe and are set in the YAML.
+    """
+
+    entry_rule: tuple[str, ...] = ("first_retest", "displacement_confirmation")
+    minutes: _PosIntTuple = (60, 120)
+    session: tuple[str, ...] = ("london", "new_york")
+    target_plan: tuple[str, ...] = ("r_multiple_2", "atr_multiple_2", "r1_then_r3")
+
+    @field_validator("minutes")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "crt opening-range minutes")
+
+    @field_validator("session")
+    @classmethod
+    def _sessions(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        _check_membership(v, _CRT_SESSIONS, "crt opening-range session")
+        return v
+
+    @field_validator("target_plan")
+    @classmethod
+    def _targets(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        _check_membership(v, _CRT_TARGET_PLANS, "crt opening-range target_plan")
+        if any(plan in {"mid", "mid_then_opposite", "q_then_mid"} for plan in v):
+            raise ValueError(
+                "A continuation family cannot target the range it just left: the mid and the "
+                "opposite extreme lie behind the entry."
+            )
+        return v
+
+
+class CrtFailedBreakoutFamily(_CrtEntryRules):
+    """A real closing break that never earned acceptance, then recovered."""
+
+    reference_kind: tuple[str, ...] = ("previous_day", "previous_candle")
+    candle_timeframe: tuple[str, ...] = ("4h",)
+
+    @field_validator("reference_kind")
+    @classmethod
+    def _references(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        _check_membership(v, frozenset({"previous_day", "previous_candle"}), "crt reference_kind")
+        return v
+
+
+class CrtDoubleSweepFamily(_CrtEntryRules):
+    """Both extremes swept, traded from the second, with the order recorded."""
+
+    entry_rule: tuple[str, ...] = ("reclaim_close", "displacement_confirmation")
+    reference_kind: tuple[str, ...] = ("previous_day", "previous_candle")
+    candle_timeframe: tuple[str, ...] = ("4h",)
+
+    @field_validator("reference_kind")
+    @classmethod
+    def _references(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        _check_membership(v, frozenset({"previous_day", "previous_candle"}), "crt reference_kind")
+        return v
+
+
+class CrtThreeCandleFamily(_Strict):
+    """Range, manipulation, displacement — the entry rule is the model."""
+
+    candle_timeframe: tuple[str, ...] = ("1h", "4h", "1d")
+    displacement_atr: tuple[float, ...] = (0.3, 0.75)
+
+    @field_validator("candle_timeframe")
+    @classmethod
+    def _known(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        bad = [tf for tf in v if tf not in TIMEFRAME_TO_MS]
+        if bad:
+            raise ValueError(f"crt candle_timeframe has unknown timeframes {bad}.")
+        return v
+
+    @field_validator("displacement_atr")
+    @classmethod
+    def _displacement(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        return _ensure_positive_floats(v, "crt displacement_atr")
+
+
+class CrtIntradayFamilies(_Strict):
+    """Round CRT_INTRADAY_V1. Registered as hypotheses, not as findings."""
+
+    mechanics: CrtIntradayMechanics = CrtIntradayMechanics()
+    grid: CrtIntradayGrid = CrtIntradayGrid()
+    htf_range_reversal: CrtHtfRangeReversalFamily = CrtHtfRangeReversalFamily()
+    previous_day_reclaim: CrtPreviousDayReclaimFamily = CrtPreviousDayReclaimFamily()
+    session_liquidity_sweep: CrtSessionLiquiditySweepFamily = CrtSessionLiquiditySweepFamily()
+    session_range_rotation: CrtSessionRangeRotationFamily = CrtSessionRangeRotationFamily()
+    opening_range_breakout_retest: CrtOpeningRangeBreakoutFamily = CrtOpeningRangeBreakoutFamily()
+    failed_breakout_reversal: CrtFailedBreakoutFamily = CrtFailedBreakoutFamily()
+    double_sweep_reversal: CrtDoubleSweepFamily = CrtDoubleSweepFamily()
+    three_candle_model: CrtThreeCandleFamily = CrtThreeCandleFamily()
+
+
 class Families(_Strict):
     momentum: MomentumFamily = MomentumFamily()
     breakout: BreakoutFamily = BreakoutFamily()
@@ -565,6 +846,8 @@ class Families(_Strict):
     funding_reversal: FundingReversalFamily = FundingReversalFamily()
     intraday_seasonality: IntradaySeasonalityFamily = IntradaySeasonalityFamily()
     xasset_spread_reversion: CrossAssetSpreadFamily = CrossAssetSpreadFamily()
+    # -- Round CRT_INTRADAY_V1 (Candle Range Theory); not part of R2 or R3 -- #
+    crt_intraday: CrtIntradayFamilies = CrtIntradayFamilies()
 
 
 class VolatilityFilter(_Strict):

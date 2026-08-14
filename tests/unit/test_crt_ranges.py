@@ -232,7 +232,9 @@ class TestActiveWindow:
         moment = datetime(2024, 1, 3, 12, tzinfo=UTC)
         row = latest_range(ranges, "previous_day", moment)
         assert row is not None
-        assert row["available_from"] <= moment
+        available_from = row["available_from"]
+        assert isinstance(available_from, datetime)
+        assert available_from <= moment
 
 
 class TestBuildRanges:
