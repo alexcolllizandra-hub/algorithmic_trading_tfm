@@ -13,6 +13,12 @@ export const NAV: NavItem[] = [
     description: "Fases, evidencia y advertencias",
   },
   {
+    href: "/guia",
+    label: "Guía",
+    icon: "\u25D4",
+    description: "Recorrido didáctico en 13 paneles",
+  },
+  {
     href: "/datos-eda",
     label: "Datos y EDA",
     icon: "\u2637",

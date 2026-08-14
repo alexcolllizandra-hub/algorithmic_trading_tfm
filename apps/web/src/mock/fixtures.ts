@@ -439,6 +439,84 @@ const studyHoldoutFixture = {
   buy_and_hold: null,
 };
 
+/**
+ * FIXTURE SINTÉTICO — a locked holdout payload that DOES carry a reading.
+ *
+ * The contract allows `provenance`, `result` and `buy_and_hold` to arrive
+ * populated while the partition is still unaudited, and no view may render
+ * them. Every value here is a recognisable sentinel so a leak test can assert
+ * that none of it reaches the DOM. It is exported for tests only and is
+ * deliberately NOT served by `resolveFixture`.
+ */
+export const HOLDOUT_LEAK_PROBE = {
+  status: "HOLDOUT_LOCKED",
+  opened: false,
+  period: `${FIXTURE_TAG}: ventana reservada (sonda de fuga)`,
+  reason: `${FIXTURE_TAG}: la partición congelada sigue sin auditar.`,
+  requirements: [`${FIXTURE_TAG}: requisito de ejemplo para la sonda.`],
+  provenance: {
+    opened_at: "2026-07-01T00:00:00+00:00",
+    partition_evaluated: "PROBE_final_holdout_do_not_render",
+    is_research_result: false,
+    git: { commit: "deadbeefcafe4242", branch: "probe", worktree_clean: true, dirty_paths: [] },
+    candidate: {
+      family: "PROBE_family_do_not_render",
+      symbol: "BTCUSDT",
+      timeframe: "1h",
+      engine: "random_search",
+      fold: 3,
+      n_members: 2,
+    },
+    dataset_hashes: { probe: { sha256: "deadbeefcafe4242", rows: 987654, role: "holdout" } },
+    costs: {
+      fee_bps_per_side: 42.42,
+      slippage_bps_per_side: 31.31,
+      funding_treatment: "PROBE_funding_do_not_render",
+      provisional: true,
+    },
+    annualization_days: 365,
+  },
+  result: {
+    combined: {
+      n_bars: 987654,
+      total_return: 424.242,
+      sharpe: 313.131,
+      max_drawdown: -98.7654,
+      n_trades: 987654,
+    },
+    costs_paid: { fees_and_slippage: 42.42, funding: 31.31, total: 98.7654 },
+    per_member: [
+      {
+        seed: 4242,
+        selection_fingerprint: "deadbeefcafe4242",
+        metrics: { total_return: 424.242, sharpe: 313.131 },
+      },
+    ],
+    n_bars: 987654,
+    window: { start: "2026-01-01T00:00:00+00:00", end: "2026-06-30T23:00:00+00:00" },
+  },
+  buy_and_hold: { total_return: 313.131, sharpe: 42.42 },
+};
+
+/**
+ * Digit runs and tokens that must never appear where a holdout is locked. Both
+ * the raw values and their es-ES rendering are listed, because a leak would
+ * surface formatted ("424,24 %") rather than raw.
+ */
+export const HOLDOUT_LEAK_SENTINELS = [
+  "4242",
+  "3131",
+  "9876",
+  "424,24",
+  "313,13",
+  "98,77",
+  "987.654",
+  "deadbeefcafe",
+  "PROBE_final_holdout_do_not_render",
+  "PROBE_family_do_not_render",
+  "PROBE_funding_do_not_render",
+];
+
 export const FIXTURES: Record<string, unknown> = {
   "/health": {
     status: "ok",
