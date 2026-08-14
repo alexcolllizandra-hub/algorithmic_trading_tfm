@@ -24,6 +24,7 @@ from perp_lab.catalog.storage import (
     ObjectStoreCredentialsError,
     ObjectStoreError,
     SupabaseObjectStore,
+    describe_existing_file,
     inspect_parquet,
     normalise_key,
     open_object_store,
@@ -66,6 +67,19 @@ def test_local_store_reports_row_count_and_schema_for_parquet(tmp_path: Path) ->
     assert set(metadata.arrow_schema) == {"bar", "equity"}
     assert metadata.arrow_schema["equity"] == "double"
     assert metadata.sha256 == sha256_bytes(source.read_bytes())
+
+
+def test_describing_an_existing_file_does_not_copy_it(tmp_path: Path) -> None:
+    source = _equity_parquet(tmp_path, rows=12)
+    original = source.read_bytes()
+
+    metadata = describe_existing_file(source)
+
+    assert source.read_bytes() == original
+    assert metadata.row_count == 12
+    assert metadata.sha256 == sha256_bytes(original)
+    assert metadata.backend == "local"
+    assert Path(metadata.key).resolve() == source.resolve()
 
 
 def test_local_store_exposes_a_path_duckdb_can_read(tmp_path: Path) -> None:

@@ -246,9 +246,23 @@ export SUPABASE_STORAGE_BUCKET="<bucket>"
 uv run alembic upgrade head
 ```
 
-Two things are worth planning before that happens and are **not implemented
-yet**: row-level security policies for anything a browser can reach (the service
-role bypasses them, so it must stay server-side), and the ingestion command that
-walks `artifacts/` and `reports/` and populates the catalogue. This layer is the
-persistence substrate; the ingestion job and the API adapters are separate,
-later work.
+Row-level security policies for anything a browser can reach are **not
+implemented yet**. The service role bypasses them, so it must stay server-side.
+
+## Ingestion
+
+`scripts/ingest_study_catalogue.py` walks the **gate-report inventory**, not the
+run-directory listing, and upserts the catalogue. Original files are never
+copied or rewritten: Parquet ledgers are registered in place with their SHA-256
+and row count. Running the command twice updates rows in place and must not
+change the counts.
+
+The frozen holdout is written as a `HOLDOUT_LOCKED` registry row. Files whose
+names announce a holdout reading are skipped. After each pass the catalogue is
+compared with the source summaries; a mismatch is a reason not to point the
+dashboard at the database, not a number to coerce.
+
+```bash
+uv run alembic upgrade head
+uv run python scripts/ingest_study_catalogue.py
+```

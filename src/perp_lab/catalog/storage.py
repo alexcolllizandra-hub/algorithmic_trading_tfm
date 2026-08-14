@@ -102,6 +102,43 @@ def normalise_key(key: str) -> str:
     return "/".join(parts)
 
 
+def describe_existing_file(path: str | Path, *, media_type: str | None = None) -> ObjectMetadata:
+    """Index a file where it already lives. Does not copy or move it.
+
+    The scientific evidence stays in ``artifacts/`` and ``reports/``. The
+    catalogue records where those bytes are, how large they are and what they
+    hash to, so re-ingesting the same tree updates the index and never produces
+    a second copy that could drift from the original.
+    """
+    from perp_lab.utils.hashing import sha256_file
+
+    resolved = Path(path).resolve()
+    if not resolved.is_file():
+        raise ObjectNotFoundError(f"No file to index at {resolved}.")
+    row_count, schema = (None, None)
+    if resolved.suffix == ".parquet":
+        try:
+            parquet_file = pq.ParquetFile(resolved)
+            row_count = int(parquet_file.metadata.num_rows)
+            arrow = parquet_file.schema_arrow
+            schema = {
+                name: str(dtype) for name, dtype in zip(arrow.names, arrow.types, strict=True)
+            }
+        except Exception:
+            row_count, schema = None, None
+    return ObjectMetadata(
+        key=resolved.as_posix(),
+        uri=resolved.as_uri(),
+        backend=LOCAL_BACKEND,
+        bucket="",
+        byte_size=resolved.stat().st_size,
+        sha256=sha256_file(resolved),
+        row_count=row_count,
+        arrow_schema=schema,
+        media_type=media_type,
+    )
+
+
 def inspect_parquet(data: bytes) -> tuple[int | None, dict[str, str] | None]:
     """Row count and column types of a Parquet payload, from its footer.
 
@@ -351,6 +388,7 @@ __all__ = [
     "ObjectStoreCredentialsError",
     "ObjectStoreError",
     "SupabaseObjectStore",
+    "describe_existing_file",
     "inspect_parquet",
     "normalise_key",
     "open_object_store",
