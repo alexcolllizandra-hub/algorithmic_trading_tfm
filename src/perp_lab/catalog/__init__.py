@@ -12,16 +12,23 @@ traced back to the file that produced it.
 
 from __future__ import annotations
 
+from perp_lab.catalog.session import database_url, session_scope
 from perp_lab.catalog.status import (
     MEASURED_STATUSES,
     TERMINAL_STATUSES,
     ResultStatus,
     has_metrics,
 )
+from perp_lab.catalog.storage import LocalObjectStore, ObjectStore, open_object_store
 
 __all__ = [
     "MEASURED_STATUSES",
     "TERMINAL_STATUSES",
+    "LocalObjectStore",
+    "ObjectStore",
     "ResultStatus",
+    "database_url",
     "has_metrics",
+    "open_object_store",
+    "session_scope",
 ]

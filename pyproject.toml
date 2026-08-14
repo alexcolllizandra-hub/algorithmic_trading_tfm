@@ -28,6 +28,9 @@ dependencies = [
     "rich>=13.9",
     "tqdm>=4.66",
     "scikit-learn>=1.5",
+    "sqlalchemy>=2",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",
 ]
 
 [project.optional-dependencies]
