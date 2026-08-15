@@ -1,25 +1,22 @@
 import type { Metadata } from "next";
 
-import { Sidebar } from "@/components/layout/Sidebar";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-  title: "perp-lab Research Platform",
+  title: {
+    default: "perp-lab",
+    template: "%s · perp-lab",
+  },
   description:
-    "Read-only research platform for interpretable perpetual-futures strategy discovery.",
+    "Laboratorio reproducible de estrategias intradía sobre futuros perpetuos de BTC y ETH.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning>
       <body>
-        <ThemeProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <div className="flex min-w-0 flex-1 flex-col">{children}</div>
-          </div>
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

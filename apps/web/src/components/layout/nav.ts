@@ -8,6 +8,12 @@ export interface NavItem {
 export const NAV: NavItem[] = [
   {
     href: "/",
+    label: "Landing",
+    icon: "\u25C8",
+    description: "Qué es el proyecto, en simple",
+  },
+  {
+    href: "/panel",
     label: "Visión general",
     icon: "\u25C9",
     description: "Fases, evidencia y advertencias",
