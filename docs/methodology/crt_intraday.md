@@ -3,6 +3,11 @@
 **Estado: motor y nueve familias implementados y testeados. Ninguna estrategia
 ejecutada sobre datos reales. Ningún resultado de rendimiento existe todavía.**
 
+**Ninguna familia de esta ronda puede promocionarse: la partición final está
+consumida. Esta ronda produce evidencia, no candidatos operativos.** La
+declaración completa, fechada y escrita antes de ejecutar, está en el
+[apartado 6bis](#6bis-declaración-previa-a-la-ejecución).
+
 Este documento describe el módulo `src/perp_lab/crt/` y registra la ronda
 experimental `CRT_INTRADAY_V1`. No contiene métricas porque los experimentos no
 se han corrido. Cuando se corran, sus resultados se añadirán aquí y se contarán
@@ -215,6 +220,94 @@ porque un mapa de dónde *no* está el edge vale más cuanto más territorio cub
 
 El holdout congelado no se usa para construir, seleccionar ni ajustar nada de
 esto.
+
+---
+
+## 6bis. Declaración previa a la ejecución
+
+**Fecha: 2026-08-16. Escrito antes de ejecutar una sola unidad de esta ronda y
+antes de observar ningún resultado.** Este apartado existe para que las dos
+consecuencias de abajo no puedan decidirse después, a la vista de lo que salga.
+
+### 6bis.1 Ninguna familia CRT puede promocionarse
+
+La partición final `[2026-01-01, 2026-07-01)` **está consumida**: se abrió una
+vez el 2026-08-13 sobre `volatility_breakout` y no queda ninguna prueba
+confirmatoria limpia sobre este histórico. Véase
+[holdout_audit_status.md](holdout_audit_status.md) §5.1.
+
+De ahí se sigue, sin margen de interpretación:
+
+> **Ninguna familia de la ronda `CRT_INTRADAY_V1` puede promocionarse a
+> estrategia operativa, gane lo que gane.** Esta ronda produce **evidencia, no
+> candidatos.** No existe el estado `PROMOTED` para ninguna de las nueve.
+
+El mejor resultado posible de esta ronda es una familia con señal parcial en
+desarrollo, y una señal parcial en desarrollo **no es un resultado positivo**:
+es una hipótesis que se queda sin forma de confirmarse. El destino esperado y
+declarado de las nueve familias es `REJECTED`, y eso es un resultado válido —
+el mapa de dónde *no* está el edge vale más cuanto más territorio cubre.
+
+Recuperar la capacidad de promocionar exige datos nuevos más allá de
+`2026-07-01` y una partición congelada declarada antes de mirarla. Eso es
+trabajo futuro y no puede sustituirse reinterpretando lo ya existente.
+
+### 6bis.2 Qué le pasa al denominador de comparaciones múltiples
+
+El cierre vigente
+([study_level_multiple_testing.md](study_level_multiple_testing.md), commit
+`232bc372`) está fijado en **N = 13 familias** y **496.500 configuraciones
+evaluadas**. Esa cuenta **no incluye** esta ronda.
+
+Contabilidad declarada de antemano:
+
+| Concepto | Cierre vigente | Tras `CRT_INTRADAY_V1` |
+|---|---:|---:|
+| Familias | 13 | **22** |
+| Familia × activo | 22 | **40** |
+| Configuraciones evaluadas | 496.500 | **1.036.500** |
+
+Las 540.000 configuraciones añadidas salen del contrato congelado, no de una
+estimación: 9 familias × 2 activos × 10 semillas × 15 folds × 2 motores × 100
+evaluaciones por fold y motor. La paridad de presupuesto garantiza esa cifra
+exacta, y por eso puede declararse antes de ejecutar.
+
+**Qué se recalcula, con qué regla de conteo, antes de reportar nada:**
+
+1. **Holm–Bonferroni** (FWER) y **Benjamini–Hochberg** (FDR), ambos a α = 0.05,
+   sobre las **22 familias** — no sobre las 9 nuevas por separado. Corregir la
+   ronda dentro de sí misma repetiría exactamente el fallo que el cierre vino a
+   arreglar: cada puerta corrigiendo internamente y nadie corrigiendo entre
+   puertas.
+2. **Deflated Sharpe Ratio** de la mejor familia del estudio completo, contando
+   la selección sobre **1.036.500 configuraciones**, no sobre 540.000 ni sobre
+   22.
+3. **PBO por CSCV** sobre las 22 series familiares alineadas, con el mismo
+   número de particiones que usó el cierre.
+4. **Sensibilidad del conteo** bajo las cuatro reglas ya establecidas —familias,
+   familia × activo, familia × activo × semilla, y todas las configuraciones—
+   recalculadas con los nuevos totales, para que la conclusión no dependa de qué
+   denominador se elija.
+
+La regla primaria de conteo sigue siendo **la familia**, con las semillas
+promediadas dentro de cada familia como réplicas de una misma hipótesis, tal y
+como está definido en el cierre. Esta ronda no introduce una regla nueva.
+
+**Condición de bloqueo.** Ninguna cifra de esta ronda —ni en la memoria, ni en
+el panel, ni en la landing— puede citarse antes de re-ejecutar
+`scripts/run_study_closure.py` y regenerar la evidencia web. Reportar un
+resultado CRT contra la corrección de 13 familias sería subestimar el número de
+oportunidades que tuvo la búsqueda de producir un ganador, que es precisamente
+el error que esta tesis existe para documentar.
+
+### 6bis.3 Motor de búsqueda
+
+**Random Search es la búsqueda primaria y la única evidencia confirmatoria.** El
+algoritmo genético se ejecuta a presupuesto idéntico como *cross-check* de
+robustez —¿coinciden dos mecanismos de búsqueda distintos en que no hay nada?—
+y **nunca como motor de descubrimiento**. Ningún resultado de esta ronda puede
+apoyarse en el GA si RS no lo sostiene. Esto es consistente con CR-2 del estudio,
+donde el GA no mostró ventaja sobre RS.
 
 ---
 
