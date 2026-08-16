@@ -255,7 +255,7 @@ describe("status vocabulary", () => {
   it("maps every backend state to a Spanish label and a tone", () => {
     expect(statusDescriptor("HOLDOUT_LOCKED")).toEqual({
       code: "HOLDOUT_LOCKED",
-      label: "Holdout bloqueado",
+      label: "Holdout retenido",
       tone: "warn",
     });
     expect(statusDescriptor("REJECTED").tone).toBe("negative");

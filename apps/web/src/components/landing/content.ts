@@ -100,11 +100,12 @@ export const PIPELINE: PipelineStep[] = [
   {
     id: "holdout",
     title: "Evaluación final",
-    what: "Abrir los seis meses congelados. Una sola vez.",
-    status: "blocked",
+    what: "Abrir los seis meses reservados. Una sola vez.",
+    status: "in-review",
     detail:
-      "Requiere una estrategia previamente seleccionada y congelada. No la hay, así que " +
-      "el holdout sigue cerrado.",
+      "Se abrió una vez, sobre un candidato declarado de antemano, y su lectura existe en " +
+      "disco. Quedó pendiente la auditoría de procedencia que comprueba que el candidato " +
+      "estaba congelado antes de mirar, así que la cifra no se publica.",
   },
   {
     id: "riesgo",
@@ -138,13 +139,15 @@ export const PRINCIPLES: Principle[] = [
   },
   {
     id: "holdout",
-    title: "Seis meses bajo llave",
+    title: "Seis meses apartados",
     plain:
-      "Los últimos seis meses de datos están apartados desde el principio. No se miran para " +
-      "elegir nada. Se abren una sola vez, al final, y lo que salga es lo que se cuenta.",
+      "Los últimos seis meses de datos se apartaron desde el principio y no se miraron para " +
+      "elegir nada. Se abrieron una sola vez, al final. Esa lectura quedó retenida a la " +
+      "espera de una auditoría de procedencia, y la conclusión del estudio no depende de ella.",
     technical:
-      "Holdout congelado en [2026-01-01, 2026-07-01). El código de desarrollo falla si " +
-      "alguien intenta cargarlo; se necesita una ruta explícita y auditada.",
+      "Partición reservada en [2026-01-01, 2026-07-01). El código de desarrollo falla si " +
+      "alguien intenta cargarla; la apertura exigió una ruta explícita y auditada, y su " +
+      "resultado permanece sin publicar mientras la auditoría siga pendiente.",
   },
   {
     id: "inmutable",
@@ -174,6 +177,8 @@ export interface Concept {
   technical: string;
   everyday: string;
   punchline: string;
+  /** Anchor of the section that pays this concept off with measured data. */
+  evidence?: { href: string; label: string };
 }
 
 export const CONCEPTS: Concept[] = [
@@ -198,6 +203,7 @@ export const CONCEPTS: Concept[] = [
       "La cola más corta del supermercado deja de serlo en cuanto todos la ven. La ventaja " +
       "desaparece justo cuando la encuentras.",
     punchline: "Por eso el resultado por defecto es que no hay ventaja.",
+    evidence: { href: "#costes", label: "Verlo medido" },
   },
   {
     id: "grandes-numeros",
@@ -301,10 +307,12 @@ export const ROADMAP: RoadmapPhase[] = [
     id: "holdout",
     period: "Evaluación final",
     title: "Apertura del holdout",
-    status: "blocked",
+    status: "in-review",
     summary:
-      "Un único disparo sobre los seis meses congelados, con la estrategia previamente " +
-      "elegida. Bloqueado mientras no haya una estrategia que lo merezca.",
+      "Un único disparo sobre los seis meses reservados, con la estrategia elegida de " +
+      "antemano. Se ejecutó; la lectura quedó retenida a la espera de la auditoría de " +
+      "procedencia que la haría citable.",
+    source: "reports/study_closure/final_holdout.md",
   },
   {
     id: "cartera",

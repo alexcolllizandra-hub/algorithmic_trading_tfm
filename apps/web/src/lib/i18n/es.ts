@@ -30,7 +30,7 @@ export const es = {
     strategies: { id: "strategies", label: "Estrategias interpretables", short: "Fase 3" },
     search: { id: "search", label: "Búsqueda RS/GA", short: "Fase 4" },
     validation: { id: "validation", label: "Walk-forward", short: "Fase 5" },
-    holdout: { id: "holdout", label: "Holdout final (bloqueado)", short: "Fase 6" },
+    holdout: { id: "holdout", label: "Holdout final (lectura retenida)", short: "Fase 6" },
   },
 
   sections: {
@@ -66,7 +66,7 @@ export const es = {
         "Todo gráfico didáctico lleva la etiqueta «ejemplo ilustrativo» y valores inventados. Las cifras del estudio llegan de la API y, si una no está disponible, se muestra un estado en su lugar, nunca un cero.",
       queConcluir: "¿Qué se puede concluir aquí?",
       queConcluirAnswer:
-        "La conclusión textual del informe de cierre se cita literalmente en el panel 13. El holdout congelado sigue bloqueado: esta página explica qué es, pero no muestra ninguna lectura suya.",
+        "La conclusión textual del informe de cierre se cita literalmente en el panel 13. La partición reservada se abrió una vez y su lectura quedó retenida a la espera de auditoría: esta página explica qué es, pero no muestra ninguna cifra suya.",
     },
     datosEda: {
       title: "Datos y análisis exploratorio",
@@ -80,7 +80,7 @@ export const es = {
         "Huecos, duplicados o filas que crucen el holdout invalidarían cualquier conclusión posterior sobre leakage o reproducibilidad.",
       comoInterpretar: "¿Cómo leer la cronología?",
       comoInterpretarAnswer:
-        "El gráfico muestra el periodo de desarrollo, el subconjunto piloto usado en búsqueda, los folds train/val/test y el holdout bloqueado.",
+        "El gráfico muestra el periodo de desarrollo, el subconjunto piloto usado en búsqueda, los folds train/val/test y la partición reservada.",
       queConcluir: "¿Qué concluir del EDA?",
       queConcluirAnswer:
         "Los hallazgos EDA orientan el diseño (regímenes, costes, dependencia en colas) pero no seleccionan parámetros ni estrategias.",
@@ -140,7 +140,7 @@ export const es = {
         "Las 13 familias juzgadas juntas: todos los backtests, la corrección por comparaciones múltiples y el estado del holdout congelado.",
       que: "¿Qué muestra esta sección?",
       queAnswer:
-        "Todos los resultados fuera de muestra del estudio (familia × activo) y la corrección aplicada al conjunto. El holdout aparece solo como estado: está bloqueado y sin auditar, así que no se publica ninguna de sus cifras.",
+        "Todos los resultados fuera de muestra del estudio (familia × activo) y la corrección aplicada al conjunto. El holdout aparece solo como estado: se abrió una vez y su lectura sigue sin auditar, así que no se publica ninguna de sus cifras.",
       porQue: "¿Por qué juzgarlas juntas?",
       porQueAnswer:
         "Cada familia probada añade una oportunidad de acertar por azar. Evaluar 13 hipótesis y quedarse con la mejor exige corregir el nivel de significación; si no, el mejor backtest siempre parecerá bueno.",
@@ -173,7 +173,7 @@ export const es = {
     holdout: {
       term: "Holdout congelado",
       definition:
-        "Partición final ([holdout_start, cutoff)) abierta una sola vez para el informe definitivo. Hasta entonces, ningún código de desarrollo la carga.",
+        "Partición final ([holdout_start, cutoff)) que se abre una sola vez para el informe definitivo y que ningún código de desarrollo carga. Se abrió sobre un candidato declarado de antemano; su lectura permanece retenida mientras la auditoría de procedencia siga pendiente.",
     },
     walkForward: {
       term: "Walk-forward",
@@ -211,7 +211,7 @@ export const es = {
     exploratory:
       "Resultados exploratorios: métricas de validación/test en desarrollo únicamente. NO son rendimiento del holdout final y no deben citarse como resultado OOS definitivo de la tesis.",
     holdoutLocked:
-      "El holdout congelado (ene–jun 2026) nunca se sirve por la plataforma ni informa decisiones de diseño.",
+      "La plataforma nunca sirve observaciones del holdout (ene–jun 2026) ni deja que informe decisiones de diseño. Su única lectura quedó retenida a la espera de auditoría.",
     devPartitionOnly:
       "Solo partición de desarrollo — observaciones del holdout congelado excluidas.",
     integrityMismatch:
@@ -250,7 +250,7 @@ export const es = {
     train: "Train",
     validation: "Validación",
     test: "Test",
-    holdout: "Holdout (bloqueado)",
+    holdout: "Holdout (reservado)",
     purge: "Purge",
     embargo: "Embargo",
   },
@@ -433,7 +433,7 @@ export const es = {
       title: "Holdout final",
       subtitle:
         "Estado de la partición congelada. Esta sección informa del estado del holdout; no muestra ninguna lectura de él.",
-      lockedTitle: "Holdout bloqueado: resultado no auditado",
+      lockedTitle: "Holdout abierto una vez: resultado no auditado",
       lockedBody:
         "La evaluación de la partición congelada está SIN AUDITAR, por lo que ninguna de sus cifras se publica aquí: ni retorno, ni Sharpe, ni drawdown, ni dispersión por semilla, ni comparación con comprar y mantener. La API puede seguir transportando esos campos; la interfaz no los renderiza.",
       period: "Ventana reservada",
@@ -483,7 +483,7 @@ export const es = {
       train: "Entrenamiento",
       val: "Validación",
       test: "Test fuera de muestra",
-      holdout: "Holdout congelado (no se abre)",
+      holdout: "Holdout reservado (lectura retenida)",
       development: "Desarrollo (donde se investiga)",
       purge: "Purge: barras descartadas",
       embargo: "Embargo: espera adicional",
@@ -556,7 +556,7 @@ export const es = {
         interpreta:
           "El histórico se parte en dos: desarrollo, donde se investiga, y holdout congelado, que no se toca. El diagrama es un dibujo con proporciones inventadas; las cifras reales son las tarjetas de arriba.",
         conclusion:
-          "Los datos son velas de futuros perpetuos USDT-M sobre dos activos muy acoplados, y la partición final sigue cerrada: todo lo que se juzga aquí ocurre en desarrollo.",
+          "Los datos son velas de futuros perpetuos USDT-M sobre dos activos muy acoplados, y la partición final quedó fuera del desarrollo: todo lo que se juzga aquí ocurre en desarrollo.",
       },
       estrategia: {
         title: "¿Qué es una estrategia?",
@@ -589,7 +589,7 @@ export const es = {
         interpreta:
           "Los tramos van en orden cronológico, nunca al azar: el pasado entrena y el futuro juzga. Cada tramo sirve para una sola cosa: train ajusta, validación elige, test puntúa una única vez.",
         conclusion:
-          "El reparto es cronológico y el holdout permanece cerrado, así que las cifras de los paneles siguientes son de test dentro de la partición de desarrollo.",
+          "El reparto es cronológico y el holdout quedó al margen del desarrollo, así que las cifras de los paneles siguientes son de test dentro de la partición de desarrollo.",
       },
       walkForward: {
         title: "¿Qué es la validación walk-forward?",
@@ -677,7 +677,7 @@ export const es = {
         interpreta:
           "Lea la conclusión por lo que es: una afirmación sobre este universo de estrategias, este modelo de costes y este horizonte. No es una afirmación sobre el trading algorítmico en general.",
         conclusion:
-          "Bajo este modelo de costes y en esta clase de instrumento, el estudio no encuentra ventaja. El holdout sigue cerrado a la espera de auditoría y su lectura queda retenida.",
+          "Bajo este modelo de costes y en esta clase de instrumento, el estudio no encuentra ventaja. El holdout se abrió una vez y su lectura queda retenida a la espera de auditoría; la conclusión no depende de ella.",
       },
     },
 
@@ -808,7 +808,7 @@ export const es = {
       oosBars: "Barras fuera de muestra (fila más larga)",
       holdoutState: "Estado del holdout",
       holdoutOpenedFalse:
-        "El artefacto declara la partición congelada como no abierta, así que ninguna cifra suya existe todavía en el estudio.",
+        "Este artefacto se generó sobre desarrollo y no incorpora ninguna lectura de la partición reservada, así que no hay cifras suyas que mostrar aquí.",
       exampleFamily: "Familia de ejemplo (la de p-valor crudo más bajo)",
       foldsNotServed: "Número de folds del experimento",
       purgeNotServed: "Barras de purge y embargo",
@@ -841,7 +841,7 @@ export const es = {
       regimeQuestion:
         "¿Y si el efecto existiera solo en un estado de mercado concreto? Esa pregunta se contestó en un bloque explícitamente exploratorio, con su propia corrección interna.",
       holdoutWithheld:
-        "La lectura del holdout queda retenida a la espera de auditoría. Esta guía explica qué es la partición congelada y por qué sigue cerrada, pero no publica ninguna de sus métricas.",
+        "La lectura del holdout queda retenida a la espera de auditoría. Esta guía explica qué es la partición reservada y por qué su cifra no se publica, pero no muestra ninguna de sus métricas.",
     },
 
     concepts: {

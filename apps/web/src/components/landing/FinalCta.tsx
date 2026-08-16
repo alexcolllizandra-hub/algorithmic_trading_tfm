@@ -24,9 +24,9 @@ export function FinalCta() {
 
         <Reveal delay={0.05}>
           <p className="mx-auto mt-5 max-w-2xl text-pretty text-lg leading-relaxed text-muted">
-            Puedes clonar el repositorio, regenerar cada cifra de esta página y comprobar que el
-            holdout sigue cerrado. Si encuentras un error metodológico, abrir una issue es la forma
-            más útil de contribuir.
+            Puedes clonar el repositorio, regenerar cada cifra de esta página y auditar el rastro de
+            la única apertura del holdout. Si encuentras un error metodológico, abrir una issue es
+            la forma más útil de contribuir.
           </p>
         </Reveal>
 

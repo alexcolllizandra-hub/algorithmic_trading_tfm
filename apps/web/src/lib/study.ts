@@ -270,7 +270,7 @@ export const STATUS_VOCABULARY: Record<string, { label: string; tone: StatusTone
   SKIPPED: { label: "Omitido", tone: "warn" },
   NOT_EXECUTED: { label: "No ejecutado", tone: "neutral" },
   NOT_AVAILABLE: { label: "No disponible", tone: "neutral" },
-  HOLDOUT_LOCKED: { label: "Holdout bloqueado", tone: "warn" },
+  HOLDOUT_LOCKED: { label: "Holdout retenido", tone: "warn" },
 };
 
 export const NOT_AVAILABLE = "NOT_AVAILABLE";

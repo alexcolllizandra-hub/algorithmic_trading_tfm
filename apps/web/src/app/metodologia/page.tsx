@@ -117,8 +117,9 @@ export default function MetodologiaPage() {
           </p>
           <p>
             El candidato ganador de cada fold se elige usando solo métricas de validación; la
-            ventana test se evalúa una sola vez. El holdout final permanece bloqueado hasta el
-            informe definitivo.
+            ventana test se evalúa una sola vez. El holdout final se abrió una sola vez, sobre un
+            candidato declarado de antemano, y su lectura permanece retenida a la espera de la
+            auditoría de procedencia.
           </p>
           <ul className="list-inside list-disc space-y-1">
             <li>RS y GA comparten presupuesto equitativo de evaluaciones.</li>

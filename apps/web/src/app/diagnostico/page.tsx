@@ -145,7 +145,7 @@ const COMPONENTS: { name: string; status: Status; note: string }[] = [
   { name: "API cuantitativa (FastAPI)", status: "implemented", note: "v1 solo lectura" },
   { name: "Plataforma web (esta UI)", status: "implemented", note: "Next.js + TypeScript" },
   { name: "Triple-barrier y meta-labeling", status: "planned", note: "fase futura" },
-  { name: "Evaluación holdout final", status: "unavailable", note: "bloqueada" },
+  { name: "Evaluación holdout final", status: "unavailable", note: "lectura retenida" },
 ];
 
 function SystemTab() {

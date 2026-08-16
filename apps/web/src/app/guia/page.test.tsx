@@ -96,7 +96,11 @@ describe("/guia", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: es.study.holdout.title })).toBeInTheDocument()
     );
-    await waitFor(() => expect(screen.getAllByText(/Holdout bloqueado/).length).toBeGreaterThan(0));
+    // Either surface is acceptable: the panel heading or the status badge. Both
+    // moved off the word "bloqueado" when the holdout language was unified.
+    await waitFor(() =>
+      expect(screen.getAllByText(/Holdout (abierto una vez|retenido)/).length).toBeGreaterThan(0)
+    );
 
     const text = document.body.textContent ?? "";
     for (const sentinel of HOLDOUT_LEAK_SENTINELS) {
