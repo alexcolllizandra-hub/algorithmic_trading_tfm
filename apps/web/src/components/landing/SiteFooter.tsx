@@ -22,6 +22,11 @@ export function SiteFooter() {
             Descubrimiento y validación reproducible de estrategias intradía sobre futuros perpetuos
             USDT-M de BTC y ETH.
           </p>
+          <p className="mt-4 max-w-md text-xs leading-relaxed text-muted/80">
+            Contenido educativo e informativo. No es asesoramiento financiero ni una recomendación
+            de inversión. Operar derivados conlleva alto riesgo de pérdida y los resultados pasados
+            no garantizan resultados futuros.
+          </p>
           {data && (
             <p className="mt-4 font-mono text-xs text-muted/70">
               datos generados {data.generated_at.slice(0, 10)} · commit{" "}
@@ -39,6 +44,12 @@ export function SiteFooter() {
           </Link>
           <Link href="/metodologia" className="text-muted transition-colors hover:text-fg">
             Metodología
+          </Link>
+          <Link href="/privacidad" className="text-muted transition-colors hover:text-fg">
+            Privacidad
+          </Link>
+          <Link href="/aviso-legal" className="text-muted transition-colors hover:text-fg">
+            Aviso legal
           </Link>
           <a
             href={REPO_URL}
