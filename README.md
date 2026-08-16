@@ -22,8 +22,12 @@ These principles are enforced by the project rules in `.cursor/rules/` and must
 never be violated:
 
 1. **Chronological splits only.** No random train/test splits.
-2. **A final holdout period is frozen and never touched** for EDA-driven
-   decisions or parameter selection.
+2. **The final holdout is frozen against EDA-driven decisions and parameter
+   selection**, and is opened at most once. It *was* opened, on 2026-08-13, over
+   a candidate that the study-level correction had already rejected. That reading
+   is withheld pending a provenance audit, the partition is now consumed, and no
+   conclusion in this repository depends on it. See
+   [docs/methodology/holdout_audit_status.md](docs/methodology/holdout_audit_status.md).
 3. **Raw data is immutable.** `data/raw/` is written once and never edited.
 4. **No silent outlier removal.** Extreme observations are flagged and
    investigated, not automatically dropped.

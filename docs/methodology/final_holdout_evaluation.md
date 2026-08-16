@@ -1,5 +1,16 @@
 # Final holdout evaluation — selection rule, pre-declared
 
+> **Estado actual (nota añadida el 2026-08-16).** La partición **fue abierta** el
+> `2026-08-13T11:13:37Z`, después de escribirse este documento, sobre el
+> candidato `volatility_breakout` que la corrección a nivel de estudio ya había
+> rechazado. Su lectura está retenida a la espera de auditoría y la partición
+> queda consumida. Véase
+> [holdout_audit_status.md](holdout_audit_status.md).
+>
+> La línea de estado que sigue **no se corrige**: dice «at the time of writing» y
+> era cierta cuando se escribió. Es la prueba de que el candidato se declaró
+> antes de mirar, y reescribirla destruiría justo lo que la hace auditable.
+
 **Version:** 0.1.0 (pre-declaration) · **Date:** 2026-08-13
 **Holdout status at the time of writing: CLOSED. Never opened.**
 

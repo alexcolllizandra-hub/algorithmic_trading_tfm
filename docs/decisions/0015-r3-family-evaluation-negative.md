@@ -5,6 +5,13 @@
 - **Affects:** Gate R3 family evaluation, Gate R4 scope
 - **Depends on:** ADR 0012 (per-fold isolation), ADR 0014 (budget 100)
 
+> **Nota de estado añadida el 2026-08-16 — el cuerpo del ADR no se modifica.**
+> La línea «holdout: never opened» era cierta el 2026-08-10. La partición se
+> abrió el 2026-08-13 sobre `volatility_breakout`, una de las familias que este
+> mismo ADR rechaza. La lectura está retenida y la partición consumida; véase
+> [holdout_audit_status.md](../methodology/holdout_audit_status.md). La decisión
+> que aquí se registra —R3 cierra con cero promociones— no cambia.
+
 ## Context
 
 Gate R3 gave every implemented family a fair, comparable hearing under the clean

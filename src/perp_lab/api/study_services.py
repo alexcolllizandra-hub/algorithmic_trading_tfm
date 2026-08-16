@@ -139,7 +139,11 @@ def study_holdout(settings: ApiSettings) -> m.StudyHoldoutResponse:
             status=ResultStatus.NOT_EXECUTED,
             opened=False,
             period=HOLDOUT_PERIOD,
-            reason="La partición sigue cerrada: no existe ninguna lectura registrada.",
+            reason=(
+                "Este artefacto no transporta ninguna lectura del holdout. La partición se "
+                "abrió una vez el 2026-08-13; su lectura está retenida a la espera de "
+                "auditoría de procedencia y no se sirve por esta API."
+            ),
         )
 
     return m.StudyHoldoutResponse(
