@@ -265,12 +265,44 @@ Contabilidad declarada de antemano:
 |---|---:|---:|
 | Familias | 13 | **22** |
 | Familia × activo | 22 | **40** |
-| Configuraciones evaluadas | 496.500 | **1.036.500** |
+| Configuraciones evaluadas | 496.500 | **≥ 1.036.500, por medir** |
 
-Las 540.000 configuraciones añadidas salen del contrato congelado, no de una
-estimación: 9 familias × 2 activos × 10 semillas × 15 folds × 2 motores × 100
-evaluaciones por fold y motor. La paridad de presupuesto garantiza esa cifra
-exacta, y por eso puede declararse antes de ejecutar.
+> ### Rectificación — 2026-08-16
+>
+> **La primera redacción de esta tabla, escrita el mismo día, daba
+> «1.036.500» como cifra cerrada y afirmaba que las 540.000 añadidas eran
+> exactas porque «la paridad de presupuesto garantiza esa cifra». Las dos
+> afirmaciones eran incorrectas y se corrigen aquí en lugar de reescribirse.**
+>
+> El error fue **sumar dos bases de conteo distintas**. Verificado en
+> `reporting/study_closure.py::evaluations_examined`, el 496.500 del cierre no
+> es un producto del contrato: es el **recuento de filas reales** de los
+> ficheros `{engine}_candidates.parquet`, es decir, cada candidato que la
+> búsqueda llegó a puntuar. El producto del contrato para ese mismo estudio es
+> 284 unidades × 15 folds × 100 = **426.000**. La diferencia, **+16,5 %**, son
+> propuestas inválidas, duplicadas y aciertos de caché: se registran como filas
+> pero **no consumen presupuesto**, que es precisamente lo que hace no
+> explotable el elitismo del GA.
+>
+> Por tanto las 540.000 de CRT son un **suelo garantizado**, no un total. Bajo
+> el mismo ratio empírico el recuento real rondaría las 629.000, pero ese ratio
+> depende de la familia —de cuántas propuestas rechaza su `validate`— y **no
+> puede declararse por adelantado**. Declararlo sería justo el tipo de cifra
+> inventada que esta tesis documenta.
+>
+> Redacción correcta: tras la ronda, el denominador se **mide** con
+> `evaluations_examined` sobre la unión de los directorios de run, y será
+> **≥ 1.036.500**. La cifra que entra en el Deflated Sharpe es la medida, nunca
+> la del contrato.
+>
+> Los recuentos de **familias (13 → 22) y de familia × activo (22 → 40) sí son
+> correctos** y se mantienen: 6 R3 + 4 S1 + 3 S2 + 9 CRT = 22, y
+> 6×2 + 4×1 + 3×2 + 9×2 = 40. No dependen de la base de conteo.
+
+El suelo de 540.000 sale del contrato congelado: 9 familias × 2 activos × 10
+semillas × 15 folds × 2 motores × 100 evaluaciones por fold y motor. La paridad
+de presupuesto garantiza que **al menos** esas se gastan; cuántas filas se
+registran encima es una propiedad medida, no declarada.
 
 **Qué se recalcula, con qué regla de conteo, antes de reportar nada:**
 
@@ -280,8 +312,9 @@ exacta, y por eso puede declararse antes de ejecutar.
    arreglar: cada puerta corrigiendo internamente y nadie corrigiendo entre
    puertas.
 2. **Deflated Sharpe Ratio** de la mejor familia del estudio completo, contando
-   la selección sobre **1.036.500 configuraciones**, no sobre 540.000 ni sobre
-   22.
+   la selección sobre el **recuento medido** de configuraciones de todo el
+   estudio (≥ 1.036.500, ver rectificación), no sobre el suelo del contrato ni
+   sobre 22.
 3. **PBO por CSCV** sobre las 22 series familiares alineadas, con el mismo
    número de particiones que usó el cierre.
 4. **Sensibilidad del conteo** bajo las cuatro reglas ya establecidas —familias,
@@ -292,6 +325,36 @@ exacta, y por eso puede declararse antes de ejecutar.
 La regla primaria de conteo sigue siendo **la familia**, con las semillas
 promediadas dentro de cada familia como réplicas de una misma hipótesis, tal y
 como está definido en el cierre. Esta ronda no introduce una regla nueva.
+
+#### Por qué las tres familias S2 no están en `search/registry.py`
+
+`registry.FAMILIES` tiene 19 entradas (6 R3 + 4 S1 + 9 CRT), pero el cierre
+cuenta 13 familias, tres de las cuales —`taker_flow_extreme`,
+`illiquidity_reversion`, `flow_price_divergence`— no aparecen en este registry.
+No es una omisión:
+
+- Se definieron en el commit `de857bd` («Freeze Gate S2 Batch 01 pre-specification
+  and S2-A implementation»), que añadió `strategies/{taker_flow_extreme,
+  illiquidity_reversion,flow_price_divergence,orderflow}.py`, 176 líneas a
+  `search/registry.py`, tres entradas a `search/config.py` y sus tests.
+- Se ejecutaron en `de07164` («run the S2-B development pilots and record a
+  negative outcome»).
+- **Ninguno de los dos es ancestro de `feat/study-closure`.** Viven en la rama
+  `feat/s2-evidence-and-strategy-lab`, sin fusionar aquí.
+
+La divergencia es coherente y no hay que arreglarla: el registry describe **qué
+puede buscar esta rama**, mientras que el inventario del cierre se reconstruye
+**desde los informes de puerta**, no listando el código. Un estudio puede haber
+probado una familia cuyo código vive en otra rama; el conteo de hipótesis no
+depende de qué esté fusionado.
+
+**Lo que sí hay que vigilar al fusionar.** Desde que `SearchRunConfig.family` se
+valida contra `registry.FAMILIES` en lugar de contra una lista propia, una
+fusión que traiga las S2 debe dejarlas también en `FAMILIES` y asignarlas a un
+grupo de ronda, o sus configs dejarán de validar.
+`tests/unit/test_search_config_families.py::test_the_round_groups_partition_the_registry`
+falla si se añaden sin declarar su ronda — que es el fallo que se quiere, porque
+una familia buscable y sin ronda sería una hipótesis fuera del denominador.
 
 **Condición de bloqueo.** Ninguna cifra de esta ronda —ni en la memoria, ni en
 el panel, ni en la landing— puede citarse antes de re-ejecutar
