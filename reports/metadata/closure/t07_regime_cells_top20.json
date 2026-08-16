@@ -1,0 +1,32 @@
+{
+  "notebook": "05_study_closure_and_multiple_testing",
+  "analysis_id": "t07_regime_cells_top20",
+  "caption": "The twenty most favourable family-by-regime cells, ranked by raw p-value.",
+  "period": "development walk-forward out-of-sample; holdout NOT published",
+  "datasets": {},
+  "config": {
+    "n_families": 13,
+    "n_units": 284,
+    "n_configurations": 496500,
+    "alpha": 0.05,
+    "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
+    "holdout_publication": "AUDIT_PENDING"
+  },
+  "generated_at": "2026-08-15T10:35:42.605784+00:00",
+  "code_commit": "739416e39bf9406f9d0bf0b0a02e997e563d3b86",
+  "output_path": "reports/tables/closure/t07_regime_cells_top20.md",
+  "kind": "table",
+  "n_rows": 20,
+  "columns": [
+    "family",
+    "gate",
+    "dimension",
+    "regime",
+    "n_bars",
+    "share_of_bars",
+    "mean_bar_return",
+    "total_return",
+    "sharpe_annualised",
+    "p_value"
+  ]
+}

@@ -1,54 +1,48 @@
-# EDA notebooks (v0.1)
+# Thesis notebooks
 
-Six narrative, reproducible notebooks that constitute the first exploratory
-data-analysis iteration for the thesis. They are **analytically deep but
-technically thin**: all statistical, validation and plotting logic lives in
-tested modules under `src/perp_lab/`; the notebooks load configuration, call
-those functions, arrange results and provide academic interpretation.
+Five narrative, reproducible notebooks that carry the thesis from raw market data to the closed
+study. They are **analytically deep but technically thin**: every statistical, validation and plotting
+routine lives in tested modules under `src/perp_lab/`; the notebooks load configuration, call those
+functions, arrange results and provide academic interpretation.
 
-| # | Notebook | Question it answers |
-|---|----------|---------------------|
-| 01 | `01_data_acquisition_and_quality.ipynb` | Is the data fit for analysis? Provenance, coverage, integrity. |
-| 02 | `02_price_and_return_dynamics.ipynb` | How do prices and returns behave and aggregate? |
-| 03 | `03_volatility_and_temporal_dependence.ipynb` | Is volatility persistent and clustered? Are returns predictable? |
-| 04 | `04_volume_funding_and_market_activity.ipynb` | How do activity, seasonality and funding behave? |
-| 05 | `05_cross_asset_and_multitimeframe_relationships.ipynb` | How do BTC and ETH co-move across timeframes? |
-| 06 | `06_exploratory_regime_analysis.ipynb` | Can we characterise interpretable market regimes? |
+Each notebook is a **generated artifact**. Do not edit the `.ipynb` by hand — edit its builder under
+`scripts/` and regenerate, so the narrative and the code stay in one source of truth.
+
+| # | Notebook | Builder | Question it answers |
+|---|----------|---------|---------------------|
+| 01 | `01_comprehensive_exploratory_data_analysis.ipynb` | `build_eda_notebook.py` | What does the market data look like, and is it fit for analysis? |
+| 02 | `02_causal_features_and_leakage.ipynb` | `build_features_notebook.py` | What is the model allowed to know, and when? What does leakage cost? |
+| 03 | `03_backtesting_and_walk_forward.ipynb` | `build_backtest_notebook.py` | How does a signal become a filled position, what does it cost, and what makes a fold out-of-sample? |
+| 04 | `04_strategy_search_and_overfitting.ipynb` | `build_search_notebook.py` | How much of a searched result is genuine structure and how much is selection bias? |
+| 05 | `05_study_closure_and_multiple_testing.ipynb` | `build_results_notebook.py` | What did the whole study find, and does anything survive correction? |
+
+Notebooks 01–03 compute from the local data lake. Notebook 04 reads the closed R3 study under
+`artifacts/runs/r3_full_budget100_ga21/`. Notebook 05 reads the closure artifacts under
+`reports/study_closure/`.
 
 ## Research-integrity rules
 
-- **Frozen holdout** `[2026-01-01 00:00 UTC, 2026-07-01 00:00 UTC)` is never used
-  for decisions. Notebooks 2–6 load only the `development` partition; a runtime
-  guard (`assert_no_holdout`) raises if any holdout timestamp leaks in.
-- Notebook 1 may inspect neutral properties of the holdout (existence, hashes,
-  schema, coverage) but never computes anything that influences indicators,
-  thresholds, features or modelling decisions.
-- Every notebook prints its active period and states explicitly whether the
-  holdout was excluded.
+- **Frozen holdout** `[2026-01-01 00:00 UTC, 2026-07-01 00:00 UTC)` is never used for any decision.
+  Notebooks 02–04 load only the `development` partition, and a runtime guard (`assert_no_holdout`)
+  raises if any holdout timestamp leaks in.
+- **The holdout reading is not published.** It was opened once on a pre-declared candidate, but the
+  repository records that opening as `HOLDOUT_LOCKED` pending a provenance audit
+  (`docs/methodology/holdout_audit_status.md`). Notebook 05 explains the lock and reports no holdout
+  metric.
+- **No silent outlier removal.** Extreme observations are flagged, never winsorised. Figure axes are
+  clipped for readability only, with the excluded count reported.
+- Every notebook prints its active period and states explicitly whether the holdout was excluded.
 
 ## How to run
 
-Notebooks are generated from a single source of truth and executed from clean
-kernels:
-
-```powershell
-# 1. Ensure the data lake exists (bulk download, cached under data/raw/)
-uv run perp-lab download --config configs/data_contract.yaml
-
-# 2. (Re)generate the notebook files from scripts/build_notebooks.py
-uv run python scripts/build_notebooks.py
-
-# 3. Execute every notebook in order from a clean kernel
-uv run python scripts/run_notebooks.py
+```bash
+uv run python scripts/build_features_notebook.py
 ```
 
-`scripts/run_notebooks.py` writes an execution report to
-`reports/metadata/eda/notebook_execution.json`. Figures, tables and their
-reproducibility metadata are written under `reports/figures/eda/`,
-`reports/tables/eda/` and `reports/metadata/eda/`.
+```bash
+uv run jupyter nbconvert --to notebook --execute --inplace notebooks/02_causal_features_and_leakage.ipynb
+```
 
-## Outputs
-
-Generated artefacts (figures `*.png` at 300 DPI, tables `*.md`/`*.csv`, metadata
-`*.json`) are ignored by Git by default; regenerate them by running the
-notebooks. Committed narrative lives in `docs/eda_findings_v0.1.md`.
+Figures (`*.png` at 300 DPI plus vector `*.pdf`), tables (`*.md`/`*.csv`) and reproducibility metadata
+(`*.json`) are written under `reports/{figures,tables,metadata}/<area>`, where `<area>` is `eda`,
+`features`, `backtest`, `search` or `closure`.

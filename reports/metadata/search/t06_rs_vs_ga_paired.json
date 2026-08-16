@@ -1,0 +1,38 @@
+{
+  "notebook": "04_strategy_search_and_overfitting",
+  "analysis_id": "t06_rs_vs_ga_paired",
+  "caption": "Paired GA - RS comparison per family, using symbol x fold as the unit of inference with seeds averaged inside each cell.",
+  "period": "development walk-forward test slices (no holdout row enters this notebook)",
+  "datasets": {},
+  "config": {
+    "study_root": "artifacts\\runs\\r3_full_budget100_ga21",
+    "families": [
+      "BTC_ETH_confirmation",
+      "breakout",
+      "funding",
+      "mean_reversion",
+      "volatility_breakout"
+    ],
+    "engines": [
+      "random_search",
+      "genetic_algorithm"
+    ],
+    "experiment_version": "0.1.0"
+  },
+  "generated_at": "2026-08-16T11:50:50.529743+00:00",
+  "code_commit": "739416e39bf9406f9d0bf0b0a02e997e563d3b86",
+  "output_path": "reports/tables/search/t06_rs_vs_ga_paired.md",
+  "kind": "table",
+  "n_rows": 5,
+  "columns": [
+    "family",
+    "n_units",
+    "mean_ga_minus_rs",
+    "ci_low",
+    "ci_high",
+    "cohens_dz",
+    "favouring_ga",
+    "favouring_rs",
+    "ci_excludes_zero"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "notebook": "04_strategy_search_and_overfitting",
+  "analysis_id": "i01_space_vs_budget",
+  "caption": "Exact cardinality of each family's parameter space against the per-fold evaluation budget actually spent.",
+  "period": "development walk-forward test slices (no holdout row enters this notebook)",
+  "datasets": {},
+  "config": {
+    "study_root": "artifacts\\runs\\r3_full_budget100_ga21",
+    "families": [
+      "BTC_ETH_confirmation",
+      "breakout",
+      "funding",
+      "mean_reversion",
+      "volatility_breakout"
+    ],
+    "engines": [
+      "random_search",
+      "genetic_algorithm"
+    ],
+    "experiment_version": "0.1.0"
+  },
+  "generated_at": "2026-08-16T11:50:47.697021+00:00",
+  "code_commit": "739416e39bf9406f9d0bf0b0a02e997e563d3b86",
+  "output_path": "reports/figures/search/i01_space_vs_budget.png",
+  "kind": "figure",
+  "dpi": 300,
+  "formats": [
+    "png",
+    "pdf"
+  ]
+}

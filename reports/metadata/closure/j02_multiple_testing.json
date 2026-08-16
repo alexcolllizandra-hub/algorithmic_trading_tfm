@@ -1,0 +1,24 @@
+{
+  "notebook": "05_study_closure_and_multiple_testing",
+  "analysis_id": "j02_multiple_testing",
+  "caption": "Raw and adjusted p-values per family (a), and the sensitivity of the Bonferroni threshold to how the number of tested hypotheses is defined (b).",
+  "period": "development walk-forward out-of-sample; holdout NOT published",
+  "datasets": {},
+  "config": {
+    "n_families": 13,
+    "n_units": 284,
+    "n_configurations": 496500,
+    "alpha": 0.05,
+    "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
+    "holdout_publication": "AUDIT_PENDING"
+  },
+  "generated_at": "2026-08-15T10:35:40.240106+00:00",
+  "code_commit": "739416e39bf9406f9d0bf0b0a02e997e563d3b86",
+  "output_path": "reports/figures/closure/j02_multiple_testing.png",
+  "kind": "figure",
+  "dpi": 300,
+  "formats": [
+    "png",
+    "pdf"
+  ]
+}
