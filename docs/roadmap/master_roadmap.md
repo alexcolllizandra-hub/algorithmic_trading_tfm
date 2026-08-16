@@ -532,7 +532,11 @@ and all five R3 families are `REJECTED` with recorded evidence
 ([ADR 0013](../decisions/0013-clean-momentum-rebaseline.md),
 [ADR 0015](../decisions/0015-r3-family-evaluation-negative.md)).
 
-The holdout remains closed. There is no promoted strategy to evaluate on it.
+There is no promoted strategy to evaluate on the holdout — and there is no longer
+a clean holdout to evaluate one on. The partition was opened on 2026-08-13 over
+an already-rejected candidate, its reading is withheld pending audit, and it is
+now consumed. Any future confirmatory test needs data beyond `2026-07-01`. See
+[holdout_audit_status.md](../methodology/holdout_audit_status.md).
 
 The next *methodological* work, if the thesis scope expands, is **S1 — controlled
 strategy expansion**: new families only where EDA supplies a mechanism, with

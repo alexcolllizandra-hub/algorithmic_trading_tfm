@@ -181,8 +181,53 @@ horizon, the study finds no edge — and can now say so with a number attached.
 
 ---
 
+## 6. The registry has outgrown this denominator
+
+**This section is a standing warning, not a result.**
+
+The correction above is fixed at **N = 13 families / 496,500 configurations**, the
+inventory as it stood on 2026-08-13. Since then `src/perp_lab/search/registry.py`
+has acquired **nine further families** that this document does not count:
+
+| Family | Registered | In this denominator |
+|---|:--:|:--:|
+| `crt_htf_range_reversal` | yes | **no** |
+| `pdl_reclaim_long` | yes | **no** |
+| `pdh_reclaim_short` | yes | **no** |
+| `session_liquidity_sweep` | yes | **no** |
+| `session_range_rotation` | yes | **no** |
+| `opening_range_breakout_retest` | yes | **no** |
+| `failed_breakout_reversal` | yes | **no** |
+| `double_sweep_reversal` | yes | **no** |
+| `crt_three_candle_model` | yes | **no** |
+
+A family that is registered but never executed consumes no degrees of freedom, so
+while these stay unevaluated the accounting above remains correct as stated.
+
+**The moment any one of them produces a reportable result, N moves from 13 to 22
+and this document is stale.** Reporting a CRT outcome against the 13-family
+correction would understate the number of chances the search had to produce a
+winner — precisely the error the rest of this study exists to avoid.
+
+Required sequence before any CRT number is cited anywhere — thesis, dashboard or
+landing page:
+
+1. Re-run `uv run python scripts/run_study_closure.py` so the inventory is
+   rebuilt from the gate reports that now include the CRT gate.
+2. Confirm the regenerated `n_families` and `all_configurations_evaluated` in
+   `reports/study_closure/study_level_multiple_testing.json`.
+3. Re-export the web evidence (`scripts/export_web_evidence.py`) so the public
+   figures move with the correction rather than lagging it.
+4. Add a change-log row here recording the new N.
+
+The landing page reads `n_families` from the exported evidence rather than
+hard-coding it, so step 3 is what keeps the public headline honest.
+
+---
+
 ## Change log
 
 | Version | Date | Change |
 |---|---|---|
 | 1.0.0 | 2026-08-13 | Study-level accounting over R2+R3+S1+S2; Holm and BH-with-adjusted-values added to `evaluation/multiple_testing.py` |
+| 1.0.1 | 2026-08-15 | Added §6: the nine CRT families are registered but outside the N = 13 denominator; recorded the re-run sequence required before any of them is reported. No result recomputed. |

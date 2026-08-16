@@ -162,7 +162,8 @@ Líneas plausibles (no ejecutadas en este TFM):
 
 Este TFM entrega un pipeline reproducible y un arco R1–R4 cerrado con evidencia
 negativa coherente: corrección temporal, baseline descartado, cinco familias
-rechazadas, R4 no ejecutado, holdout intacto. La contribución metodológica —
+rechazadas, R4 no ejecutado y ninguna cifra procedente del holdout. La
+contribución metodológica —
 detectar y corregir contaminación por pliegue, fijar criterios de promoción
 estrictos y reportar el fracaso con trazabilidad — tiene valor independiente del
 signo del alpha. La memoria puede afirmar, con respaldo en artefactos, que **bajo

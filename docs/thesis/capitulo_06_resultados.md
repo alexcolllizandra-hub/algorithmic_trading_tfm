@@ -10,6 +10,15 @@ desarrollo; R4 quedó **SKIPPED** conforme al protocolo y no se ejecutó como ga
 confirmatorio. El holdout no se abrió para EDA orientada a diseño, selección de
 estrategias ni ajuste de hiperparámetros.
 
+> **Estado posterior al cierre de R1–R4 (nota del 2026-08-16).** El 2026-08-13 la
+> partición se abrió una vez, fuera del arco R1–R4, sobre `volatility_breakout`
+> —la familia que R3 ya había rechazado—. La lectura está retenida a la espera de
+> una auditoría de procedencia y **no se cita en ningún punto de este capítulo**;
+> ninguna cifra de aquí procede de ella. La consecuencia relevante para el
+> trabajo futuro es que la partición queda **consumida**: no existe ya una prueba
+> confirmatoria limpia sobre este histórico. Véase
+> [holdout_audit_status.md](../methodology/holdout_audit_status.md).
+
 La validación temporal principal es **walk-forward** con quince pliegues externos
 cronológicos. Tras la corrección de R1, la búsqueda de candidatos es
 **independiente por pliegue externo**: cada pliegue selecciona su ganador usando
@@ -216,7 +225,9 @@ limitación afecta a la **reconstrucción exacta del código ejecutado**, no a l
 
 Bajo un protocolo temporal corregido, un baseline de momentum rechazado y un
 presupuesto de búsqueda homogéneo, **ninguna** de las cinco familias evaluadas
-cumple los criterios pre-especificados de promoción en ambos activos. El holdout
-permanece intacto. R4 no añade evidencia porque no hubo promovidas. El resultado
+cumple los criterios pre-especificados de promoción en ambos activos. Ninguna
+cifra de este capítulo procede del holdout: el arco R1–R4 se resolvió entero en
+desarrollo, y la apertura posterior de la partición (§6.1) no lo altera. R4 no
+añade evidencia porque no hubo promovidas. El resultado
 global del arco R1–R4 es **negativo pero auditable**, apto para reportarse como
 hallazgo principal del TFM.

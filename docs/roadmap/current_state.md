@@ -36,7 +36,11 @@ about whether it works.**
 | `PROMOTED` | Meets promotion criteria; eligible for holdout |
 | `REJECTED` | Failed its promotion criterion on recorded evidence |
 
-The frozen holdout `[2026-01-01, 2026-07-01)` **has never been opened.** No
+The frozen holdout `[2026-01-01, 2026-07-01)` **was opened once**, on
+2026-08-13, over `volatility_breakout` — a family the study-level correction had
+already rejected. The reading is withheld pending a provenance audit and the
+partition is now consumed: no clean confirmatory test remains on this dataset.
+See [holdout_audit_status.md](../methodology/holdout_audit_status.md). No
 component anywhere in this repository is `PROMOTED`.
 
 ---
@@ -626,4 +630,4 @@ orchestration test output, not a mean-reversion study. Mean reversion is
 | Simulation | `SPECIFIED` | — | None | Blocked |
 | Funded accounts | `SPECIFIED` | — | None | Blocked |
 | Execution / live | `SPECIFIED` | — | None | Blocked |
-| Holdout evaluation | `SPECIFIED` | **never opened** | — | Final report only |
+| Holdout evaluation | `TESTED` | **opened once, consumed** | `reports/study_closure/final_holdout.json`; audit pending | Reading withheld |

@@ -76,7 +76,7 @@ parity per fold, and a byte-reproducible run.
 | Tracking · Dashboard | Tested | n/a |
 | ML / meta-labeling | **Not implemented** | — |
 | Portfolio · Risk · Simulation · Funded · Execution | **Not implemented** | — |
-| Holdout `[2026-01-01, 2026-07-01)` | — | **Never opened** |
+| Holdout `[2026-01-01, 2026-07-01)` | — | **Opened once (2026-08-13), consumed; reading withheld** |
 
 ---
 
