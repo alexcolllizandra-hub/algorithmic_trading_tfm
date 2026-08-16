@@ -13,9 +13,10 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from perp_lab.config.experiment import ga_unique_evaluations
+from perp_lab.search.registry import FAMILIES as REGISTERED_FAMILIES
 
 
 class _Strict(BaseModel):
@@ -80,20 +81,36 @@ class SearchRunConfig(_Strict):
 
     experiment_config: Path = Path("configs/experiment.yaml")
     data_contract: Path = Path("configs/data_contract.yaml")
-    # The R2/R3 families are closed; they remain here so historical configs stay
-    # loadable and reproducible, not because they may be searched again.
-    family: Literal[
-        "momentum",
-        "breakout",
-        "mean_reversion",
-        "volatility_breakout",
-        "funding",
-        "BTC_ETH_confirmation",
-        "mtf_trend_consensus",
-        "funding_reversal",
-        "intraday_seasonality",
-        "xasset_spread_reversion",
-    ]
+    # Validated against the registry rather than restated as a literal here.
+    #
+    # This field used to carry its own hand-written list, which silently drifted:
+    # the CRT round was registered in `search/registry.py` and reachable by both
+    # engines, yet every CRT config failed validation because this copy had never
+    # been updated. Duplicating the vocabulary was the defect; the missing names
+    # were only its symptom. `tests/unit/test_search_config_families.py` fails if
+    # the two ever diverge again.
+    #
+    # The R2/R3 families remain registered — and therefore accepted — so historical
+    # configs stay loadable and reproducible, not because they may be searched again.
+    family: str
+
+    @field_validator("family")
+    @classmethod
+    def _family_must_be_registered(cls, value: str) -> str:
+        """Reject any family the registry cannot build.
+
+        Membership is checked against `registry.FAMILIES`, which is the single
+        source of truth for what both engines can reach. Validation stays as
+        strict as the old literal: an unregistered name fails before any data is
+        loaded, rather than surfacing as a `KeyError` deep inside a search.
+        """
+        if value not in REGISTERED_FAMILIES:
+            raise ValueError(
+                f"Unknown strategy family {value!r}. Registered families are: "
+                f"{', '.join(REGISTERED_FAMILIES)}."
+            )
+        return value
+
     algorithm: Literal["random_search", "genetic_algorithm", "comparison"] = "comparison"
     symbol: str = "BTCUSDT"
     timeframe: str = "1h"
