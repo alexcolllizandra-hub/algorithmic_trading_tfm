@@ -99,3 +99,6 @@ Thumbs.db
 # --- Probe artifacts ---
 shell_probe.txt
 probe*.txt
+
+# Supabase CLI scratch state (project ref, pooler URL, tool versions).
+supabase/.temp/
