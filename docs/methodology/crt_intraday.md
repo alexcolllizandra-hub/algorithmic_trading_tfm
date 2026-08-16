@@ -419,6 +419,46 @@ La regla primaria de conteo sigue siendo **la familia**, con las semillas
 promediadas dentro de cada familia como réplicas de una misma hipótesis, tal y
 como está definido en el cierre. Esta ronda no introduce una regla nueva.
 
+#### 6bis.2.1 Qué afirmación usa qué N
+
+Un N no es global: corrige *una* afirmación concreta, y aplicarle a una
+afirmación el N de otra la distorsiona en una dirección u otra. Esta tabla fija
+la correspondencia antes de que exista un resultado de V1.
+
+| Afirmación | N aplicable | Justificación |
+|---|---|---|
+| «Ninguna de las 13 familias del cierre sobrevive» | **13 familias / 436.092 pruebas** | Es el estudio tal como se cerró. Su denominador se fija en el momento del cierre y **no se reabre** por trabajo posterior. |
+| «`volatility_breakout` era el mejor del cierre y aun así es espurio» | **436.092** | El candidato se seleccionó sobre ese conjunto y sobre ningún otro. |
+| «Ninguna de las 22 familias del estudio ampliado sobrevive» | **22 familias / ≈ 878.000 pruebas** | Afirmación nueva sobre un universo nuevo; exige el denominador del universo entero. |
+| «Ninguna familia CRT sobrevive» | **22 familias / ≈ 878.000** | No 9 ni 540.000: corregir la ronda dentro de sí misma repetiría el fallo que el cierre vino a arreglar. |
+| «El estudio no encuentra ventaja, en ningún momento de su historia» | **≈ 878.000** | Es la afirmación acumulada y le corresponde el denominador acumulado. |
+
+**El punto que no puede quedar ambiguo.** El candidato del cierre se seleccionó
+**antes de que V1 existiera**. Añadir retroactivamente a su denominador unos
+ensayos que aún no se habían realizado **no es correcto**: el sesgo de selección
+que el Deflated Sharpe corrige es el de la búsqueda que produjo *ese* máximo, y
+esa búsqueda tuvo 436.092 oportunidades, no 878.000. Por eso las dos primeras
+filas conservan su N original de forma permanente.
+
+Lo que sí cambia es que **aparece una afirmación nueva** —sobre 22 familias— que
+no existía antes y que sí necesita el denominador ampliado. Las dos conviven: la
+del cierre se cita con su N, la ampliada con el suyo, y ninguna hereda el del
+otro.
+
+Tres matices, para que la decisión sea auditable y no una preferencia:
+
+1. **La dirección del error es conservadora.** Inflar retroactivamente un
+   denominador solo hace más difícil rechazar el nulo, así que hacerlo nunca
+   crearía un falso positivo. Es defendible —y algunos autores lo prefieren— pero
+   es una elección, no la única lectura, y aquí se decide explícitamente por la
+   otra.
+2. **En este estudio la cuestión es discutible sin consecuencia**, porque nada
+   promociona bajo ninguno de los dos denominadores: el p-valor crudo más bajo es
+   0,345 y falla incluso con N = 1. La distinción se fija igualmente, porque una
+   regla que solo se define cuando importa se define a conveniencia.
+3. **Si alguna vez importara**, la regla ya está escrita y fechada aquí, antes de
+   existir el resultado que podría tentar a elegir la otra.
+
 #### Por qué las tres familias S2 no están en `search/registry.py`
 
 `registry.FAMILIES` tiene 19 entradas (6 R3 + 4 S1 + 9 CRT), pero el cierre
@@ -456,6 +496,31 @@ resultado CRT contra la corrección de 13 familias sería subestimar el número 
 oportunidades que tuvo la búsqueda de producir un ganador, que es precisamente
 el error que esta tesis existe para documentar.
 
+### 6bis.2.2 Reanudación: qué se pierde si el proceso muere
+
+Verificado sobre la ejecución en curso, no sobre la documentación.
+
+- **Granularidad: la unidad `(activo, semilla)`.** Las claves del checkpoint son
+  literalmente `BTCUSDT|seed=891022`. Cada familia son 20 unidades (2 activos ×
+  10 semillas), 180 en la ronda.
+- **Persistencia tras cada unidad.** `Checkpoint.mark_done()` escribe y hace
+  `_flush()` inmediatamente, vía `atomic_write_json` → escritura a temporal y
+  reemplazo. No hay escrituras a medias: o la unidad está entera en el
+  `checkpoint.json` o no está.
+- **Lo que se pierde es, como mucho, la unidad en curso**: sus 15 folds × 2
+  motores, unos 4 minutos. **El trabajo intra-unidad no se checkpointea**: morir
+  en el fold 14 de 15 pierde los 15.
+- **Reanudar es seguro y casi gratis.** `run_crt_v1.py` no salta familias, pero
+  `multi-seed` sí salta unidades ya persistidas (`is_done`), así que una familia
+  completa se re-recorre en segundos. La robustez y la auditoría se rehacen (~9 s
+  y ~4 s por familia, medidos).
+- **`assert_compatible()` protege el pooling**: un checkpoint escrito bajo otra
+  config, contrato o huella de código se niega a reanudarse en lugar de mezclar
+  resultados incomparables.
+
+El comando de recuperación es el mismo que el de arranque:
+`uv run python scripts/run_crt_v1.py`.
+
 ### 6bis.3 Motor de búsqueda
 
 **Random Search es la búsqueda primaria y la única evidencia confirmatoria.** El
@@ -464,6 +529,35 @@ robustez —¿coinciden dos mecanismos de búsqueda distintos en que no hay nada
 y **nunca como motor de descubrimiento**. Ningún resultado de esta ronda puede
 apoyarse en el GA si RS no lo sostiene. Esto es consistente con CR-2 del estudio,
 donde el GA no mostró ventaja sobre RS.
+
+### 6bis.4 Compromiso de medición: exposición desigual a la selección
+
+**Declarado antes de tener resultados; a completar al cerrar la ronda.**
+
+R3 realizó **81,9** evaluaciones válidas por grupo contra un presupuesto
+declarado de 100. Los primeros folds de V1 realizan **100 de 100**. Si eso se
+sostiene, la lectura es que el `validate()` de las familias CRT rechaza muchas
+menos propuestas que el de R3, de modo que **por la misma cuota nominal las CRT
+recorren un espacio efectivo mayor**.
+
+Eso importa para una corrección conjunta. Holm y Benjamini-Hochberg sobre 22
+familias tratan a cada familia como una prueba, pero **no todas habrán tenido la
+misma exposición a la selección múltiple**: una familia que examinó 100
+candidatos por fold tuvo más oportunidades de producir un máximo afortunado que
+una que examinó 82. La corrección por familias no ve esa asimetría; el Deflated
+Sharpe, que cuenta ensayos y no familias, sí.
+
+Al cerrar la ronda se medirá y se publicará aquí, para las 22 familias:
+
+1. **Tasa de rechazo de `validate()` por familia** — `failed / (evaluated + failed)`.
+2. **Presupuesto realizado / declarado por familia**, con la dispersión por fold.
+3. Si la asimetría se confirma, **qué implica para comparar familias bajo una
+   corrección conjunta**, y si procede reportar el DSR por familia con su propio
+   número de ensayos junto al DSR global.
+
+**No se cambia nada del pipeline por esto.** Es una propiedad medida del estudio
+que se documenta; ajustar presupuestos a posteriori para igualar exposición sería
+cambiar el experimento después de ver cómo salió.
 
 ---
 
