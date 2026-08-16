@@ -265,7 +265,7 @@ Contabilidad declarada de antemano:
 |---|---:|---:|
 | Familias | 13 | **22** |
 | Familia × activo | 22 | **40** |
-| Configuraciones evaluadas | 496.500 | **≥ 1.036.500, por medir** |
+| Pruebas (ver 2ª rectificación) | 436.092 | **≈ 878.000, techo 976.092** |
 
 > ### Rectificación — 2026-08-16
 >
@@ -299,10 +299,103 @@ Contabilidad declarada de antemano:
 > correctos** y se mantienen: 6 R3 + 4 S1 + 3 S2 + 9 CRT = 22, y
 > 6×2 + 4×1 + 3×2 + 9×2 = 40. No dependen de la base de conteo.
 
-El suelo de 540.000 sale del contrato congelado: 9 familias × 2 activos × 10
-semillas × 15 folds × 2 motores × 100 evaluaciones por fold y motor. La paridad
-de presupuesto garantiza que **al menos** esas se gastan; cuántas filas se
-registran encima es una propiedad medida, no declarada.
+> ### Segunda rectificación — 2026-08-16
+>
+> **La primera rectificación también estaba mal, y en la dirección contraria.**
+> Dijo que 540.000 era un *suelo garantizado* y que el recuento real quedaría por
+> encima. Es al revés: **540.000 es un techo que la búsqueda puede no alcanzar.**
+> Se deja la primera nota tal cual y se corrige aquí.
+>
+> El error de fondo era razonar sobre supuestos en vez de medir. Ahora está
+> medido sobre el estudio ya cerrado, reproduciendo su propio inventario
+> (`build_inventory` → 284 unidades, 142 directorios de run, 4.260 grupos
+> fold × motor × unidad, `evaluations_examined` = 496.500, idéntico al artefacto).
+>
+> **Qué son en realidad las 496.500 filas.** No hay más que dos estados, y
+> ninguno es el que ambas notas anteriores supusieron:
+>
+> | Estado | Filas | % | Qué es |
+> |---|---:|---:|---|
+> | `evaluated` | 436.092 | 87,8 % | Configuración distinta, backtesteada, con objetivo válido |
+> | `failed` | 60.408 | 12,2 % | Configuración distinta, **backtesteada**, rechazada por `min_trades_total 4` |
+>
+> **Duplicados: 0. Aciertos de caché: 0.** Verificado en los 4.260 grupos:
+> `n_unique(params_json) == n_filas` en todos, sin una sola excepción. El
+> parquet solo registra candidatos genuinamente nuevos, así que la premisa de la
+> primera nota —que el exceso eran duplicados y caché— era falsa. Y los `failed`
+> **sí tocaron el dato**: corrieron su backtest y produjeron un número de
+> operaciones; lo que no produjeron es un objetivo admisible.
+>
+> **El 426.000 no existía.** Salía de suponer presupuesto 100 y 15 folds para
+> todo el estudio. Medido, el presupuesto fue heterogéneo por diseño:
+>
+> | Puerta | Grupos | `evaluated` | `failed` | Media por grupo |
+> |---|---:|---:|---:|---:|
+> | R2 | 600 | 178.321 | 1.679 | 297,2 |
+> | R3 | 3.000 | 245.589 | 54.411 | **81,9** |
+> | S1 | 120 | 2.266 | 734 | 18,9 |
+> | S2 | 540 | 9.916 | 3.584 | 18,4 |
+>
+> La fila de R3 es la importante: con presupuesto declarado de 100, la media
+> realizada es **81,9**. Un presupuesto es un **tope**, no una cuota. Cuando el
+> espacio es pequeño o rechaza muchas propuestas, la búsqueda termina por debajo,
+> y hay grupos con cero candidatos admisibles. De ahí que un producto de contrato
+> sea siempre un techo.
+>
+> ---
+>
+> #### Definición operativa de «prueba», congelada aquí
+>
+> > **Una prueba es una configuración de parámetros distinta que, dentro de su
+> > fold y motor, consumió presupuesto y produjo un objetivo válido.**
+>
+> Es la definición propuesta con **una corrección**, que conviene explicar porque
+> cambia el resultado en dos órdenes de magnitud. La propuesta decía «y produjo un
+> Sharpe out-of-sample». En este pipeline los candidatos se puntúan sobre la
+> ventana de **validación** (`mean_val_sharpe`); el único que llega a tocar test
+> es el ganador de cada fold. Tomada al pie de la letra, esa definición daría
+> N ≈ 4.260 —los ganadores— cuando la selección operó de hecho sobre cientos de
+> miles de candidatos. Sería un DSR mucho más permisivo de lo debido.
+>
+> Lo que el Deflated Sharpe necesita es *sobre cuántas oportunidades se tomó el
+> máximo*, y esas son las evaluaciones de validación. Por eso la tercera cláusula
+> queda como **«produjo un objetivo válido»**, y el out-of-sample no entra.
+>
+> **Caché y duplicados: excluidos**, y la exclusión no cuesta nada porque no
+> existen — no se registra ninguno. Si algún día se registraran, quedan excluidos
+> por definición: una caché devuelve el resultado de una configuración ya contada
+> y volver a sumarla contaría dos veces la misma oportunidad.
+>
+> **`failed`: excluidos.** Una configuración rechazada por no alcanzar el mínimo
+> de operaciones nunca pudo ganar la selección, así que no fue una oportunidad de
+> producir un falso positivo. El criterio `min_trades_total` está preregistrado en
+> el objetivo y se aplica igual a todas las familias, de modo que excluirlas no es
+> una elección hecha a la vista de los resultados. Se registra que son 60.408 y
+> que se conocen, para que la exclusión sea auditable en lugar de silenciosa.
+>
+> #### N bajo esta definición
+>
+> | | N |
+> |---|---:|
+> | **Estudio cerrado (13 familias), medido** | **436.092** |
+> | V1 proyectado, techo del contrato (5.400 grupos × 100) | ≤ 540.000 |
+> | V1 proyectado, si se realiza como R3 (81,9 %) | ≈ 442.000 |
+> | **Estudio + V1, a medir tras la ronda** | **≈ 878.000, techo 976.092** |
+>
+> La proyección de V1 es una **proyección**, no una declaración: depende de
+> cuántas propuestas rechaza el `validate` de cada familia, y las rejillas CRT
+> son pequeñas (192 para `pdl`/`pdh`), lo que empuja a la baja. El número que
+> entra en el DSR será el **medido** con `evaluations_examined` restringido a
+> `status == 'evaluated'`, nunca una proyección ni un producto de contrato.
+>
+> **Esta definición queda fijada antes de que exista un solo resultado de V1.**
+> Ese es su propósito: si se eligiera después, se elegiría la que mejor le
+> sentara al resultado.
+
+El techo de 540.000 sale del contrato congelado: 9 familias × 2 activos × 10
+semillas × 15 folds × 2 motores × 100 evaluaciones por fold y motor. El
+presupuesto es un tope por grupo, no una cuota: la cifra que cuenta es la
+realizada, y se mide al cerrar la ronda.
 
 **Qué se recalcula, con qué regla de conteo, antes de reportar nada:**
 
@@ -312,9 +405,9 @@ registran encima es una propiedad medida, no declarada.
    arreglar: cada puerta corrigiendo internamente y nadie corrigiendo entre
    puertas.
 2. **Deflated Sharpe Ratio** de la mejor familia del estudio completo, contando
-   la selección sobre el **recuento medido** de configuraciones de todo el
-   estudio (≥ 1.036.500, ver rectificación), no sobre el suelo del contrato ni
-   sobre 22.
+   la selección sobre el **número de pruebas medido** —configuraciones distintas
+   con objetivo válido, según la definición congelada en la 2ª rectificación—
+   de todo el estudio, no sobre el techo del contrato ni sobre 22.
 3. **PBO por CSCV** sobre las 22 series familiares alineadas, con el mismo
    número de particiones que usó el cierre.
 4. **Sensibilidad del conteo** bajo las cuatro reglas ya establecidas —familias,

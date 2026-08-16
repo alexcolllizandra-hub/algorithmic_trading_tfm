@@ -199,3 +199,29 @@ Consecuencias operativas, vinculantes para todo trabajo posterior:
 
 Que el estudio cierre en negativo es lo que hace tolerable esta pérdida: no había
 nada que confirmar. Habría sido mucho más grave con un candidato vivo.
+
+---
+
+## 6. Cómo se verificaron los commits de esta tanda
+
+Nota de procedencia sobre los ocho commits temáticos del 2026-08-16
+(`bddaf4c` … `c3f27bc`), añadida para que nadie deduzca una garantía que no se
+dio.
+
+**La puerta de calidad se ejecutó una vez, sobre el árbol completo**, no una vez
+por commit: `ruff check`, `ruff format --check`, `pyright`, `pytest -m "not
+network"` (1.329 pasan), `tsc --noEmit`, `next lint` y `next build`.
+
+Los ocho commits son **subconjuntos disjuntos de ese mismo árbol de trabajo**. El
+árbol no cambió entre ellos, así que re-ejecutar la puerta antes de cada uno
+habría dado el mismo resultado; lo que **no** se hizo, y por tanto no se afirma,
+es verificar que cada commit compila **de forma aislada**, con `git checkout` en
+él y la puerta encima.
+
+Lo que sí se comprobó es el **orden de dependencias**: los commits se
+construyeron de modo que ningún fichero importe algo que llegue en un commit
+posterior — en concreto, las páginas legales y `lib/legal.ts` preceden al stack
+de autenticación, que importa `PRIVACY_POLICY_READY`.
+
+Quien necesite la garantía por commit debe ejecutar `git checkout <sha>` y la
+puerta en cada uno. No se ha hecho aquí.
