@@ -1,13 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 
-export function PageShell({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+export function PageShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar />

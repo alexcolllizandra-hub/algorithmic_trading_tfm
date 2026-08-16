@@ -25,6 +25,16 @@ export function Concepts() {
               </div>
 
               <p className="mt-auto pt-5 text-sm font-medium text-fg">{concept.punchline}</p>
+
+              {concept.evidence && (
+                <a
+                  href={concept.evidence.href}
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm text-accent underline-offset-4 hover:underline"
+                >
+                  {concept.evidence.label}
+                  <span aria-hidden>{"↓"}</span>
+                </a>
+              )}
             </article>
           </Reveal>
         ))}

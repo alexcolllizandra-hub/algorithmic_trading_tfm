@@ -3,20 +3,22 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useAuth } from "@/lib/auth/AuthContext";
 import { cn } from "@/lib/cn";
 
 const LINKS = [
   { href: "#en-simple", label: "En simple" },
-  { href: "#como-funciona", label: "Cómo funciona" },
-  { href: "#integridad", label: "Integridad" },
-  { href: "#conceptos", label: "Conceptos" },
+  { href: "#sobreajuste", label: "El problema" },
+  { href: "#arquitectura", label: "Arquitectura" },
   { href: "#datos", label: "Datos reales" },
+  { href: "#veredicto", label: "Resultado" },
   { href: "#roadmap", label: "Roadmap" },
 ];
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { configured, user, signOut } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -54,12 +56,32 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <Link
-          href="/panel"
-          className="ml-auto hidden rounded-md border border-border bg-surface px-3.5 py-1.5 text-sm font-medium transition-colors hover:border-accent/50 hover:text-accent lg:ml-0 lg:block"
-        >
-          Panel de investigación
-        </Link>
+        <div className="ml-auto hidden items-center gap-2.5 lg:ml-0 lg:flex">
+          <Link
+            href="/panel"
+            className="rounded-md border border-border bg-surface px-3.5 py-1.5 text-sm font-medium transition-colors hover:border-accent/50 hover:text-accent"
+          >
+            Panel de investigación
+          </Link>
+
+          {configured &&
+            (user ? (
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className="rounded-md px-3 py-1.5 text-sm text-muted transition-colors hover:text-fg"
+              >
+                Salir
+              </button>
+            ) : (
+              <Link
+                href="/acceso"
+                className="rounded-md bg-accent px-3.5 py-1.5 text-sm font-semibold text-accent-fg transition-opacity hover:opacity-90"
+              >
+                Entrar
+              </Link>
+            ))}
+        </div>
 
         <button
           type="button"
@@ -95,6 +117,30 @@ export function SiteHeader() {
                 Panel de investigación
               </Link>
             </li>
+            {configured && (
+              <li>
+                {user ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      void signOut();
+                    }}
+                    className="block py-2.5 text-sm text-muted"
+                  >
+                    Salir
+                  </button>
+                ) : (
+                  <Link
+                    href="/acceso"
+                    className="block py-2.5 text-sm font-medium text-accent"
+                    onClick={() => setOpen(false)}
+                  >
+                    Entrar
+                  </Link>
+                )}
+              </li>
+            )}
           </ul>
         </nav>
       )}
