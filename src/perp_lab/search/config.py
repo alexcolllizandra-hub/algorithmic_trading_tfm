@@ -29,6 +29,10 @@ class GASettings(_Strict):
     # spent; a fixed generation count would consume a seed-dependent number of
     # unique evaluations and make the units of a multi-seed study incomparable.
     max_generations: int = Field(default=100, ge=1)
+    # Conventional GA defaults, deliberately left untuned. Tuning them would be a
+    # second search layered on the first, and its selection bias would not be
+    # captured by the study's test count -- the GA is here as a comparison engine,
+    # not as a subject of optimisation itself.
     crossover_rate: float = Field(default=0.7, ge=0, le=1)
     mutation_rate: float = Field(default=0.2, ge=0, le=1)
     elitism: int = Field(default=1, ge=0)
@@ -123,7 +127,9 @@ class SearchRunConfig(_Strict):
     max_folds: int | None = Field(default=None, ge=1)
     # The fixed number of unique, valid, non-cached objective evaluations EVERY
     # engine must spend. Declared in configuration, never inferred from whatever
-    # one engine happened to consume.
+    # one engine happened to consume. ADR 0014 records the corollary: a budget
+    # above the space's finite cardinality cannot be spent, and the shortfall is
+    # reported rather than papered over.
     effective_budget: int = Field(default=2000, ge=1)
     ga: GASettings = GASettings()
     walk_forward_override: WalkForwardOverride | None = None

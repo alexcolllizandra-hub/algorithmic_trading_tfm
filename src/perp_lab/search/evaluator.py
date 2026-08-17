@@ -69,6 +69,10 @@ class FoldIsolationError(RuntimeError):
 
 
 _VOLATILITY_PREFIXES = ("rvol_", "roll_std_", "atr_")
+# Ordered by how much each axis is expected to separate market states, and the
+# first group is load-bearing: build_folds_data refuses to run if no volatility
+# proxy is present, because a regime model without one would be labelling trend
+# rather than regime. The later groups only refine that partition.
 _REGIME_PRIORITY: tuple[tuple[str, ...], ...] = (
     _VOLATILITY_PREFIXES,
     ("momentum_", "ma_distance_", "price_dist_sma_"),
@@ -148,6 +152,9 @@ def single_fold_bundle(bundle: FoldsBundle, fold_index: int) -> FoldsBundle:
 
 
 def _regime_feature_items(exp: ExperimentConfig) -> list[_FeatureItem]:
+    # First configured window of each family by convention: the regime model only
+    # needs one representative per axis, and taking index 0 keeps the choice in
+    # the config file rather than hidden here.
     f = exp.features
     return [
         _FeatureItem("rvol", window=f.regime_vol_windows[0]),
@@ -241,6 +248,9 @@ def _fold_metrics(result: BacktestResult) -> dict[str, float]:
     m = dict(result.metrics)
     n_bars = float(m.get("n_bars", 0.0))
     turnover = float(m.get("turnover", 0.0))
+    # Per-bar, not absolute: folds differ in length, and the objective's turnover
+    # penalty must not simply punish a candidate for being evaluated over a
+    # longer window.
     m["turnover_per_bar"] = (turnover / n_bars) if n_bars > 0 else 0.0
     m["funding_applied"] = 1.0 if result.funding_applied else 0.0
     return m

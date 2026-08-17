@@ -33,7 +33,7 @@ class Candidate:
     params: dict[str, ParamValue]
     active_params: dict[str, ParamValue]
     seed: int
-    step: int  # RS proposal index or GA generation
+    step: int  # RS evaluation index or GA generation
     parent_ids: tuple[str, ...] = ()
     status: CandidateStatus = CandidateStatus.PROPOSED
     failure_reason: str | None = None
@@ -87,6 +87,9 @@ class Candidate:
 
     def ledger_row(self) -> dict[str, Any]:
         """Flat row for the tabular candidate ledger (Parquet/CSV)."""
+        # A missing per-fold Sharpe poisons the mean below with NaN by design:
+        # a silent 0.0 default would read as a flat strategy rather than as
+        # absent evidence.
         val_sharpes = [float(m.get("sharpe", float("nan"))) for m in self.fold_metrics]
         return {
             "candidate_id": self.candidate_id,
@@ -116,6 +119,9 @@ def _to_jsonable(value: ParamValue) -> Any:
 def _canonical_params(active: dict[str, ParamValue]) -> str:
     import json
 
+    # Sorted keys and separators without whitespace: the ledger uses this string
+    # for grouping and de-duplication, so equal parameter sets must produce
+    # byte-identical output regardless of insertion order.
     return json.dumps(
         {k: _to_jsonable(v) for k, v in active.items()}, sort_keys=True, separators=(",", ":")
     )

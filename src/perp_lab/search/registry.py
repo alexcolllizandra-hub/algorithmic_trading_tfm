@@ -638,13 +638,9 @@ def _xasset_spread_reversion_space(exp: ExperimentConfig, symbol: str) -> Search
     )
 
 
-# --------------------------------------------------------------------------- #
-# Round CRT_INTRADAY_V1
-#
-# Nine families, one engine. Each space is the shared grid plus the one or two
-# dimensions that actually distinguish the family, because every extra
-# configuration is paid for in the multiple-testing correction.
-# --------------------------------------------------------------------------- #
+# Round CRT_INTRADAY_V1: nine families, one engine. Each space is the shared grid
+# plus the one or two dimensions that actually distinguish the family, because
+# every extra configuration is paid for in the multiple-testing correction.
 
 
 def _crt_mechanics(exp: ExperimentConfig) -> FamilyMechanics:

@@ -28,6 +28,9 @@ from typing import Any
 from perp_lab.config.experiment import ExperimentConfig
 
 # Deterministic penalty assigned to any candidate that fails a hard constraint.
+# Large enough that no feasible fitness can reach it, so failures always sort
+# last; finite rather than -inf so it survives JSON round-trips and arithmetic
+# in the convergence trace.
 FAILURE_PENALTY = -1.0e9
 
 
@@ -106,6 +109,8 @@ def _mean(values: list[float]) -> float:
 
 
 def _std(values: list[float]) -> float:
+    # Population divisor, not the sample (n-1) one: this is a penalty term over
+    # a fixed, complete set of sub-blocks, not an estimate of a wider population.
     if len(values) < 2:
         return 0.0
     m = _mean(values)
@@ -179,7 +184,9 @@ def aggregate_objective(
     instability = _std(dispersion_source)
     mean_dd = _mean(drawdowns)
     mean_turnover = _mean(turnovers_pb)
-    # Complexity: number of active parameters beyond the family's minimum (2).
+    # Complexity penalty counts only parameters beyond the two that every family
+    # needs to express a rule at all, so a minimal strategy is never penalised
+    # for existing -- only for buying its fit with extra degrees of freedom.
     complexity = max(n_active_params - 2, 0)
 
     components = {
