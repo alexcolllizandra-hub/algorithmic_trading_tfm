@@ -11,6 +11,8 @@ from __future__ import annotations
 import pandera.polars as pa
 import polars as pl
 
+# Binance publishes epoch milliseconds; matching the unit exactly keeps the
+# schema from silently coercing (and therefore rounding) the index.
 _UTC_MS = pl.Datetime(time_unit="ms", time_zone="UTC")
 
 KLINE_SCHEMA = pa.DataFrameSchema(
@@ -26,6 +28,8 @@ KLINE_SCHEMA = pa.DataFrameSchema(
         "taker_buy_base": pa.Column(pl.Float64, pa.Check.ge(0), nullable=True),
         "taker_buy_quote": pa.Column(pl.Float64, pa.Check.ge(0), nullable=True),
     },
+    # strict rejects unexpected columns: an upstream schema change should fail
+    # here rather than flow into features as a silently ignored column.
     strict=True,
     ordered=False,
 )
@@ -34,6 +38,8 @@ FUNDING_SCHEMA = pa.DataFrameSchema(
     {
         "funding_time": pa.Column(_UTC_MS),
         "funding_interval_hours": pa.Column(pl.Int64, pa.Check.gt(0), nullable=True),
+        # Deliberately unbounded: funding is negative whenever shorts pay longs,
+        # so any sign or range check here would reject valid market data.
         "funding_rate": pa.Column(pl.Float64),
     },
     strict=True,
@@ -47,5 +53,5 @@ def validate_klines(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def validate_funding(df: pl.DataFrame) -> pl.DataFrame:
-    """Structurally validate funding data; raises on failure."""
+    """Structurally validate funding; raises ``pandera.errors.SchemaError``."""
     return FUNDING_SCHEMA.validate(df)

@@ -1,5 +1,8 @@
 """Expanding walk-forward partitioning with purging and embargo (Chapter 5.7).
 
+Implements the validation geometry accepted in ADR 0008; the holdout boundary it
+refuses to cross is fixed by ADR 0003.
+
 The development period ``[development_start, development_end_exclusive)`` (the
 frozen holdout is *after* ``development_end_exclusive`` and never touched here)
 is cut into chronological folds. Each fold has three **disjoint, time-ordered**
@@ -34,6 +37,9 @@ Purge and embargo are **derived from the config**, never hard-coded:
 
 Bar counts are converted to durations with the primary-timeframe step, so the
 day-based windows and bar-based purge/embargo are consistent.
+
+Folds produced here are the *outer* folds. Candidate search runs independently
+inside each one and never pools fitness across them; see ADR 0012.
 """
 
 from __future__ import annotations
@@ -120,11 +126,18 @@ def generate_folds(
         if test_end > development_end_exclusive:
             break
 
+        # Both guards eat into the END of their window, so the raw boundaries
+        # above stay on the config's calendar grid and only the usable span
+        # shrinks. That keeps fold k comparable across purge/embargo settings.
         train_end_eff = train_end_raw - embargo
         val_end_eff = val_end_raw - purge
         # Skip degenerate folds where the guard consumed the whole window.
         if train_end_eff <= development_start or val_end_eff <= val_start:
             k += 1
+            # Termination guard for the degenerate case: with max_folds set, a
+            # geometry whose windows are always consumed by the guards would
+            # otherwise spin until test_end leaves the development period. The
+            # 4x multiplier is arbitrary headroom, not a tuned value.
             if max_folds is not None and k > max_folds * 4:
                 break
             continue
@@ -203,7 +216,11 @@ def split_fold(
 
 
 def assert_folds_exclude_holdout(folds: list[WalkForwardFold], holdout_start: datetime) -> None:
-    """Raise if any fold boundary reaches into the frozen holdout."""
+    """Raise if any fold reaches into the frozen holdout (ADR 0003).
+
+    Fails closed on purpose: a warning here would be trivial to ignore, and a
+    single fold crossing the boundary silently invalidates the whole study.
+    """
     for fold in folds:
         if fold.test_end > holdout_start:
             raise ValueError(
