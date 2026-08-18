@@ -3,8 +3,16 @@
   "analysis_id": "j04_regime_conditioned",
   "caption": "Distribuci\u00f3n de p-valores brutos en las celdas familia-r\u00e9gimen (a) y retorno total de cada celda (b). Ninguna celda sobrevive a la correcci\u00f3n.",
   "period": "development walk-forward out-of-sample; holdout NOT published",
-  "datasets": {},
+  "datasets": {
+    "reports/study_closure/study_dashboard.json": "bdbd51becfe3f071e7eb68ebe8bae8691b4d6f80e67fcaf4542395f70914e313",
+    "reports/study_closure/study_level_multiple_testing.json": "5489799d8ff0f555b536ba3a3ba9cf1cd80ccbef6119aa03fae4c06000c6942d",
+    "reports/study_closure/regime_conditioned.json": "92e40adf94b5371bbc0b0d1bdbdf358e25c548fc09e1f833aa5ac8fb048c2e9e"
+  },
   "config": {
+    "seed": null,
+    "code_commit_resolved": "a7d41eb511c9d8a66ac8fb92d75068e8de916a49",
+    "data_contract_cutoff": "2026-07-01",
+    "holdout_start": "2026-01-01",
     "n_families": 13,
     "n_units": 284,
     "n_configurations": 496500,
@@ -12,7 +20,7 @@
     "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
     "holdout_publication": "AUDIT_PENDING"
   },
-  "generated_at": "2026-08-18T22:39:41.515775+00:00",
+  "generated_at": "2026-08-18T23:07:32.310843+00:00",
   "code_commit": null,
   "output_path": "reports/figures/closure/j04_regime_conditioned.png",
   "kind": "figure",

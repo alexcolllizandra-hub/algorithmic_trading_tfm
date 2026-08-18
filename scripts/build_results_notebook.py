@@ -47,6 +47,11 @@ ruido a nivel de fold. **Qué entrega.** El veredicto agregado del estudio y las
 cuatro figuras de cierre (j01-j04) que alimentan los capítulos 6 y 7 de la
 memoria.
 
+**Convención de decimales.** La prosa, los captions y las tablas Markdown de
+la memoria usan coma decimal; los CSV y los ejes de las figuras conservan el
+punto, porque son formato de máquina y los consume código además de personas.
+Lo declaramos una vez aquí y aplica a toda la cadena 01→07.
+
 Una aclaración de contabilidad antes de empezar: todos los contrastes de este
 cuaderno son **INFERENCIALES ya contados y cerrados** — se ejecutaron una vez,
 quedaron registrados en los artefactos, y aquí se leen y se explican. Este
@@ -121,6 +126,50 @@ print(f"Repository root: {_root}")
 
 code(
     r"""
+# Contrato del cuaderno: entradas y salidas declaradas y verificadas antes de
+# computar nada. La cadena 01->07 se valida encadenando estos bloques.
+import hashlib
+import subprocess
+
+NB_CONTRACT = {
+    "notebook": "05_study_closure_and_multiple_testing",
+    "inputs": [
+        "reports/study_closure/study_dashboard.json",
+        "reports/study_closure/study_level_multiple_testing.json",
+        "reports/study_closure/regime_conditioned.json",
+    ],
+    "outputs": {
+        "figures": ["j01_promotion_criteria", "j02_multiple_testing",
+                     "j03_deflated_sharpe_pbo", "j04_regime_conditioned"],
+        "tables": [f"t0{i}" for i in range(1, 10)],
+        "dirs": ["reports/figures/closure", "reports/tables/closure"],
+    },
+    # Este cuaderno no muestrea: lee artefactos cerrados. Se declara para que
+    # la ausencia de semilla sea una afirmacion y no un olvido.
+    "seed": None,
+}
+
+missing = [f for f in NB_CONTRACT["inputs"] if not Path(f).exists()]
+if missing:
+    raise FileNotFoundError(f"El cuaderno anterior ya no produce: {missing}")
+
+INPUT_HASHES = {
+    f: hashlib.sha256(Path(f).read_bytes()).hexdigest() for f in NB_CONTRACT["inputs"]
+}
+# read_git_commit devuelve null dentro de un worktree; lo resolvemos aqui y lo
+# inyectamos en la huella para que cada figura sea rastreable al commit exacto.
+REPO_COMMIT = subprocess.run(
+    ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+).stdout.strip() or None
+
+for k, v in INPUT_HASHES.items():
+    print(f"input  {v[:16]}  {k}")
+print(f"commit {REPO_COMMIT}")
+"""
+)
+
+code(
+    r"""
 import json
 import platform
 
@@ -162,13 +211,22 @@ print(f"  holdout publication state : {DASH['holdout_publication']}")
 
 code(
     r"""
-NB_ID = "05_study_closure_and_multiple_testing"
+from perp_lab.config import load_data_contract
+
+_contract = load_data_contract("configs/data_contract.yaml")
+
+NB_ID = NB_CONTRACT["notebook"]
 ctx = ArtifactContext(
     notebook=NB_ID,
     figures_dir=PATHS.reports_root / "figures" / "closure",
     tables_dir=PATHS.reports_root / "tables" / "closure",
     metadata_dir=PATHS.reports_root / "metadata" / "closure",
+    datasets=INPUT_HASHES,
     config={
+        "seed": NB_CONTRACT["seed"],
+        "code_commit_resolved": REPO_COMMIT,
+        "data_contract_cutoff": str(_contract.cutoff_date),
+        "holdout_start": str(_contract.holdout.start_date(_contract.cutoff_date)),
         "n_families": STUDY["n_families"],
         "n_units": STUDY["n_units"],
         "n_configurations": STUDY["n_configurations_evaluated"],
@@ -422,8 +480,8 @@ hp = [holm["adjusted_p_values"][k] for k in order]
 bp = [bh["adjusted_p_values"][k] for k in order]
 yy = np.arange(len(order))
 axA.barh(yy - 0.26, raw, height=0.24, color="#999999", label="raw p-value")
-axA.barh(yy, bp, height=0.24, color="#0072B2", label="Benjamini-Hochberg")
-axA.barh(yy + 0.26, hp, height=0.24, color="#D55E00", label="Holm-Bonferroni")
+axA.barh(yy, bp, height=0.24, color="#0072B2", hatch="///", label="Benjamini-Hochberg")
+axA.barh(yy + 0.26, hp, height=0.24, color="#D55E00", hatch="\\\\", label="Holm-Bonferroni")
 axA.axvline(STUDY["alpha"], color="#D62728", lw=2.0, ls="--")
 axA.text(STUDY["alpha"], -1.0, f" alpha = {STUDY['alpha']}", color="#D62728", fontsize=9)
 axA.set_yticks(yy)
@@ -541,7 +599,7 @@ obs = DS["observed_sharpe_per_obs"].to_numpy()
 bench = DS["benchmark_sharpe_per_obs"].to_numpy()
 xx = np.arange(len(scen))
 axA.bar(xx - 0.2, obs, width=0.38, color="#0072B2", label="observed Sharpe of the best family")
-axA.bar(xx + 0.2, bench, width=0.38, color="#D55E00",
+axA.bar(xx + 0.2, bench, width=0.38, color="#D55E00", hatch="///",
         label="Sharpe the best would reach BY LUCK")
 for i in range(len(scen)):
     axA.text(i + 0.2, bench[i] * 1.03,
@@ -778,6 +836,11 @@ md(
 ## 8. Qué establece un negativo con esta forma — `DESCRIPTIVO`
 
 El estudio no encontró nada. ¿Qué se ha aprendido, exactamente?
+
+Cada afirmación lleva, además de su base y su límite de alcance, **el resultado
+que la habría contradicho**: es lo que separa un negativo defendible de un
+negativo cómodo. Si ninguna observación concebible pudiera haber tumbado una
+conclusión, esa conclusión no estaría afirmando nada.
 """
 )
 
@@ -789,38 +852,48 @@ conclusions = [
      "strength": "Fuerte",
      "basis": f"{FAM['family'].n_unique()} familias, {STUDY['n_units']} unidades, p bruto minimo "
               f"{float(FAM['p_value'].min()):.3f} antes de correccion alguna",
-     "scope_limit": "Temporalidad 1h, 2020-2025, estos dos activos, estas familias de reglas"},
+     "scope_limit": "Temporalidad 1h, 2020-2025, estos dos activos, estas familias de reglas",
+     "would_have_contradicted": "Una familia con p bruto < 0.05 sostenido en ambos activos"},
     {"id": "C2",
      "claim": "La conclusion es invariante a como se cuente el numero de hipotesis",
      "strength": "Fuerte",
      "basis": f"t05: {SENS.height} convenciones de recuento entre "
               f"{int(SENS['n_tests'].min())} y {int(SENS['n_tests'].max()):,} pruebas, ninguna produce superviviente",
-     "scope_limit": "Aplica a los contrastes por familia realmente ejecutados"},
+     "scope_limit": "Aplica a los contrastes por familia realmente ejecutados",
+     "would_have_contradicted": "Un denominador razonable bajo el cual alguna familia sobreviviera"},
     {"id": "C3",
      "claim": "La seleccion in-sample no lleva esencialmente informacion out-of-sample",
      "strength": "Fuerte",
      "basis": f"PBO = {pbo['pbo']:.3f} sobre {pbo['n_splits']} particiones; el Sharpe deflactado "
               f"implica que la mejor familia es espuria con probabilidad "
               f"{ds['family_selection']['probability_best_is_spurious']:.2f}",
-     "scope_limit": "Medido sobre el conjunto de configuraciones de este estudio"},
+     "scope_limit": "Medido sobre el conjunto de configuraciones de este estudio",
+     "would_have_contradicted": "PBO claramente < 0.5 o un Sharpe deflactado positivo con "
+                                "probabilidad de espurio baja"},
     {"id": "C4",
      "claim": "Condicionar por regimen no rescata ninguna familia",
      "strength": "Moderada",
      "basis": f"{rc['n_cells']} celdas, {len(rc['survivors'])} supervivientes tras correccion; "
               "histograma de p compatible con la nula global",
-     "scope_limit": "Condicionar reduce potencia; un efecto debil y estrecho podria escapar"},
+     "scope_limit": "Condicionar reduce potencia; un efecto debil y estrecho podria escapar",
+     "would_have_contradicted": "Un exceso de p pequenos sobre lo esperado bajo la nula, con "
+                                "supervivientes tras Holm"},
     {"id": "C5",
      "claim": "La busqueda evolutiva no ofrece ventaja sobre Random Search aqui",
      "strength": "Moderada",
      "basis": "Cuaderno 04: paridad de presupuesto verificada; 1 de 5 familias nominalmente "
               "significativa, compatible con el azar en cinco pruebas",
-     "scope_limit": "Espacios de este tamano; nada dice de espacios mucho mayores"},
+     "scope_limit": "Espacios de este tamano; nada dice de espacios mucho mayores",
+     "would_have_contradicted": "IC pareado GA-RS excluyendo cero a favor del GA de forma "
+                                "consistente entre familias"},
     {"id": "C6",
      "claim": "El aparato es solido, asi que el negativo habla del mercado y no del utillaje",
      "strength": "Fuerte",
      "basis": "Cuaderno 02: garantias de causalidad G1-G7 sobre datos reales; cuaderno 03: guardas "
               "de ejecucion, coste y geometria verificadas y fallando en cerrado",
-     "scope_limit": "Los costes siguen siendo provisionales (ADR 0005)"},
+     "scope_limit": "Los costes siguen siendo provisionales (ADR 0005)",
+     "would_have_contradicted": "Una guarda fallando en abierto o la fuga plantada pasando "
+                                "inadvertida"},
 ]
 CONC = pl.DataFrame(conclusions)
 save_table(CONC, "t09_conclusions", ctx,
@@ -845,22 +918,29 @@ límites es un sitio donde otro estudio, con otros datos u otra frecuencia,
 podría llegar a una respuesta distinta. Los límites de alcance van anotados
 junto a cada afirmación, no enterrados.
 
-¿Por qué nos fiamos de este negativo y no lo tratamos como «no encontramos nada
-porque el aparato fallaba»? Por tres razones que se sostienen solas: el aparato
-se validó antes de usarse y detectó al instante una fuga plantada a propósito
-(cuadernos 02 y 03); la búsqueda tuvo una oportunidad justa, con presupuesto
-igualado y verificado en cada familia; y el negativo lo confirman tres
-diagnósticos metodológicamente independientes —contraste de hipótesis, Sharpe
-deflactado y PBO— que podían haber discrepado y no lo hicieron.
+Nos fiamos de este negativo por tres razones, y las enunciamos como decisiones
+nuestras y no como circunstancias: validamos el utillaje antes de usarlo y
+comprobamos que detecta al instante una fuga plantada a propósito (cuadernos 02
+y 03); dimos a la búsqueda una oportunidad justa, con presupuesto igualado y
+verificado en cada familia; y contrastamos el veredicto con tres diagnósticos
+metodológicamente independientes —contraste de hipótesis, Sharpe deflactado y
+PBO— que podían haber discrepado y no lo hicieron.
 
 Lo que cambiaría la conclusión: datos de mayor frecuencia, donde vive la
-microestructura; un espacio de hipótesis más rico — la capa de meta-etiquetado
-que esta fase especificó se ejecutó después sobre datos reales en contrato
-exploratorio, y su resultado (mejora económica sin capacidad predictiva alguna:
-toda la ganancia viene de abstenerse) apunta en la misma dirección que el resto
-del estudio; activos con menos participación institucional; o una estructura de
-costes de quien solo aporta liquidez. Cada una es una extensión concreta y
-falsable, no una excusa.
+microestructura; un espacio de hipótesis más rico; activos con menos
+participación institucional; o una estructura de costes de quien solo aporta
+liquidez. Cada una es una extensión concreta y falsable, no una excusa.
+
+Sobre la capa de meta-etiquetado, una nota con su etiqueta delante:
+**INFRAESTRUCTURA / EXPLORATORIO (§5 del contrato metodológico; ADR 0017).**
+Como el estudio cerró sin primaria elegible, la puerta del meta-etiquetado
+nunca llegó a abrirse; la ejecutamos igualmente sobre datos reales bajo ese
+contrato para no dejar RQ3 sin evidencia. El resultado —mejora económica en
+todos los folds con ROC-AUC por debajo de 0,5: toda la ganancia viene de
+abstenerse, no de predecir— es un diagnóstico del utillaje y del espacio, **no
+un hallazgo sobre la familia primaria**, que ya estaba rechazada. Esa ejecución
+no entra en el denominador congelado de este cierre; si algún trabajo futuro
+quisiera afirmarse sobre ella, sus ajustes modelo×fold tendrían que contarse.
 
 La aportación metodológica es la más transferible: no el veredicto sobre
 ninguna familia, sino la demostración de que el veredicto es *de fiar* — cada
@@ -868,6 +948,20 @@ paso entre el dato crudo y la conclusión es auditable, cada guarda falla en
 cerrado en vez de avisar, y el único momento en que el proceso se torció quedó
 registrado a la vista en lugar de alisado. Un estudio que publica su propia
 discrepancia es más creíble que uno que solo reporta aciertos.
+
+### De las preguntas locales a las de la memoria
+
+| Pregunta local | Alimenta | Cómo |
+|---|---|---|
+| P1 (recuento de hipótesis) | RQ5 (robustez) | la sensibilidad del denominador es la prueba de robustez del veredicto |
+| P2 (criterios de promoción) | RQ1 (rentabilidad neta) | los seis listones económicos son la operacionalización de RQ1 |
+| P3 (correcciones) | RQ1 | el «no» de RQ1, corregido por haber mirado trece veces |
+| P4 (¿artefacto?) | RQ1 + RQ5 | DSR y PBO cuantifican cuánto fiarse del mejor resultado |
+| P5 (régimen) | RQ4 (dependencia de régimen) | respuesta directa: no hay rescate condicional |
+| P6 (alcance del negativo) | transversal | fija qué afirma y qué no afirma la tesis |
+
+RQ2 (GA frente a RS) se responde en el cuaderno 04; RQ3 (meta-etiquetado), en
+la nota de infraestructura de arriba.
 
 ---
 
