@@ -178,6 +178,19 @@ def main(argv: list[str] | None = None) -> int:
     signals = strategy.signals(feats)
     events = _events_from_signals(signals)
     print(f"events={events.height}")
+
+    # Warm-up rows carry NaN in the longer-window features. LightGBM and
+    # scikit-learn forests tolerate NaN natively; logistic regression does not,
+    # and on the first run that silently reduced the preregistered trio to a
+    # duo (every fold recorded "not fittable: Input X contains NaN" for LR).
+    # Restricting events to complete feature rows keeps the three backends on
+    # identical inputs, which is what makes their comparison meaningful.
+    complete = feats.filter(
+        pl.all_horizontal([pl.col(n).is_not_null() & pl.col(n).is_finite() for n in names])
+    ).select(pl.col("open_time").alias(EVENT_TIME_COL))
+    before = events.height
+    events = events.join(complete, on=EVENT_TIME_COL, how="inner")
+    print(f"events with complete features={events.height} (dropped {before - events.height} warm-up)")
     if events.height == 0:
         raise SystemExit("The primary produced no entries; nothing to meta-label.")
 

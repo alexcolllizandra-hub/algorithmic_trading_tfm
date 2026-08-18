@@ -2,7 +2,7 @@
 
 > EXPLORATORY — RQ3 on real development data. No promotion, no holdout access, no operational candidate claimed.
 
-Primary: `crt_htf_range_reversal` on BTCUSDT 1h, 1173 labelled events, meta-label positive rate 0.495.
+Primary: `crt_htf_range_reversal` on BTCUSDT 1h, 1172 labelled events, meta-label positive rate 0.495.
 
 Selection rule: modal fold winner; family chosen on event count and low span overlap, both fixed before any meta-label result was seen.
 
@@ -10,16 +10,16 @@ Selection rule: modal fold winner; family chosen on event count and low span ove
 
 | | primary only | primary + meta |
 |---|---:|---:|
-| total net return | -0.3197 | -0.0337 |
-| median Sharpe | -3.343 | +0.000 |
+| total net return | -0.3197 | -0.0202 |
+| median Sharpe | -3.343 | -0.201 |
 
 Folds improved: **4/4**. Abstention rate: **0.50**.
 
 ## Predictive skill
 
-- ROC-AUC (median): **0.479**
-- PR-AUC lift over base rate: **1.022**
-- Brier score: 0.357
+- ROC-AUC (median): **0.548**
+- PR-AUC lift over base rate: **1.098**
+- Brier score: 0.269
 
 ## Reading
 
@@ -34,10 +34,10 @@ own abstention reasons.
 
 | fold | train | val | test | acted | net delta | reason |
 |---:|---:|---:|---:|:--|---:|---|
-| 0 | 913 | 42 | 42 | no | +0.0814 | no candidate improved net return on validation (best delta -0.0145) |
-| 1 | 955 | 41 | 48 | yes | +0.0627 | — |
-| 2 | 997 | 47 | 42 | yes | +0.1020 | — |
-| 3 | 1045 | 41 | 22 | no | +0.0854 | the filtered arm improved on the primary but still lost money on validation (net return -0 |
+| 0 | 912 | 42 | 42 | no | +0.0814 | no candidate improved net return on validation (best delta -0.0191) |
+| 1 | 954 | 41 | 48 | yes | +0.0473 | — |
+| 2 | 996 | 47 | 42 | yes | +0.1304 | — |
+| 3 | 1044 | 41 | 22 | no | +0.0854 | the filtered arm improved on the primary but still lost money on validation (net return -0 |
 
 ## Notes
 
