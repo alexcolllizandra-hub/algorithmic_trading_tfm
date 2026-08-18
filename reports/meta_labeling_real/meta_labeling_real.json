@@ -1,0 +1,865 @@
+{
+  "contract": "EXPLORATORY \u2014 RQ3 on real development data. No promotion, no holdout access, no operational candidate claimed.",
+  "family": "crt_htf_range_reversal",
+  "symbol": "BTCUSDT",
+  "timeframe": "1h",
+  "primary_params": {
+    "candle_timeframe": "4h",
+    "direction": "both",
+    "entry_rule": "first_retest",
+    "min_net_reward_risk": 1.5,
+    "stop_kind": "wick_extreme",
+    "sweep_bps": 20.0,
+    "target_plan": "r_multiple_2",
+    "time_stop_bars": 48
+  },
+  "primary_selection_rule": "modal fold winner; family chosen on event count and low span overlap, both fixed before any meta-label result was seen",
+  "n_events": 1173,
+  "meta_label_positive_rate": 0.49531116794543906,
+  "study": {
+    "summary": {
+      "market": "BTCUSDT_1h_crt_htf_range_reversal",
+      "planted_edge": false,
+      "n_folds": 4,
+      "folds_acted": 1,
+      "abstention_rate": 0.75,
+      "folds_improved": 4,
+      "folds_profitable": 1,
+      "median_net_return_delta": 0.0834012292737375,
+      "delta_stability_sd": 0.035238993405138516,
+      "median_primary_net_return": -0.0834012292737375,
+      "median_meta_net_return": 0.0,
+      "primary_only_total_return": -0.31972804771490904,
+      "primary_plus_meta_total_return": 0.008784698774164434,
+      "primary_only_median_sharpe": -3.3434172848138948,
+      "primary_plus_meta_median_sharpe": 0.0,
+      "median_pr_auc": 0.5271666666666667,
+      "median_pr_auc_lift": 1.01216,
+      "median_roc_auc": 0.48608695652173917,
+      "median_brier": 0.376867742138639,
+      "selected_models": [
+        "random_forest",
+        "random_forest",
+        "random_forest",
+        "random_forest"
+      ],
+      "notes": [
+        "fold 4: skipped, fewer than 30 events in train or validation after purging.",
+        "fold 5: skipped, fewer than 30 events in train or validation after purging."
+      ]
+    },
+    "config": {
+      "barriers": {
+        "upper_barrier_atr": 2.0,
+        "lower_barrier_atr": 2.0,
+        "vertical_barrier_bars": 24,
+        "min_return_bps": 0.0,
+        "exit_fill": "next_open"
+      },
+      "costs": {
+        "fee_bps_per_side": 4.0,
+        "slippage_bps_per_side": 1.0,
+        "funding_rate_col": "funding_rate_in_bar",
+        "round_trip_cost": 0.001
+      },
+      "models": [
+        "logistic_regression",
+        "random_forest"
+      ],
+      "calibration": "isotonic",
+      "calibration_fraction": 0.5,
+      "threshold_criterion": "expected_return",
+      "min_signal_rate": 0.05,
+      "position_scale": {
+        "min": 0.5,
+        "max": 1.0
+      },
+      "n_folds": 6,
+      "test_bars": 2000,
+      "validation_bars": 2000,
+      "min_train_bars": 4000,
+      "embargo_bars": 48,
+      "timeframe": "1h",
+      "seed": 42
+    },
+    "folds": [
+      {
+        "fold": 0,
+        "train_end": 38608,
+        "validation_start": 38608,
+        "validation_end": 40608,
+        "test_start": 40608,
+        "test_end": 42608,
+        "n_train": 913,
+        "n_validation": 42,
+        "n_test": 42,
+        "candidates": [
+          {
+            "model": "logistic_regression",
+            "available": false,
+            "unavailable_reason": "not fittable: Input X contains NaN.\nLogisticRegression does not accept missing values encoded as NaN natively. For supervised learning, you might want to consider sklearn.ensemble.HistGradientBoostingClassifier and Regressor which accept missing values encoded as NaNs natively. Alternatively, it is possible to preprocess the data, for instance by using an imputer transformer in a pipeline or drop samples with missing values. See https://scikit-learn.org/stable/modules/impute.html You can find a list of all estimators that handle NaN values at the following page: https://scikit-learn.org/stable/modules/impute.html#estimators-that-handle-nan-values",
+            "validation_delta": null,
+            "threshold": null,
+            "validation_metrics": null
+          },
+          {
+            "model": "random_forest",
+            "available": true,
+            "unavailable_reason": null,
+            "validation_delta": -0.014463502051273336,
+            "threshold": {
+              "threshold": 0.05,
+              "criterion": "expected_return",
+              "score": -0.0003300808121656414,
+              "n_samples": 21,
+              "fitted_on": "validation"
+            },
+            "validation_metrics": {
+              "brier_score": 0.25396825396825395,
+              "base_rate": 0.5714285714285714,
+              "signal_rate": 1.0,
+              "roc_auc": 0.5
+            }
+          }
+        ],
+        "selected_model": "random_forest",
+        "abstained": true,
+        "abstention_reason": "no candidate improved net return on validation (best delta -0.0145)",
+        "test_signal_rate": 0.0,
+        "test_predictive": null,
+        "test_primary": {
+          "net_return": -0.0814346328807094,
+          "sharpe": -2.5438640502746033,
+          "sortino": -1.3070816306874762,
+          "max_drawdown": -0.0939375428930821,
+          "turnover": 84.0,
+          "total_cost": 0.042,
+          "total_funding": 0.00016154,
+          "n_trades": 42,
+          "profit_factor": 0.736197531400414,
+          "trade_hit_rate": 0.38095238095238093,
+          "exposure": 0.09954977488744372
+        },
+        "test_meta": {
+          "net_return": 0.0,
+          "sharpe": 0.0,
+          "sortino": 0.0,
+          "max_drawdown": 0.0,
+          "turnover": 0.0,
+          "total_cost": 0.0,
+          "total_funding": 0.0,
+          "n_trades": 0,
+          "profit_factor": NaN,
+          "trade_hit_rate": NaN,
+          "exposure": 0.0
+        },
+        "net_return_delta": 0.0814346328807094,
+        "prediction_drift_psi": null,
+        "per_regime": [
+          {
+            "regime": "low",
+            "n_events": 34,
+            "base_rate": 0.35294117647058826,
+            "accepted": 0,
+            "precision": NaN,
+            "mean_return_primary": -0.0027255476489530853,
+            "mean_return_accepted": NaN
+          },
+          {
+            "regime": "medium",
+            "n_events": 8,
+            "base_rate": 0.5,
+            "accepted": 0,
+            "precision": NaN,
+            "mean_return_primary": 0.0012770948922131709,
+            "mean_return_accepted": NaN
+          }
+        ],
+        "feature_drift": [
+          {
+            "feature": "rvol_96",
+            "psi": 4.939287174723685,
+            "mean_shift_in_reference_sd": -0.6263570918279264,
+            "severe_drift": true
+          },
+          {
+            "feature": "zscore_96",
+            "psi": 1.489850260329665,
+            "mean_shift_in_reference_sd": 0.16644621047337677,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_12",
+            "psi": 1.4629682222962184,
+            "mean_shift_in_reference_sd": -0.049922576080878515,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_72",
+            "psi": 1.4501218103268474,
+            "mean_shift_in_reference_sd": 0.05145577495564068,
+            "severe_drift": true
+          },
+          {
+            "feature": "rel_volume_24",
+            "psi": 0.3447439487880287,
+            "mean_shift_in_reference_sd": 0.12661415664202658,
+            "severe_drift": true
+          },
+          {
+            "feature": "rel_volume_96",
+            "psi": 0.3278564387519823,
+            "mean_shift_in_reference_sd": 0.19960649235209219,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_24",
+            "psi": 0.3094944204246726,
+            "mean_shift_in_reference_sd": 0.015165717694263696,
+            "severe_drift": true
+          },
+          {
+            "feature": "zscore_24",
+            "psi": 0.21883679332813075,
+            "mean_shift_in_reference_sd": 0.1965339166747419,
+            "severe_drift": false
+          },
+          {
+            "feature": "zscore_48",
+            "psi": 0.19252916091077366,
+            "mean_shift_in_reference_sd": 0.10457103527538013,
+            "severe_drift": false
+          },
+          {
+            "feature": "rvol_168",
+            "psi": 0.007659891223011506,
+            "mean_shift_in_reference_sd": NaN,
+            "severe_drift": false
+          }
+        ],
+        "permutation_importance": [],
+        "calibration": []
+      },
+      {
+        "fold": 1,
+        "train_end": 40608,
+        "validation_start": 40608,
+        "validation_end": 42608,
+        "test_start": 42608,
+        "test_end": 44608,
+        "n_train": 955,
+        "n_validation": 41,
+        "n_test": 48,
+        "candidates": [
+          {
+            "model": "logistic_regression",
+            "available": false,
+            "unavailable_reason": "not fittable: Input X contains NaN.\nLogisticRegression does not accept missing values encoded as NaN natively. For supervised learning, you might want to consider sklearn.ensemble.HistGradientBoostingClassifier and Regressor which accept missing values encoded as NaNs natively. Alternatively, it is possible to preprocess the data, for instance by using an imputer transformer in a pipeline or drop samples with missing values. See https://scikit-learn.org/stable/modules/impute.html You can find a list of all estimators that handle NaN values at the following page: https://scikit-learn.org/stable/modules/impute.html#estimators-that-handle-nan-values",
+            "validation_delta": null,
+            "threshold": null,
+            "validation_metrics": null
+          },
+          {
+            "model": "random_forest",
+            "available": true,
+            "unavailable_reason": null,
+            "validation_delta": 0.10249718387636242,
+            "threshold": {
+              "threshold": 0.7999999999999999,
+              "criterion": "expected_return",
+              "score": 0.001696029731536819,
+              "n_samples": 21,
+              "fitted_on": "validation"
+            },
+            "validation_metrics": {
+              "brier_score": 0.4214559618380604,
+              "base_rate": 0.38095238095238093,
+              "signal_rate": 0.19047619047619047,
+              "roc_auc": 0.4326923076923077
+            }
+          }
+        ],
+        "selected_model": "random_forest",
+        "abstained": false,
+        "abstention_reason": null,
+        "test_signal_rate": 0.0625,
+        "test_predictive": {
+          "n": 48,
+          "base_rate": 0.5208333333333334,
+          "pr_auc": 0.5271666666666667,
+          "pr_auc_lift": 1.01216,
+          "roc_auc": 0.48608695652173917,
+          "brier_score": 0.376867742138639,
+          "log_loss": 1.7211703458402792,
+          "expected_calibration_error": 0.37358924852501213
+        },
+        "test_primary": {
+          "net_return": -0.05391991972567012,
+          "sharpe": -1.1668934162371907,
+          "sortino": -0.7101551117385556,
+          "max_drawdown": -0.13672052799309875,
+          "turnover": 88.0,
+          "total_cost": 0.044000000000000004,
+          "total_funding": 0.00100726,
+          "n_trades": 44,
+          "profit_factor": 0.8920516345732356,
+          "trade_hit_rate": 0.5,
+          "exposure": 0.13356678339169584
+        },
+        "test_meta": {
+          "net_return": 0.008784698774164434,
+          "sharpe": 0.618396159944986,
+          "sortino": 0.06553248652046838,
+          "max_drawdown": -0.0178024603593141,
+          "turnover": 6.0,
+          "total_cost": 0.003,
+          "total_funding": -5.44e-06,
+          "n_trades": 3,
+          "profit_factor": 1.6378569398325862,
+          "trade_hit_rate": 0.6666666666666666,
+          "exposure": 0.0025012506253126563
+        },
+        "net_return_delta": 0.06270461849983455,
+        "prediction_drift_psi": 0.04749360838673909,
+        "per_regime": [
+          {
+            "regime": "high",
+            "n_events": 7,
+            "base_rate": 0.7142857142857143,
+            "accepted": 0,
+            "precision": NaN,
+            "mean_return_primary": 0.011827773023555912,
+            "mean_return_accepted": NaN
+          },
+          {
+            "regime": "low",
+            "n_events": 22,
+            "base_rate": 0.45454545454545453,
+            "accepted": 1,
+            "precision": 0.0,
+            "mean_return_primary": -0.001771418544416809,
+            "mean_return_accepted": -0.017327681361939185
+          },
+          {
+            "regime": "medium",
+            "n_events": 19,
+            "base_rate": 0.5263157894736842,
+            "accepted": 2,
+            "precision": 1.0,
+            "mean_return_primary": -0.0021421636204602573,
+            "mean_return_accepted": 0.013353879290130044
+          }
+        ],
+        "feature_drift": [
+          {
+            "feature": "rvol_96",
+            "psi": 2.5356742878998704,
+            "mean_shift_in_reference_sd": -0.21017572930272038,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_12",
+            "psi": 0.4279671420728469,
+            "mean_shift_in_reference_sd": -0.024690402855378584,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_24",
+            "psi": 0.4091416436779895,
+            "mean_shift_in_reference_sd": 0.05830335031942496,
+            "severe_drift": true
+          },
+          {
+            "feature": "zscore_48",
+            "psi": 0.2540884172090881,
+            "mean_shift_in_reference_sd": -0.016806194175293828,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_72",
+            "psi": 0.12934922610964844,
+            "mean_shift_in_reference_sd": -0.052988238268077185,
+            "severe_drift": false
+          },
+          {
+            "feature": "rel_volume_96",
+            "psi": 0.07226395836201549,
+            "mean_shift_in_reference_sd": -0.0034683447247040853,
+            "severe_drift": false
+          },
+          {
+            "feature": "rel_volume_24",
+            "psi": 0.07211827985040828,
+            "mean_shift_in_reference_sd": 0.0019634889750143954,
+            "severe_drift": false
+          },
+          {
+            "feature": "zscore_24",
+            "psi": 0.06486910798056444,
+            "mean_shift_in_reference_sd": -0.04862395382446121,
+            "severe_drift": false
+          },
+          {
+            "feature": "zscore_96",
+            "psi": 0.059068182344315046,
+            "mean_shift_in_reference_sd": -0.010921287029342232,
+            "severe_drift": false
+          },
+          {
+            "feature": "rvol_168",
+            "psi": 0.0072756083856160125,
+            "mean_shift_in_reference_sd": NaN,
+            "severe_drift": false
+          }
+        ],
+        "permutation_importance": [
+          {
+            "feature": "rel_volume_24",
+            "importance_mean": 0.13731250000000003,
+            "importance_std": 0.03267327606393334,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "zscore_96",
+            "importance_mean": 0.08562500000000002,
+            "importance_std": 0.030863864388634164,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "momentum_12",
+            "importance_mean": 0.08499999999999999,
+            "importance_std": 0.028165248978129057,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "zscore_24",
+            "importance_mean": 0.08406250000000001,
+            "importance_std": 0.03702168916662232,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "momentum_24",
+            "importance_mean": 0.06531250000000001,
+            "importance_std": 0.06133396668038029,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "momentum_72",
+            "importance_mean": 0.05237500000000002,
+            "importance_std": 0.01700137862057077,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "rvol_96",
+            "importance_mean": 0.0425625,
+            "importance_std": 0.022491230930075847,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "zscore_48",
+            "importance_mean": 0.024625000000000008,
+            "importance_std": 0.0281987920840592,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "rel_volume_96",
+            "importance_mean": 0.011937499999999995,
+            "importance_std": 0.0247060057222935,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "rvol_168",
+            "importance_mean": -0.045625,
+            "importance_std": 0.05174531983667702,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          }
+        ],
+        "calibration": [
+          {
+            "bin_lower": 0.1,
+            "bin_upper": 0.2,
+            "n": 28,
+            "mean_predicted": 0.11111111111111112,
+            "observed_rate": 0.5357142857142857
+          },
+          {
+            "bin_lower": 0.30000000000000004,
+            "bin_upper": 0.4,
+            "n": 3,
+            "mean_predicted": 0.3333333333333333,
+            "observed_rate": 0.6666666666666666
+          },
+          {
+            "bin_lower": 0.4,
+            "bin_upper": 0.5,
+            "n": 2,
+            "mean_predicted": 0.4504717245072749,
+            "observed_rate": 0.0
+          },
+          {
+            "bin_lower": 0.5,
+            "bin_upper": 0.6000000000000001,
+            "n": 1,
+            "mean_predicted": 0.5526458859291506,
+            "observed_rate": 1.0
+          },
+          {
+            "bin_lower": 0.6000000000000001,
+            "bin_upper": 0.7000000000000001,
+            "n": 2,
+            "mean_predicted": 0.6332630243274332,
+            "observed_rate": 0.5
+          },
+          {
+            "bin_lower": 0.7000000000000001,
+            "bin_upper": 0.8,
+            "n": 9,
+            "mean_predicted": 0.7142857142857143,
+            "observed_rate": 0.4444444444444444
+          },
+          {
+            "bin_lower": 0.9,
+            "bin_upper": 1.0,
+            "n": 3,
+            "mean_predicted": 1.0,
+            "observed_rate": 0.6666666666666666
+          }
+        ]
+      },
+      {
+        "fold": 2,
+        "train_end": 42608,
+        "validation_start": 42608,
+        "validation_end": 44608,
+        "test_start": 44608,
+        "test_end": 46608,
+        "n_train": 997,
+        "n_validation": 47,
+        "n_test": 42,
+        "candidates": [
+          {
+            "model": "logistic_regression",
+            "available": false,
+            "unavailable_reason": "not fittable: Input X contains NaN.\nLogisticRegression does not accept missing values encoded as NaN natively. For supervised learning, you might want to consider sklearn.ensemble.HistGradientBoostingClassifier and Regressor which accept missing values encoded as NaNs natively. Alternatively, it is possible to preprocess the data, for instance by using an imputer transformer in a pipeline or drop samples with missing values. See https://scikit-learn.org/stable/modules/impute.html You can find a list of all estimators that handle NaN values at the following page: https://scikit-learn.org/stable/modules/impute.html#estimators-that-handle-nan-values",
+            "validation_delta": null,
+            "threshold": null,
+            "validation_metrics": null
+          },
+          {
+            "model": "random_forest",
+            "available": true,
+            "unavailable_reason": null,
+            "validation_delta": 0.0417061193711562,
+            "threshold": {
+              "threshold": 0.5789473684210527,
+              "criterion": "expected_return",
+              "score": 0.0010294951508816068,
+              "n_samples": 23,
+              "fitted_on": "validation"
+            },
+            "validation_metrics": {
+              "brier_score": 0.2628557277850853,
+              "base_rate": 0.4782608695652174,
+              "signal_rate": 0.9565217391304348,
+              "roc_auc": 0.5454545454545454
+            }
+          }
+        ],
+        "selected_model": "random_forest",
+        "abstained": true,
+        "abstention_reason": "the filtered arm improved on the primary but still lost money on validation (net return -0.0042); trading less than a losing rule is not an edge",
+        "test_signal_rate": 0.0,
+        "test_predictive": null,
+        "test_primary": {
+          "net_return": -0.14414907365251006,
+          "sharpe": -4.142970519353186,
+          "sortino": -1.9964166065829128,
+          "max_drawdown": -0.17043458095487607,
+          "turnover": 84.0,
+          "total_cost": 0.04200000000000001,
+          "total_funding": -0.00034111,
+          "n_trades": 42,
+          "profit_factor": 0.5381360818563378,
+          "trade_hit_rate": 0.42857142857142855,
+          "exposure": 0.12556278139069535
+        },
+        "test_meta": {
+          "net_return": 0.0,
+          "sharpe": 0.0,
+          "sortino": 0.0,
+          "max_drawdown": 0.0,
+          "turnover": 0.0,
+          "total_cost": 0.0,
+          "total_funding": 0.0,
+          "n_trades": 0,
+          "profit_factor": NaN,
+          "trade_hit_rate": NaN,
+          "exposure": 0.0
+        },
+        "net_return_delta": 0.14414907365251006,
+        "prediction_drift_psi": null,
+        "per_regime": [
+          {
+            "regime": "high",
+            "n_events": 10,
+            "base_rate": 0.3,
+            "accepted": 0,
+            "precision": NaN,
+            "mean_return_primary": -0.009264083368899289,
+            "mean_return_accepted": NaN
+          },
+          {
+            "regime": "low",
+            "n_events": 25,
+            "base_rate": 0.44,
+            "accepted": 0,
+            "precision": NaN,
+            "mean_return_primary": -0.0021184590828036407,
+            "mean_return_accepted": NaN
+          },
+          {
+            "regime": "medium",
+            "n_events": 7,
+            "base_rate": 0.5714285714285714,
+            "accepted": 0,
+            "precision": NaN,
+            "mean_return_primary": -0.0010027514339617477,
+            "mean_return_accepted": NaN
+          }
+        ],
+        "feature_drift": [
+          {
+            "feature": "rvol_96",
+            "psi": 1.621437313214447,
+            "mean_shift_in_reference_sd": -0.29806639436376237,
+            "severe_drift": true
+          },
+          {
+            "feature": "rel_volume_24",
+            "psi": 1.424316787854277,
+            "mean_shift_in_reference_sd": 0.23120676223268813,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_72",
+            "psi": 1.3847471800735836,
+            "mean_shift_in_reference_sd": -0.24159332728922656,
+            "severe_drift": true
+          },
+          {
+            "feature": "rel_volume_96",
+            "psi": 0.3328254595248312,
+            "mean_shift_in_reference_sd": 0.20527302575896073,
+            "severe_drift": true
+          },
+          {
+            "feature": "zscore_24",
+            "psi": 0.3162949229466472,
+            "mean_shift_in_reference_sd": -0.018070189640266385,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_12",
+            "psi": 0.2770692563184644,
+            "mean_shift_in_reference_sd": -0.05821883913609725,
+            "severe_drift": true
+          },
+          {
+            "feature": "zscore_48",
+            "psi": 0.18564751310594252,
+            "mean_shift_in_reference_sd": -0.17695609958040628,
+            "severe_drift": false
+          },
+          {
+            "feature": "zscore_96",
+            "psi": 0.13939827800385168,
+            "mean_shift_in_reference_sd": -0.22061304331381995,
+            "severe_drift": false
+          },
+          {
+            "feature": "momentum_24",
+            "psi": 0.05453571365532929,
+            "mean_shift_in_reference_sd": 0.09289621422277429,
+            "severe_drift": false
+          },
+          {
+            "feature": "rvol_168",
+            "psi": 0.006925650223541663,
+            "mean_shift_in_reference_sd": NaN,
+            "severe_drift": false
+          }
+        ],
+        "permutation_importance": [],
+        "calibration": []
+      },
+      {
+        "fold": 3,
+        "train_end": 44608,
+        "validation_start": 44608,
+        "validation_end": 46608,
+        "test_start": 46608,
+        "test_end": 48608,
+        "n_train": 1045,
+        "n_validation": 41,
+        "n_test": 22,
+        "candidates": [
+          {
+            "model": "logistic_regression",
+            "available": false,
+            "unavailable_reason": "not fittable: Input X contains NaN.\nLogisticRegression does not accept missing values encoded as NaN natively. For supervised learning, you might want to consider sklearn.ensemble.HistGradientBoostingClassifier and Regressor which accept missing values encoded as NaNs natively. Alternatively, it is possible to preprocess the data, for instance by using an imputer transformer in a pipeline or drop samples with missing values. See https://scikit-learn.org/stable/modules/impute.html You can find a list of all estimators that handle NaN values at the following page: https://scikit-learn.org/stable/modules/impute.html#estimators-that-handle-nan-values",
+            "validation_delta": null,
+            "threshold": null,
+            "validation_metrics": null
+          },
+          {
+            "model": "random_forest",
+            "available": true,
+            "unavailable_reason": null,
+            "validation_delta": 0.04087074589108808,
+            "threshold": {
+              "threshold": 0.05,
+              "criterion": "expected_return",
+              "score": -0.0017696303766710736,
+              "n_samples": 21,
+              "fitted_on": "validation"
+            },
+            "validation_metrics": {
+              "brier_score": 0.2552380952380953,
+              "base_rate": 0.47619047619047616,
+              "signal_rate": 1.0,
+              "roc_auc": 0.5
+            }
+          }
+        ],
+        "selected_model": "random_forest",
+        "abstained": true,
+        "abstention_reason": "the filtered arm improved on the primary but still lost money on validation (net return -0.0933); trading less than a losing rule is not an edge",
+        "test_signal_rate": 0.0,
+        "test_predictive": null,
+        "test_primary": {
+          "net_return": -0.0853678256667656,
+          "sharpe": -4.143901515030047,
+          "sortino": -1.935170938453884,
+          "max_drawdown": -0.0853678256667656,
+          "turnover": 44.0,
+          "total_cost": 0.022,
+          "total_funding": -0.00043468,
+          "n_trades": 22,
+          "profit_factor": 0.4082361992850434,
+          "trade_hit_rate": 0.22727272727272727,
+          "exposure": 0.05952976488244122
+        },
+        "test_meta": {
+          "net_return": 0.0,
+          "sharpe": 0.0,
+          "sortino": 0.0,
+          "max_drawdown": 0.0,
+          "turnover": 0.0,
+          "total_cost": 0.0,
+          "total_funding": 0.0,
+          "n_trades": 0,
+          "profit_factor": NaN,
+          "trade_hit_rate": NaN,
+          "exposure": 0.0
+        },
+        "net_return_delta": 0.0853678256667656,
+        "prediction_drift_psi": null,
+        "per_regime": [
+          {
+            "regime": "low",
+            "n_events": 20,
+            "base_rate": 0.2,
+            "accepted": 0,
+            "precision": NaN,
+            "mean_return_primary": -0.00461088882125964,
+            "mean_return_accepted": NaN
+          },
+          {
+            "regime": "medium",
+            "n_events": 2,
+            "base_rate": 0.5,
+            "accepted": 0,
+            "precision": NaN,
+            "mean_return_primary": 0.002037835950984501,
+            "mean_return_accepted": NaN
+          }
+        ],
+        "feature_drift": [
+          {
+            "feature": "rvol_96",
+            "psi": 5.524122054823793,
+            "mean_shift_in_reference_sd": -0.8042029194141151,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_12",
+            "psi": 3.8304495951919364,
+            "mean_shift_in_reference_sd": -0.10086013986020044,
+            "severe_drift": true
+          },
+          {
+            "feature": "zscore_48",
+            "psi": 2.5251980486776935,
+            "mean_shift_in_reference_sd": -0.20808066208664383,
+            "severe_drift": true
+          },
+          {
+            "feature": "zscore_24",
+            "psi": 2.426435380219031,
+            "mean_shift_in_reference_sd": -0.2760453563027192,
+            "severe_drift": true
+          },
+          {
+            "feature": "rel_volume_96",
+            "psi": 1.7172594894970117,
+            "mean_shift_in_reference_sd": 0.42923105957817764,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_24",
+            "psi": 1.564795046290834,
+            "mean_shift_in_reference_sd": 0.0317687052828146,
+            "severe_drift": true
+          },
+          {
+            "feature": "momentum_72",
+            "psi": 1.5432711709283773,
+            "mean_shift_in_reference_sd": -0.012399588285422085,
+            "severe_drift": true
+          },
+          {
+            "feature": "zscore_96",
+            "psi": 1.3299460569786494,
+            "mean_shift_in_reference_sd": -0.17476775659317711,
+            "severe_drift": true
+          },
+          {
+            "feature": "rel_volume_24",
+            "psi": 0.2579141533550457,
+            "mean_shift_in_reference_sd": 0.46983885110664214,
+            "severe_drift": true
+          },
+          {
+            "feature": "rvol_168",
+            "psi": 0.006562223141531497,
+            "mean_shift_in_reference_sd": NaN,
+            "severe_drift": false
+          }
+        ],
+        "permutation_importance": [],
+        "calibration": []
+      }
+    ],
+    "shap_importance": null
+  }
+}
