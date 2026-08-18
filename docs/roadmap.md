@@ -42,6 +42,8 @@ Deliverables:
 - [ ] Quality report generated; gaps/dupes/extremes flagged (none silently
       dropped).
 - [ ] Final holdout reserved, hashed, and documented as untouched.
+      *(Estado 2026-08-19: abierto el 2026-08-13 y consumido; véase
+      [holdout_audit_status.md](methodology/holdout_audit_status.md).)*
 - [ ] Every processed dataset has a committed manifest with a stable hash.
 - [ ] Governance files (AGENTS.md, rules, skills, subagents) in place.
 
