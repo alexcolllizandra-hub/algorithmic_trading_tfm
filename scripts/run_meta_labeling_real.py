@@ -183,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
 
     volatility_col = regime_inputs[0]
     config = MetaLabelStudyConfig(
-        models=("logistic_regression", "random_forest"),  # lightgbm not installed
+        models=("logistic_regression", "random_forest", "lightgbm"),
         n_folds=args.n_folds,
         timeframe=TIMEFRAME,
         seed=args.seed,
@@ -202,7 +202,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"labelled events={dataset.n_events} | positive rate={dataset.meta_labels.mean():.3f}")
 
     study = run_meta_label_study(
-        dataset, config, market=f"{SYMBOL}_{TIMEFRAME}_{FAMILY}", planted_edge=False
+        dataset,
+        config,
+        market=f"{SYMBOL}_{TIMEFRAME}_{FAMILY}",
+        planted_edge=False,
+        explain_winner=True,
     )
 
     args.out.mkdir(parents=True, exist_ok=True)

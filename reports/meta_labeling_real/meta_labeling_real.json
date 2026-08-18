@@ -21,27 +21,27 @@
       "market": "BTCUSDT_1h_crt_htf_range_reversal",
       "planted_edge": false,
       "n_folds": 4,
-      "folds_acted": 1,
-      "abstention_rate": 0.75,
+      "folds_acted": 2,
+      "abstention_rate": 0.5,
       "folds_improved": 4,
       "folds_profitable": 1,
       "median_net_return_delta": 0.0834012292737375,
-      "delta_stability_sd": 0.035238993405138516,
+      "delta_stability_sd": 0.016150304546755822,
       "median_primary_net_return": -0.0834012292737375,
       "median_meta_net_return": 0.0,
       "primary_only_total_return": -0.31972804771490904,
-      "primary_plus_meta_total_return": 0.008784698774164434,
+      "primary_plus_meta_total_return": -0.03369252044535753,
       "primary_only_median_sharpe": -3.3434172848138948,
       "primary_plus_meta_median_sharpe": 0.0,
-      "median_pr_auc": 0.5271666666666667,
-      "median_pr_auc_lift": 1.01216,
-      "median_roc_auc": 0.48608695652173917,
-      "median_brier": 0.376867742138639,
+      "median_pr_auc": 0.48488980463980463,
+      "median_pr_auc_lift": 1.0224617663817663,
+      "median_roc_auc": 0.47857588566827697,
+      "median_brier": 0.3573438827809492,
       "selected_models": [
         "random_forest",
         "random_forest",
-        "random_forest",
-        "random_forest"
+        "lightgbm",
+        "lightgbm"
       ],
       "notes": [
         "fold 4: skipped, fewer than 30 events in train or validation after purging.",
@@ -64,7 +64,8 @@
       },
       "models": [
         "logistic_regression",
-        "random_forest"
+        "random_forest",
+        "lightgbm"
       ],
       "calibration": "isotonic",
       "calibration_fraction": 0.5,
@@ -119,6 +120,25 @@
               "base_rate": 0.5714285714285714,
               "signal_rate": 1.0,
               "roc_auc": 0.5
+            }
+          },
+          {
+            "model": "lightgbm",
+            "available": true,
+            "unavailable_reason": null,
+            "validation_delta": -0.014798832474459678,
+            "threshold": {
+              "threshold": 0.7,
+              "criterion": "expected_return",
+              "score": 0.011466292456092042,
+              "n_samples": 21,
+              "fitted_on": "validation"
+            },
+            "validation_metrics": {
+              "brier_score": 0.26562023279578845,
+              "base_rate": 0.5714285714285714,
+              "signal_rate": 0.19047619047619047,
+              "roc_auc": 0.5092592592592594
             }
           }
         ],
@@ -276,6 +296,25 @@
               "base_rate": 0.38095238095238093,
               "signal_rate": 0.19047619047619047,
               "roc_auc": 0.4326923076923077
+            }
+          },
+          {
+            "model": "lightgbm",
+            "available": true,
+            "unavailable_reason": null,
+            "validation_delta": 0.09135519361467659,
+            "threshold": {
+              "threshold": 0.2,
+              "criterion": "expected_return",
+              "score": -0.00041673678779400133,
+              "n_samples": 21,
+              "fitted_on": "validation"
+            },
+            "validation_metrics": {
+              "brier_score": 0.2076719576719577,
+              "base_rate": 0.38095238095238093,
+              "signal_rate": 0.6666666666666666,
+              "roc_auc": 0.6682692307692308
             }
           }
         ],
@@ -573,13 +612,41 @@
               "signal_rate": 0.9565217391304348,
               "roc_auc": 0.5454545454545454
             }
+          },
+          {
+            "model": "lightgbm",
+            "available": true,
+            "unavailable_reason": null,
+            "validation_delta": 0.09492601923454114,
+            "threshold": {
+              "threshold": 0.65,
+              "criterion": "expected_return",
+              "score": 0.011249687821506316,
+              "n_samples": 23,
+              "fitted_on": "validation"
+            },
+            "validation_metrics": {
+              "brier_score": 0.2929628166682031,
+              "base_rate": 0.4782608695652174,
+              "signal_rate": 0.08695652173913043,
+              "roc_auc": 0.5
+            }
           }
         ],
-        "selected_model": "random_forest",
-        "abstained": true,
-        "abstention_reason": "the filtered arm improved on the primary but still lost money on validation (net return -0.0042); trading less than a losing rule is not an edge",
-        "test_signal_rate": 0.0,
-        "test_predictive": null,
+        "selected_model": "lightgbm",
+        "abstained": false,
+        "abstention_reason": null,
+        "test_signal_rate": 0.16666666666666666,
+        "test_predictive": {
+          "n": 42,
+          "base_rate": 0.42857142857142855,
+          "pr_auc": 0.4426129426129426,
+          "pr_auc_lift": 1.0327635327635327,
+          "roc_auc": 0.47106481481481477,
+          "brier_score": 0.33782002342325945,
+          "log_loss": 3.2071062862622015,
+          "expected_calibration_error": 0.2523318006996752
+        },
         "test_primary": {
           "net_return": -0.14414907365251006,
           "sharpe": -4.142970519353186,
@@ -594,47 +661,47 @@
           "exposure": 0.12556278139069535
         },
         "test_meta": {
-          "net_return": 0.0,
-          "sharpe": 0.0,
-          "sortino": 0.0,
-          "max_drawdown": 0.0,
-          "turnover": 0.0,
-          "total_cost": 0.0,
-          "total_funding": 0.0,
-          "n_trades": 0,
-          "profit_factor": NaN,
-          "trade_hit_rate": NaN,
-          "exposure": 0.0
+          "net_return": -0.04210731910499699,
+          "sharpe": -2.6299673472076783,
+          "sortino": -0.5443186920731943,
+          "max_drawdown": -0.058663323787248256,
+          "turnover": 13.121137855025044,
+          "total_cost": 0.006560568927512521,
+          "total_funding": 2.521243293303448e-05,
+          "n_trades": 7,
+          "profit_factor": 0.3151320507260334,
+          "trade_hit_rate": 0.2857142857142857,
+          "exposure": 0.021510755377688845
         },
-        "net_return_delta": 0.14414907365251006,
-        "prediction_drift_psi": null,
+        "net_return_delta": 0.10204175454751307,
+        "prediction_drift_psi": 0.5481381825433138,
         "per_regime": [
           {
             "regime": "high",
             "n_events": 10,
             "base_rate": 0.3,
-            "accepted": 0,
-            "precision": NaN,
+            "accepted": 3,
+            "precision": 0.0,
             "mean_return_primary": -0.009264083368899289,
-            "mean_return_accepted": NaN
+            "mean_return_accepted": -0.012944281126490117
           },
           {
             "regime": "low",
             "n_events": 25,
             "base_rate": 0.44,
-            "accepted": 0,
-            "precision": NaN,
+            "accepted": 3,
+            "precision": 0.6666666666666666,
             "mean_return_primary": -0.0021184590828036407,
-            "mean_return_accepted": NaN
+            "mean_return_accepted": 0.002314388059144523
           },
           {
             "regime": "medium",
             "n_events": 7,
             "base_rate": 0.5714285714285714,
-            "accepted": 0,
-            "precision": NaN,
+            "accepted": 1,
+            "precision": 0.0,
             "mean_return_primary": -0.0010027514339617477,
-            "mean_return_accepted": NaN
+            "mean_return_accepted": -0.016525884282033387
           }
         ],
         "feature_drift": [
@@ -699,8 +766,115 @@
             "severe_drift": false
           }
         ],
-        "permutation_importance": [],
-        "calibration": []
+        "permutation_importance": [
+          {
+            "feature": "momentum_24",
+            "importance_mean": 0.07459090909090903,
+            "importance_std": 0.03954020341311378,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "momentum_72",
+            "importance_mean": 0.06863636363636359,
+            "importance_std": 0.03225607765142171,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "zscore_24",
+            "importance_mean": 0.0605454545454545,
+            "importance_std": 0.039888688095956845,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "zscore_96",
+            "importance_mean": 0.05549999999999995,
+            "importance_std": 0.026326737500837746,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "momentum_12",
+            "importance_mean": 0.05386363636363632,
+            "importance_std": 0.03971580342033024,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "rel_volume_96",
+            "importance_mean": 0.0478636363636363,
+            "importance_std": 0.038159381936190576,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "rvol_96",
+            "importance_mean": 0.0458636363636363,
+            "importance_std": 0.03162862366134107,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "zscore_48",
+            "importance_mean": 0.03972727272727265,
+            "importance_std": 0.03634897431681255,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "rel_volume_24",
+            "importance_mean": 0.03854545454545447,
+            "importance_std": 0.034197288568752746,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          },
+          {
+            "feature": "rvol_168",
+            "importance_mean": 0.028772727272727217,
+            "importance_std": 0.022151385606718182,
+            "scoring": "roc_auc",
+            "n_repeats": 20
+          }
+        ],
+        "calibration": [
+          {
+            "bin_lower": 0.0,
+            "bin_upper": 0.1,
+            "n": 1,
+            "mean_predicted": 0.0,
+            "observed_rate": 1.0
+          },
+          {
+            "bin_lower": 0.30000000000000004,
+            "bin_upper": 0.4,
+            "n": 2,
+            "mean_predicted": 0.3527686900637972,
+            "observed_rate": 0.0
+          },
+          {
+            "bin_lower": 0.5,
+            "bin_upper": 0.6000000000000001,
+            "n": 32,
+            "mean_predicted": 0.6,
+            "observed_rate": 0.46875
+          },
+          {
+            "bin_lower": 0.8,
+            "bin_upper": 0.9,
+            "n": 1,
+            "mean_predicted": 0.8514375119011999,
+            "observed_rate": 0.0
+          },
+          {
+            "bin_lower": 0.9,
+            "bin_upper": 1.0,
+            "n": 6,
+            "mean_predicted": 0.9734934562262608,
+            "observed_rate": 0.3333333333333333
+          }
+        ]
       },
       {
         "fold": 3,
@@ -739,11 +913,30 @@
               "signal_rate": 1.0,
               "roc_auc": 0.5
             }
+          },
+          {
+            "model": "lightgbm",
+            "available": true,
+            "unavailable_reason": null,
+            "validation_delta": 0.08727441111100664,
+            "threshold": {
+              "threshold": 0.35,
+              "criterion": "expected_return",
+              "score": -0.0009244498482071033,
+              "n_samples": 21,
+              "fitted_on": "validation"
+            },
+            "validation_metrics": {
+              "brier_score": 0.27911857714172195,
+              "base_rate": 0.47619047619047616,
+              "signal_rate": 0.8571428571428571,
+              "roc_auc": 0.4545454545454546
+            }
           }
         ],
-        "selected_model": "random_forest",
+        "selected_model": "lightgbm",
         "abstained": true,
-        "abstention_reason": "the filtered arm improved on the primary but still lost money on validation (net return -0.0933); trading less than a losing rule is not an edge",
+        "abstention_reason": "the filtered arm improved on the primary but still lost money on validation (net return -0.0469); trading less than a losing rule is not an edge",
         "test_signal_rate": 0.0,
         "test_predictive": null,
         "test_primary": {
@@ -860,6 +1053,47 @@
         "calibration": []
       }
     ],
-    "shap_importance": null
+    "shap_importance": [
+      {
+        "feature": "momentum_24",
+        "mean_abs_shap": 0.06758925303072
+      },
+      {
+        "feature": "rel_volume_96",
+        "mean_abs_shap": 0.04419042734076626
+      },
+      {
+        "feature": "momentum_12",
+        "mean_abs_shap": 0.04061258396117075
+      },
+      {
+        "feature": "rvol_96",
+        "mean_abs_shap": 0.03793635190208154
+      },
+      {
+        "feature": "rel_volume_24",
+        "mean_abs_shap": 0.0378691642820868
+      },
+      {
+        "feature": "momentum_72",
+        "mean_abs_shap": 0.036917433121370684
+      },
+      {
+        "feature": "zscore_48",
+        "mean_abs_shap": 0.03566037795646815
+      },
+      {
+        "feature": "zscore_24",
+        "mean_abs_shap": 0.03494878283937779
+      },
+      {
+        "feature": "zscore_96",
+        "mean_abs_shap": 0.03180573232530178
+      },
+      {
+        "feature": "rvol_168",
+        "mean_abs_shap": 0.026072833610651158
+      }
+    ]
   }
 }
