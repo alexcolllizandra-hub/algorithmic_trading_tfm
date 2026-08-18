@@ -1,7 +1,7 @@
 {
   "notebook": "05_study_closure_and_multiple_testing",
   "analysis_id": "t06_deflated_sharpe",
-  "caption": "Deflated Sharpe of the study's best family under two definitions of the number of trials.",
+  "caption": "Sharpe deflactado de la mejor familia del estudio bajo dos definiciones del n\u00famero de ensayos.",
   "period": "development walk-forward out-of-sample; holdout NOT published",
   "datasets": {},
   "config": {
@@ -12,8 +12,8 @@
     "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
     "holdout_publication": "AUDIT_PENDING"
   },
-  "generated_at": "2026-08-15T10:35:41.279235+00:00",
-  "code_commit": "739416e39bf9406f9d0bf0b0a02e997e563d3b86",
+  "generated_at": "2026-08-18T22:39:38.540607+00:00",
+  "code_commit": null,
   "output_path": "reports/tables/closure/t06_deflated_sharpe.md",
   "kind": "table",
   "n_rows": 2,

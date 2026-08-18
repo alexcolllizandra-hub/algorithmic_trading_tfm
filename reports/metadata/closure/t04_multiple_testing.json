@@ -1,7 +1,7 @@
 {
   "notebook": "05_study_closure_and_multiple_testing",
   "analysis_id": "t04_multiple_testing",
-  "caption": "Rejections at alpha = 0.05 before and after each multiple-testing correction.",
+  "caption": "Rechazos a alfa = 0.05 antes y despu\u00e9s de cada correcci\u00f3n por contraste m\u00faltiple.",
   "period": "development walk-forward out-of-sample; holdout NOT published",
   "datasets": {},
   "config": {
@@ -12,8 +12,8 @@
     "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
     "holdout_publication": "AUDIT_PENDING"
   },
-  "generated_at": "2026-08-15T10:35:37.175783+00:00",
-  "code_commit": "739416e39bf9406f9d0bf0b0a02e997e563d3b86",
+  "generated_at": "2026-08-18T22:39:35.263191+00:00",
+  "code_commit": null,
   "output_path": "reports/tables/closure/t04_multiple_testing.md",
   "kind": "table",
   "n_rows": 3,

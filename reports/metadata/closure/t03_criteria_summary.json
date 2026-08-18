@@ -1,7 +1,7 @@
 {
   "notebook": "05_study_closure_and_multiple_testing",
   "analysis_id": "t03_criteria_summary",
-  "caption": "How often each promotion criterion was met across the whole study.",
+  "caption": "Frecuencia con la que cada criterio de promoci\u00f3n se cumpli\u00f3 en el conjunto del estudio.",
   "period": "development walk-forward out-of-sample; holdout NOT published",
   "datasets": {},
   "config": {
@@ -12,8 +12,8 @@
     "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
     "holdout_publication": "AUDIT_PENDING"
   },
-  "generated_at": "2026-08-15T10:35:34.831328+00:00",
-  "code_commit": "739416e39bf9406f9d0bf0b0a02e997e563d3b86",
+  "generated_at": "2026-08-18T22:39:32.271223+00:00",
+  "code_commit": null,
   "output_path": "reports/tables/closure/t03_criteria_summary.md",
   "kind": "table",
   "n_rows": 6,
