@@ -275,7 +275,8 @@ visible:
 * whether evidence is positive, negative or inconclusive — **negative results
   displayed as prominently as positive ones**;
 * the current research phase and its gate;
-* frozen holdout status (closed, and provably untouched);
+* frozen holdout status (opened once on 2026-08-13 and consumed; the reading is
+  withheld — see [holdout_audit_status.md](../methodology/holdout_audit_status.md));
 * the chain EDA → hypothesis → feature → strategy → experiment → result.
 
 The last item is the one that turns the dashboard from a results viewer into an

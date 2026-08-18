@@ -38,7 +38,7 @@ def _iso(value: Any) -> datetime:
 
 
 def _load_bars(symbol: str, timeframe: str) -> pl.DataFrame | None:
-    """Load the DEVELOPMENT klines only; holdout partitions are never opened."""
+    """Load the DEVELOPMENT klines only; the holdout partition is not read here."""
     path = PROCESSED / symbol / f"{timeframe}_development.parquet"
     if not path.exists():
         return None

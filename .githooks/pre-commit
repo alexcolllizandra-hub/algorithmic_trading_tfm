@@ -1,0 +1,4 @@
+#!/bin/sh
+# Versioned hooks: activate once per clone with
+#   git config core.hooksPath .githooks
+python scripts/check_stale_claims.py || exit 1
