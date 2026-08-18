@@ -36,9 +36,9 @@ palabras. Estados: **escribible ya** / **falta ejecutar** / **falta decidir**.
 
 | Figura | Sección | Cómo se genera |
 |---|---|---|
-| Distribución nula de Monte Carlo con la estrategia real dentro | Cap 6/anexo — **la figura que resume el TFM** | Bloque C (módulo nuevo + notebook 06) |
+| Distribución nula de Monte Carlo con la estrategia real dentro | Cap 6/anexo — **la figura que resume el TFM** | Bloque C (módulo nuevo + notebook 07) |
 | Resultados CRT V1 agregados | Cap 6 | al cierre de la ronda: `uv run python scripts/summarise_multiseed.py artifacts/runs/crt_v1_budget100/<familia>` + builder de figura a añadir |
-| Curvas del estudio meta-labeling real (economía vs AUC) | Cap 6 (RQ3) | ampliar `scripts/run_meta_labeling_real.py` (rama `feat/meta-labeling-real-data`) con `save_figure`; hoy solo emite JSON+MD |
+| `ml/m01-m05`: economía vs AUC por fold, calibración, SHAP, abstención (estudio meta real, trío LR/RF/LightGBM completado 19-08) | Cap 5.8 y 6 (RQ3) | `build_ml_notebook.py` (cuaderno 06 nuevo; el estudio ya corre con los tres modelos preregistrados + SHAP en la rama `feat/meta-labeling-real-data`, commit `c42e4c3`) |
 | Pipeline y esquema temporal como imagen | Cap 5 | exportar los Mermaid de `docs/methodology/pipeline_end_to_end.md` (mmdc o captura) |
 
 ## Reparto de palabras (objetivo 22.000)

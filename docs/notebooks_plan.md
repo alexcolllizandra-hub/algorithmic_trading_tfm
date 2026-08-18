@@ -16,7 +16,8 @@ no es el orden: es el idioma (inglés, con la memoria en español) y el tono
 | 03 | `03_backtest_y_walk_forward` | `build_backtest_notebook.py` (reescribir) | Cómo una señal se convierte en posición pagando lo que se paga, y qué hace out-of-sample a un fold — con una familia de ejemplo de punta a punta | dev + configs | `backtest/h01-h06` | Caps 4.2-4.3, 5.4 |
 | 04 | `04_busqueda_y_sobreajuste` | `build_search_notebook.py` (reescribir) | Cuánto de un resultado buscado es estructura y cuánto sesgo de selección | `artifacts/runs/r3_full_budget100_ga21/` | `search/i01-i06` | Caps 5.4-5.6 |
 | 05 | `05_cierre_y_contraste_multiple` | `build_results_notebook.py` (reescribir) | Qué encontró el estudio completo y si algo sobrevive a la corrección | `reports/study_closure/*.json` | `closure/j01-j04` | Caps 6-8 |
-| 06 | `06_monte_carlo_nula` | **nuevo** (Bloque C) | Situar la mejor estrategia rechazada dentro de la distribución del azar | ledgers de `volatility_breakout` en `r3_full_budget100_ga21/` | `montecarlo/k01-k05` (nuevas) | Cap 6/anexo — la figura-resumen del TFM |
+| 06 | `06_meta_etiquetado_supervisado` | **nuevo** (`build_ml_notebook.py`) | ¿Puede un clasificador (LR, RF, LightGBM — el trío preregistrado) decidir cuándo actuar sobre una primaria, y qué separa mejora económica de capacidad predictiva? | `reports/meta_labeling_real/*.json` + dataset reconstruible | `ml/m01-m05` (nuevas: economía vs AUC por fold, calibración, SHAP, abstención) | Cap 5.8 y cap 6 (RQ3) |
+| 07 | `07_monte_carlo_nula` | **nuevo** (Bloque C) | Situar la mejor estrategia rechazada dentro de la distribución del azar | ledgers de `volatility_breakout` en `r3_full_budget100_ga21/` | `montecarlo/k01-k05` (nuevas) | Cap 6/anexo — la figura-resumen del TFM |
 
 Decisiones: se **archiva nada** (no existe legacy); se **reescriben los cinco
 builders** (prosa, no lógica) y se **añade el 06**. Los nombres de figura
@@ -63,8 +64,10 @@ actuales son estables y ya están citados por tablas y web: no se renombran.
 | 1 | Reescribir `build_results_notebook.py` (05) — el más corto y el patrón de los demás | ya (worktree `../tfm_notebooks`) | 2-3 h + ejecución rápida (lee JSON) |
 | 2 | 04, luego 03, luego 02 | tras aprobar el tono del 05 | 2-4 h cada uno |
 | 3 | 01 (builder de 4.928 líneas, ejecución más larga) | último de los reescritos | 4-6 h |
-| 4 | 06 Monte Carlo | Bloque C | según C |
-| 5 | Regenerar todo + versionar figuras (tras quitar `.gitignore:54`) | al cierre de la ronda CRT | 1 h |
+| 4 | 06 ML supervisado (builder nuevo) | tras validar patrón (hecho) | 3-4 h |
+| 5 | 07 Monte Carlo | Bloque C | según C |
+| 6 | 08 síntesis (no calcula: encadena las figuras clave 01-07) | último | 2 h |
+| 7 | Regenerar todo + versionar figuras (tras quitar `.gitignore:54`) | al cierre de la ronda CRT | 1 h |
 
 Restricción operativa vigente: los `.ipynb` están trackeados; regenerarlos en el
 árbol principal rompe la huella de la ronda en curso. Todo en worktree hasta que
