@@ -1,0 +1,33 @@
+{
+  "notebook": "07_monte_carlo_nula",
+  "analysis_id": "t05_cuenta_fondeada",
+  "caption": "Reglas de cuenta fondeada aplicadas (entradas del an\u00e1lisis) y probabilidad estimada de superarlas sobre caminos bootstrap de la semilla mediana.",
+  "period": "development walk-forward out-of-sample; holdout never loaded",
+  "datasets": {
+    "artifacts/runs/r3_full_budget100_ga21/volatility_breakout/study_robustness.json": "b44ba6ab2fc21b7094d12159d18b4bfad0900cb078239d9279a5f96926d1dd85"
+  },
+  "config": {
+    "seed": 42,
+    "code_commit_resolved": "459aeb73ff1f274f7ecfb83fcfe17eaf3049e9a4",
+    "data_contract_cutoff": "2026-07-01",
+    "family": "volatility_breakout (REJECTED)",
+    "symbol": "BTCUSDT",
+    "engine": "random_search",
+    "n_units": 10
+  },
+  "generated_at": "2026-08-19T10:24:38.577647+00:00",
+  "code_commit": "459aeb73ff1f274f7ecfb83fcfe17eaf3049e9a4",
+  "output_path": "reports/tables/montecarlo/t05_cuenta_fondeada.md",
+  "kind": "table",
+  "n_rows": 1,
+  "columns": [
+    "profit_target",
+    "max_total_drawdown",
+    "max_daily_loss",
+    "max_days",
+    "bars_per_day",
+    "pass_phase1",
+    "pass_both",
+    "n_paths"
+  ]
+}

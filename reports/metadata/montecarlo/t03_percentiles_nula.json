@@ -1,0 +1,29 @@
+{
+  "notebook": "07_monte_carlo_nula",
+  "analysis_id": "t03_percentiles_nula",
+  "caption": "Percentil de cada semilla real dentro de su propia distribuci\u00f3n nula por rotaci\u00f3n circular (1.000 rotaciones por semilla).",
+  "period": "development walk-forward out-of-sample; holdout never loaded",
+  "datasets": {
+    "artifacts/runs/r3_full_budget100_ga21/volatility_breakout/study_robustness.json": "b44ba6ab2fc21b7094d12159d18b4bfad0900cb078239d9279a5f96926d1dd85"
+  },
+  "config": {
+    "seed": 42,
+    "code_commit_resolved": "459aeb73ff1f274f7ecfb83fcfe17eaf3049e9a4",
+    "data_contract_cutoff": "2026-07-01",
+    "family": "volatility_breakout (REJECTED)",
+    "symbol": "BTCUSDT",
+    "engine": "random_search",
+    "n_units": 10
+  },
+  "generated_at": "2026-08-19T10:24:31.812576+00:00",
+  "code_commit": "459aeb73ff1f274f7ecfb83fcfe17eaf3049e9a4",
+  "output_path": "reports/tables/montecarlo/t03_percentiles_nula.md",
+  "kind": "table",
+  "n_rows": 10,
+  "columns": [
+    "seed",
+    "real_total_return",
+    "null_percentile",
+    "exposure"
+  ]
+}

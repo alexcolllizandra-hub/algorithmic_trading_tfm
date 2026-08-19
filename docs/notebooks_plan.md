@@ -65,7 +65,7 @@ actuales son estables y ya están citados por tablas y web: no se renombran.
 | 2 | 04, luego 03, luego 02 | tras aprobar el tono del 05 | 2-4 h cada uno |
 | 3 | 01 (builder de 4.928 líneas, ejecución más larga) | último de los reescritos | 4-6 h |
 | 4 | 06 ML supervisado (builder nuevo) | tras validar patrón (hecho) | 3-4 h |
-| 5 | 07 Monte Carlo | Bloque C | según C |
+| 5 | 07 Monte Carlo | **hecho 19-08** (módulo + builder + determinismo 10/10) | — |
 | 6 | 08 síntesis (no calcula: encadena las figuras clave 01-07) | último | 2 h |
 | 7 | Regenerar todo + versionar figuras (tras quitar `.gitignore:54`) | al cierre de la ronda CRT | 1 h |
 
