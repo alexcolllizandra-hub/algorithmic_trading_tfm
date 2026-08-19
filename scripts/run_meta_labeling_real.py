@@ -190,7 +190,9 @@ def main(argv: list[str] | None = None) -> int:
     ).select(pl.col("open_time").alias(EVENT_TIME_COL))
     before = events.height
     events = events.join(complete, on=EVENT_TIME_COL, how="inner")
-    print(f"events with complete features={events.height} (dropped {before - events.height} warm-up)")
+    print(
+        f"events with complete features={events.height} (dropped {before - events.height} warm-up)"
+    )
     if events.height == 0:
         raise SystemExit("The primary produced no entries; nothing to meta-label.")
 

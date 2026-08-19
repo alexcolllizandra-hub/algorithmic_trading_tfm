@@ -36,7 +36,7 @@ md(
 > **INFRAESTRUCTURA / EXPLORATORIO — §5 del contrato metodológico (ADR 0017).**
 > El estudio que este cuaderno narra corrió sin primaria elegible (el cierre
 > fue negativo), así que nada de lo que sigue es un hallazgo sobre la familia
-> primaria ni promueve candidato alguno. Sus ajustes modelo×fold quedan fuera
+> primaria ni promueve candidato alguno. Sus ajustes modelo-x-fold quedan fuera
 > del denominador congelado del cierre y están contados en el artefacto.
 
 **¿Qué pregunta responde este cuaderno?** Si un clasificador —regresión

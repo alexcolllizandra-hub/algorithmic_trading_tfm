@@ -940,7 +940,7 @@ todos los folds con ROC-AUC por debajo de 0,5: toda la ganancia viene de
 abstenerse, no de predecir— es un diagnóstico del utillaje y del espacio, **no
 un hallazgo sobre la familia primaria**, que ya estaba rechazada. Esa ejecución
 no entra en el denominador congelado de este cierre; si algún trabajo futuro
-quisiera afirmarse sobre ella, sus ajustes modelo×fold tendrían que contarse.
+quisiera afirmarse sobre ella, sus ajustes modelo-x-fold tendrían que contarse.
 
 La aportación metodológica es la más transferible: no el veredicto sobre
 ninguna familia, sino la demostración de que el veredicto es *de fiar* — cada

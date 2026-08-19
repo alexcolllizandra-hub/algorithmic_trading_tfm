@@ -68,7 +68,9 @@ def main() -> int:
         for line in failures:
             print(f"  - {line}")
         return 1
-    print("All pilot invariants hold: 15 folds, identical budgets, no fold reads the holdout partition.")
+    print(
+        "All pilot invariants hold: 15 folds, identical budgets, no fold reads the holdout partition."
+    )
     return 0
 
 

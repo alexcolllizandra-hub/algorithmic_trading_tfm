@@ -35,10 +35,15 @@ SCAN_SUFFIXES = {".md", ".py", ".yaml", ".yml", ".txt"}
 # Frozen bodies whose wording is historical and governed by a dated status
 # note in the same file. Path separators normalised to '/'.
 ALLOWLIST: dict[str, set[str]] = {
-    "docs/decisions/0003-cutoff-and-holdout-window.md": {"never opened", "holdout untouched",
-                                                          "provably untouched"},
-    "docs/decisions/0006-experimental-vertical-slice-and-run-tracking.md": {"holdout untouched",
-                                                                             "never opened"},
+    "docs/decisions/0003-cutoff-and-holdout-window.md": {
+        "never opened",
+        "holdout untouched",
+        "provably untouched",
+    },
+    "docs/decisions/0006-experimental-vertical-slice-and-run-tracking.md": {
+        "holdout untouched",
+        "never opened",
+    },
     "docs/decisions/0012-outer-fold-contamination-in-candidate-search.md": {"holdout untouched"},
     "docs/decisions/0015-r3-family-evaluation-negative.md": {"never opened"},
     "docs/methodology/final_holdout_evaluation.md": {"never opened"},
