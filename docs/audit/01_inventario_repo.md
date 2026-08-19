@@ -50,7 +50,7 @@ Propósito deducido del código, no del docstring. El paquete instala como
 | `artifacts/runs/multiseed_momentum_*` (3 dirs) | Baseline momentum R1/R2 (ADR 0011/0013) | multi-seed runner | Sí |
 | `artifacts/runs/search_*` (~300 dirs) | Runs individuales por familia/seed/fecha | runner | Sí, unitariamente |
 | `reports/figures/` (51 PNG+PDF) | eda 25 · features 9 · backtest 6 · search 6 · closure 4 · experiments 1 | notebooks 01–05 | Sí, pero **no versionadas** (`.gitignore:54`) |
-| `reports/tables/` (~100 CSV+MD) | Tablas t01–t39 por capa | notebooks | Versionadas |
+| `reports/tables/` (~100 CSV+MD) | Tablas t01–t39 por capa | notebooks | Versionadas desde 2026-08-19 (antes ignoradas en `.gitignore:55`, hallazgo corregido) |
 | `reports/meta_labeling_real/` | RQ3 sobre datos reales (18-08) | `scripts/run_meta_labeling_real.py` | Solo en rama `feat/meta-labeling-real-data` |
 | `reports/data_provenance/data_provenance_audit.json` | Auditoría de procedencia de datos | script homónimo | Sí |
 | `data/manifests/*.json` | SHA-256 por dataset | ingesta | Sí |

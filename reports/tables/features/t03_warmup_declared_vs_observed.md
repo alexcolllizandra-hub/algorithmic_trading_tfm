@@ -1,0 +1,32 @@
+**Table — Declared warm-up versus observed leading nulls for every built column (G3).**
+
+| symbol | column | declared_warmup | observed_leading_nulls | total_nulls | delta | interior_nulls |
+| --- | --- | --- | --- | --- | --- | --- |
+| BTCUSDT | log_return | 1 | 1 | 1 | 0 | 0 |
+| BTCUSDT | momentum_12 | 12 | 12 | 12 | 0 | 0 |
+| BTCUSDT | momentum_24 | 24 | 24 | 24 | 0 | 0 |
+| BTCUSDT | sma_24 | 23 | 23 | 23 | 0 | 0 |
+| BTCUSDT | sma_96 | 95 | 95 | 95 | 0 | 0 |
+| BTCUSDT | price_dist_sma_48 | 47 | 47 | 47 | 0 | 0 |
+| BTCUSDT | zscore_48 | 47 | 47 | 47 | 0 | 0 |
+| BTCUSDT | rvol_96 | 96 | 96 | 96 | 0 | 0 |
+| BTCUSDT | atr_14 | 13 | 13 | 13 | 0 | 0 |
+| BTCUSDT | range_norm | 0 | 0 | 0 | 0 | 0 |
+| BTCUSDT | rel_volume_24 | 23 | 23 | 23 | 0 | 0 |
+| BTCUSDT | hour_sin | 0 | 0 | 0 | 0 | 0 |
+| BTCUSDT | hour_cos | 0 | 0 | 0 | 0 | 0 |
+| BTCUSDT | taker_buy_imbalance | 1 | 1 | 2 | 0 | 1 |
+| ETHUSDT | log_return | 1 | 1 | 1 | 0 | 0 |
+| ETHUSDT | momentum_12 | 12 | 12 | 12 | 0 | 0 |
+| ETHUSDT | momentum_24 | 24 | 24 | 24 | 0 | 0 |
+| ETHUSDT | sma_24 | 23 | 23 | 23 | 0 | 0 |
+| ETHUSDT | sma_96 | 95 | 95 | 95 | 0 | 0 |
+| ETHUSDT | price_dist_sma_48 | 47 | 47 | 47 | 0 | 0 |
+| ETHUSDT | zscore_48 | 47 | 47 | 47 | 0 | 0 |
+| ETHUSDT | rvol_96 | 96 | 96 | 96 | 0 | 0 |
+| ETHUSDT | atr_14 | 13 | 13 | 13 | 0 | 0 |
+| ETHUSDT | range_norm | 0 | 0 | 0 | 0 | 0 |
+| ETHUSDT | rel_volume_24 | 23 | 23 | 23 | 0 | 0 |
+| ETHUSDT | hour_sin | 0 | 0 | 0 | 0 | 0 |
+| ETHUSDT | hour_cos | 0 | 0 | 0 | 0 | 0 |
+| ETHUSDT | taker_buy_imbalance | 1 | 1 | 2 | 0 | 1 |

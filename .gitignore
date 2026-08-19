@@ -51,10 +51,6 @@ data/processed/
 !data/manifests/**
 
 # --- Reports (generated artifacts) ---
-reports/figures/*
-reports/tables/*
-!reports/figures/.gitkeep
-!reports/tables/.gitkeep
 
 # --- Jupyter ---
 .ipynb_checkpoints/
