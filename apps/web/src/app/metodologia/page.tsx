@@ -8,14 +8,15 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/Table";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/States";
+import { useI18n } from "@/lib/i18n";
 import type { FeatureDocModel, StrategyDocModel } from "@/lib/api-types";
 import { fmtInt } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
 import { useMethodology } from "@/lib/hooks";
 
 export default function MetodologiaPage() {
+  const t = useI18n();
   const { data, error, isLoading } = useMethodology();
-  const s = es.sections.metodologia;
+  const s = t.sections.metodologia;
 
   const featureColumns: Column<FeatureDocModel>[] = [
     {
@@ -130,9 +131,9 @@ export default function MetodologiaPage() {
       </Card>
 
       <HowToRead>
-        <p>{es.glossary.causalFeature.definition}</p>
-        <p>{es.glossary.nextBar.definition}</p>
-        <p>{es.glossary.walkForward.definition}</p>
+        <p>{t.glossary.causalFeature.definition}</p>
+        <p>{t.glossary.nextBar.definition}</p>
+        <p>{t.glossary.walkForward.definition}</p>
       </HowToRead>
 
       <InterpretationBox tone="info">{s.queConcluirAnswer}</InterpretationBox>

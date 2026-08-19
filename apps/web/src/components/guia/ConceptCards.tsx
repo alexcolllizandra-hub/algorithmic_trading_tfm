@@ -21,6 +21,7 @@ import {
   selectionBiasBars,
   snoopingRows,
 } from "@/lib/guia";
+import { useI18n, type Dictionary } from "@/lib/i18n";
 import { es } from "@/lib/i18n/es";
 
 type ConceptId = keyof typeof es.guia.concepts.items;
@@ -32,19 +33,19 @@ interface ConceptSpec {
   figure: React.ReactNode;
 }
 
-const CONCEPTS: ConceptSpec[] = [
+const buildConcepts = (t: Dictionary): ConceptSpec[] => [
   { id: "mineria", figureId: "dataMining", figure: <PDots figure={dataMiningFigure()} /> },
   {
     id: "snooping",
     figureId: "snooping",
-    figure: <Timeline rows={snoopingRows()} rowLabels={es.guia.figures.snooping.rows} />,
+    figure: <Timeline rows={snoopingRows()} rowLabels={t.guia.figures.snooping.rows} />,
   },
   { id: "curva", figureId: "curveFitting", figure: <Sparkline series={curveFittingSeries()} /> },
   { id: "hiper", figureId: "hyperparameter", figure: <Bars bars={hyperparameterBars()} /> },
   {
     id: "fineTuning",
     figureId: "fineTuning",
-    figure: <Timeline rows={fineTuningRows()} rowLabels={es.guia.figures.fineTuning.rows} />,
+    figure: <Timeline rows={fineTuningRows()} rowLabels={t.guia.figures.fineTuning.rows} />,
   },
   {
     id: "sobreajuste",
@@ -61,7 +62,7 @@ const CONCEPTS: ConceptSpec[] = [
   {
     id: "leakage",
     figureId: "leakage",
-    figure: <Timeline rows={leakageRows()} rowLabels={es.guia.figures.leakage.rows} />,
+    figure: <Timeline rows={leakageRows()} rowLabels={t.guia.figures.leakage.rows} />,
   },
   { id: "pbo", figureId: "pbo", figure: <Bars bars={pboBars()} /> },
   { id: "deflated", figureId: "deflated", figure: <Bars bars={deflatedBars()} /> },
@@ -75,19 +76,21 @@ const CONCEPTS: ConceptSpec[] = [
  * the two ideas it separates are the ones readers conflate most often.
  */
 export function ConceptCards() {
+  const t = useI18n();
+  const concepts = buildConcepts(t);
   return (
     <Card>
-      <CardHeader title={es.guia.concepts.title} subtitle={es.guia.concepts.subtitle} />
+      <CardHeader title={t.guia.concepts.title} subtitle={t.guia.concepts.subtitle} />
 
-      <InterpretationBox tone="warning" title={es.guia.concepts.fineTuningTitle}>
-        <p>{es.guia.concepts.fineTuningBody}</p>
-        <p className="mt-2">{es.guia.concepts.fineTuningBody2}</p>
+      <InterpretationBox tone="warning" title={t.guia.concepts.fineTuningTitle}>
+        <p>{t.guia.concepts.fineTuningBody}</p>
+        <p className="mt-2">{t.guia.concepts.fineTuningBody2}</p>
       </InterpretationBox>
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {CONCEPTS.map((spec) => {
-          const concept = es.guia.concepts.items[spec.id];
-          const figure = es.guia.figures[spec.figureId];
+        {concepts.map((spec) => {
+          const concept = t.guia.concepts.items[spec.id];
+          const figure = t.guia.figures[spec.figureId];
           return (
             <article
               key={spec.id}
@@ -98,13 +101,13 @@ export function ConceptCards() {
               <dl className="mt-2 space-y-2">
                 <div>
                   <dt className="text-xs font-semibold uppercase tracking-wide text-accent">
-                    {es.guia.concepts.whatIs}
+                    {t.guia.concepts.whatIs}
                   </dt>
                   <dd className="mt-1 text-sm text-muted">{concept.plain}</dd>
                 </div>
                 <div>
                   <dt className="text-xs font-semibold uppercase tracking-wide text-accent">
-                    {es.guia.concepts.whyMatters}
+                    {t.guia.concepts.whyMatters}
                   </dt>
                   <dd className="mt-1 text-sm text-muted">{concept.matters}</dd>
                 </div>

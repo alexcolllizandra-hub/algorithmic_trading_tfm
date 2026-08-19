@@ -11,27 +11,28 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { ExploratoryBanner } from "@/components/ui/ExploratoryBanner";
 import { ErrorState, SkeletonCard } from "@/components/ui/States";
 import { StatCard } from "@/components/ui/StatCard";
-import { es } from "@/lib/i18n/es";
+import { useI18n, type Dictionary } from "@/lib/i18n";
 import { fmtInt, fmtPercent } from "@/lib/format";
 import { useHealth, useMarketCoverage, useResearchSummary } from "@/lib/hooks";
 
-const PHASES = Object.values(es.phases);
+const PHASES = (t: Dictionary) => Object.values(t.phases);
 
 export default function OverviewPage() {
+  const t = useI18n();
   const { data: summary, error: summaryError, isLoading } = useResearchSummary();
   const { data: health } = useHealth();
   const { data: coverage } = useMarketCoverage();
 
-  const s = es.sections.overview;
+  const s = t.sections.overview;
 
   return (
     <PageShell title={s.title}>
       <SectionIntro title={s.title} subtitle={s.subtitle} questions={s} />
 
-      <ExploratoryBanner message={es.warnings.exploratory} />
+      <ExploratoryBanner message={t.warnings.exploratory} />
 
       <InterpretationBox tone="warning" title="Holdout">
-        {es.warnings.holdoutLocked}
+        {t.warnings.holdoutLocked}
       </InterpretationBox>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -70,7 +71,7 @@ export default function OverviewPage() {
           subtitle="Estado metodológico del pipeline"
         />
         <ol className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {PHASES.map((phase, i) => (
+          {PHASES(t).map((phase, i) => (
             <li
               key={phase.id}
               className="flex gap-3 rounded-md border border-border bg-surface-2 px-4 py-3"
@@ -169,13 +170,13 @@ export default function OverviewPage() {
       </Card>
 
       <InterpretationBox tone="info" title="Conclusión provisional">
-        {es.warnings.provisionalConclusion} {es.warnings.noHoldoutRuns}
+        {t.warnings.provisionalConclusion} {t.warnings.noHoldoutRuns}
       </InterpretationBox>
 
       <HowToRead>
-        <p>{es.glossary.holdout.definition}</p>
-        <p>{es.glossary.walkForward.definition}</p>
-        <p>{es.glossary.fairBudget.definition}</p>
+        <p>{t.glossary.holdout.definition}</p>
+        <p>{t.glossary.walkForward.definition}</p>
+        <p>{t.glossary.fairBudget.definition}</p>
       </HowToRead>
     </PageShell>
   );

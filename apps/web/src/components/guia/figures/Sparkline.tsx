@@ -1,3 +1,4 @@
+import { useI18n, type Dictionary } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 import {
   sparkDomain,
@@ -7,7 +8,6 @@ import {
   type SparkBox,
   type SparkSeries,
 } from "@/lib/guia";
-import { es } from "@/lib/i18n/es";
 
 const TONE_CLASS: Record<SeriesTone, string> = {
   accent: "text-accent",
@@ -18,13 +18,14 @@ const TONE_CLASS: Record<SeriesTone, string> = {
 
 const BOX: SparkBox = { width: 320, height: 130, pad: 8 };
 
-const SERIES_LABEL: Record<string, string> = es.guia.series;
+const SERIES_LABEL = (t: Dictionary): Record<string, string> => t.guia.series;
 
 /**
  * Tiny line/scatter drawing for the didactic figures. No axis values are
  * printed: only the shape of the curves carries meaning here.
  */
 export function Sparkline({ series }: { series: SparkSeries[] }) {
+  const t = useI18n();
   const domain = sparkDomain(series);
 
   return (
@@ -70,7 +71,7 @@ export function Sparkline({ series }: { series: SparkSeries[] }) {
                 s.tone === "negative" && "bg-negative"
               )}
             />
-            {SERIES_LABEL[s.key] ?? s.key}
+            {SERIES_LABEL(t)[s.key] ?? s.key}
           </li>
         ))}
       </ul>

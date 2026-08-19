@@ -12,8 +12,8 @@ import type {
   StudyDeflatedSharpeEntry,
   StudySensitivityRow,
 } from "@/lib/api-types";
+import { useI18n, type Dictionary } from "@/lib/i18n";
 import { fmtInt, fmtNumber, fmtPercent } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
 import { gaugePercent } from "@/lib/study";
 
 interface AdjustedRow {
@@ -43,78 +43,78 @@ function adjustedRows(holm: StudyAdjustment, bh: StudyAdjustment): AdjustedRow[]
     .sort((a, b) => (a.holm ?? 1) - (b.holm ?? 1) || a.family.localeCompare(b.family));
 }
 
-const adjustedColumns: Column<AdjustedRow>[] = [
-  { key: "family", header: es.study.corrections.familyColumn, render: (r) => r.family },
+const adjustedColumns = (t: Dictionary): Column<AdjustedRow>[] => [
+  { key: "family", header: t.study.corrections.familyColumn, render: (r) => r.family },
   {
     key: "holm",
-    header: es.study.table.holm,
+    header: t.study.table.holm,
     align: "right",
     render: (r) => fmtNumber(r.holm, 3),
   },
-  { key: "bh", header: es.study.table.bh, align: "right", render: (r) => fmtNumber(r.bh, 4) },
+  { key: "bh", header: t.study.table.bh, align: "right", render: (r) => fmtNumber(r.bh, 4) },
 ];
 
-const deflatedColumns: Column<DeflatedRow>[] = [
-  { key: "rule", header: es.study.corrections.rule, render: (r) => r.rule },
+const deflatedColumns = (t: Dictionary): Column<DeflatedRow>[] => [
+  { key: "rule", header: t.study.corrections.rule, render: (r) => r.rule },
   {
     key: "n",
-    header: es.study.corrections.trials,
+    header: t.study.corrections.trials,
     align: "right",
     render: (r) => fmtInt(r.n_trials),
   },
   {
     key: "obs",
-    header: es.study.corrections.observedSharpe,
+    header: t.study.corrections.observedSharpe,
     align: "right",
     render: (r) => fmtNumber(r.observed_sharpe_per_observation, 4),
   },
   {
     key: "bench",
-    header: es.study.corrections.benchmark,
+    header: t.study.corrections.benchmark,
     align: "right",
     render: (r) => fmtNumber(r.benchmark_sharpe_per_observation, 4),
   },
   {
     key: "dsr",
-    header: es.study.corrections.deflated,
+    header: t.study.corrections.deflated,
     align: "right",
     render: (r) => fmtNumber(r.deflated_sharpe, 4),
   },
   {
     key: "spurious",
-    header: es.study.corrections.spurious,
+    header: t.study.corrections.spurious,
     align: "right",
     render: (r) => fmtPercent(r.probability_best_is_spurious, 2),
   },
 ];
 
-const sensitivityColumns: Column<SensitivityRow>[] = [
-  { key: "rule", header: es.study.corrections.rule, render: (r) => r.rule },
+const sensitivityColumns = (t: Dictionary): Column<SensitivityRow>[] => [
+  { key: "rule", header: t.study.corrections.rule, render: (r) => r.rule },
   {
     key: "n",
-    header: es.study.corrections.nTests,
+    header: t.study.corrections.nTests,
     align: "right",
     render: (r) => fmtInt(r.n_tests),
   },
   {
     key: "thr",
-    header: es.study.corrections.threshold,
+    header: t.study.corrections.threshold,
     align: "right",
     render: (r) => (r.bonferroni_threshold == null ? "—" : r.bonferroni_threshold.toExponential(2)),
   },
   {
     key: "p",
-    header: es.study.corrections.smallestP,
+    header: t.study.corrections.smallestP,
     align: "right",
     render: (r) => fmtNumber(r.smallest_raw_p_value, 4),
   },
   {
     key: "survive",
-    header: es.study.corrections.anySurvive,
+    header: t.study.corrections.anySurvive,
     align: "right",
     render: (r) => (
       <Badge tone={r.any_survive ? "positive" : "negative"}>
-        {r.any_survive ? es.study.corrections.yes : es.study.corrections.no}
+        {r.any_survive ? t.study.corrections.yes : t.study.corrections.no}
       </Badge>
     ),
   },
@@ -122,6 +122,7 @@ const sensitivityColumns: Column<SensitivityRow>[] = [
 
 /** PBO against the 0.5 line that pure noise produces. */
 function PboGauge({ pbo }: { pbo: number }) {
+  const t = useI18n();
   return (
     <div className="space-y-2">
       <div className="relative h-4 w-full overflow-hidden rounded-full bg-surface-2">
@@ -137,7 +138,7 @@ function PboGauge({ pbo }: { pbo: number }) {
       </div>
       <div className="flex justify-between text-xs text-muted">
         <span>0</span>
-        <span>{es.study.corrections.pboNoiseLine}</span>
+        <span>{t.study.corrections.pboNoiseLine}</span>
         <span>1</span>
       </div>
     </div>
@@ -145,6 +146,7 @@ function PboGauge({ pbo }: { pbo: number }) {
 }
 
 export function CorrectionsPanel({ study }: { study: StudyCorrections }) {
+  const t = useI18n();
   const deflated: DeflatedRow[] = Object.entries(study.deflated_sharpe ?? {}).map(
     ([rule, entry]) => ({ rule, ...entry })
   );
@@ -156,32 +158,32 @@ export function CorrectionsPanel({ study }: { study: StudyCorrections }) {
 
   return (
     <Card>
-      <CardHeader title={es.study.corrections.title} subtitle={es.study.corrections.subtitle} />
+      <CardHeader title={t.study.corrections.title} subtitle={t.study.corrections.subtitle} />
 
-      <InterpretationBox title={es.study.corrections.conclusionTitle}>
+      <InterpretationBox title={t.study.corrections.conclusionTitle}>
         <p>{study.conclusion}</p>
       </InterpretationBox>
 
       <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          label={`${es.study.corrections.holmTitle} — ${es.study.corrections.rejected}`}
+          label={`${t.study.corrections.holmTitle} — ${t.study.corrections.rejected}`}
           value={fmtInt(study.holm.n_rejected)}
           sub={`α = ${fmtNumber(study.alpha, 2)}`}
           metricKey="holm_adjusted_p"
         />
         <StatCard
-          label={`${es.study.corrections.bhTitle} — ${es.study.corrections.rejected}`}
+          label={`${t.study.corrections.bhTitle} — ${t.study.corrections.rejected}`}
           value={fmtInt(study.benjamini_hochberg.n_rejected)}
           sub={`α = ${fmtNumber(study.alpha, 2)}`}
           metricKey="bh_adjusted_p"
         />
         <StatCard
-          label={es.study.corrections.pboSplits}
+          label={t.study.corrections.pboSplits}
           value={fmtInt(study.pbo?.n_splits)}
-          sub={`${es.study.corrections.pboConfigurations}: ${fmtInt(study.pbo?.n_configurations)}`}
+          sub={`${t.study.corrections.pboConfigurations}: ${fmtInt(study.pbo?.n_configurations)}`}
         />
         <StatCard
-          label={es.study.headline.configurations}
+          label={t.study.headline.configurations}
           value={fmtInt(study.n_configurations_evaluated)}
           metricKey="n_configurations_evaluated"
         />
@@ -189,54 +191,59 @@ export function CorrectionsPanel({ study }: { study: StudyCorrections }) {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div>
-          <CardHeader title={es.study.corrections.pboTitle} />
+          <CardHeader title={t.study.corrections.pboTitle} />
           {pbo != null && Number.isFinite(pbo) ? (
             <div className="space-y-3">
               <p className="tabular text-3xl font-semibold text-fg">{fmtNumber(pbo, 3)}</p>
               <PboGauge pbo={pbo} />
-              <p className="text-xs text-muted">{es.study.corrections.pboCaption}</p>
+              <p className="text-xs text-muted">{t.study.corrections.pboCaption}</p>
             </div>
           ) : (
-            <EmptyState title={es.study.corrections.pboUnavailable} />
+            <EmptyState title={t.study.corrections.pboUnavailable} />
           )}
         </div>
 
         <div>
-          <CardHeader title={es.study.corrections.adjustedTitle} />
+          <CardHeader title={t.study.corrections.adjustedTitle} />
           {rows.length > 0 ? (
-            <DataTable columns={adjustedColumns} rows={rows} rowKey={(r) => r.family} dense />
+            <DataTable columns={adjustedColumns(t)} rows={rows} rowKey={(r) => r.family} dense />
           ) : (
-            <EmptyState title={es.common.noData} />
+            <EmptyState title={t.common.noData} />
           )}
         </div>
       </div>
 
       <div className="mt-6 space-y-3">
         <CardHeader
-          title={es.study.corrections.deflatedTitle}
-          subtitle={es.study.corrections.deflatedCaption}
+          title={t.study.corrections.deflatedTitle}
+          subtitle={t.study.corrections.deflatedCaption}
         />
         {deflated.length > 0 ? (
-          <DataTable columns={deflatedColumns} rows={deflated} rowKey={(r) => r.rule} dense />
+          <DataTable columns={deflatedColumns(t)} rows={deflated} rowKey={(r) => r.rule} dense />
         ) : (
-          <EmptyState title={es.common.noData} />
+          <EmptyState title={t.common.noData} />
         )}
       </div>
 
       <div className="mt-6 space-y-3">
         <CardHeader
-          title={es.study.corrections.sensitivityTitle}
-          subtitle={es.study.corrections.sensitivityCaption}
+          title={t.study.corrections.sensitivityTitle}
+          subtitle={t.study.corrections.sensitivityCaption}
         />
         {sensitivity.length > 0 ? (
-          <DataTable columns={sensitivityColumns} rows={sensitivity} rowKey={(r) => r.rule} dense />
+          <DataTable
+            columns={sensitivityColumns(t)}
+            rows={sensitivity}
+            rowKey={(r) => r.rule}
+            dense
+          />
         ) : (
-          <EmptyState title={es.common.noData} />
+          <EmptyState title={t.common.noData} />
         )}
       </div>
 
       <div className="mt-6">
-        <CardHeader title={es.study.corrections.criteriaByGate} />
+        <CardHeader title={t.study.corrections.criteriaByGate} />
         <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {Object.entries(study.criteria_by_gate ?? {}).map(([gate, text]) => (
             <div key={gate} className="rounded-md border border-border bg-surface-2 px-3 py-2">

@@ -12,33 +12,33 @@ import { DataTable, type Column } from "@/components/ui/Table";
 import type { StudyRegimeCell } from "@/lib/api-types";
 import { fmtInt, fmtNumber, fmtPercent, fmtSignedPercent, signClass } from "@/lib/format";
 import { useStudyRegimes } from "@/lib/hooks";
-import { es } from "@/lib/i18n/es";
+import { useI18n, type Dictionary } from "@/lib/i18n";
 import { ALL } from "@/lib/study";
 
-const columns: Column<StudyRegimeCell>[] = [
+const buildColumns = (t: Dictionary): Column<StudyRegimeCell>[] => [
   {
     key: "family",
-    header: es.study.table.family,
+    header: t.study.table.family,
     render: (c) => <span className="font-medium text-fg">{c.family}</span>,
   },
-  { key: "gate", header: es.study.table.gate, render: (c) => c.gate ?? "—" },
-  { key: "dimension", header: es.study.regimes.dimension, render: (c) => c.dimension ?? "—" },
-  { key: "regime", header: es.study.regimes.regime, render: (c) => c.regime ?? "—" },
+  { key: "gate", header: t.study.table.gate, render: (c) => c.gate ?? "—" },
+  { key: "dimension", header: t.study.regimes.dimension, render: (c) => c.dimension ?? "—" },
+  { key: "regime", header: t.study.regimes.regime, render: (c) => c.regime ?? "—" },
   {
     key: "bars",
-    header: es.study.detail.bars,
+    header: t.study.detail.bars,
     align: "right",
     render: (c) => fmtInt(c.n_bars),
   },
   {
     key: "share",
-    header: es.study.regimes.shareOfBars,
+    header: t.study.regimes.shareOfBars,
     align: "right",
     render: (c) => fmtPercent(c.share_of_bars, 1),
   },
   {
     key: "ret",
-    header: es.study.table.totalReturn,
+    header: t.study.table.totalReturn,
     align: "right",
     render: (c) => (
       <span className={signClass(c.total_return)}>{fmtSignedPercent(c.total_return)}</span>
@@ -46,7 +46,7 @@ const columns: Column<StudyRegimeCell>[] = [
   },
   {
     key: "sharpe",
-    header: es.study.table.sharpe,
+    header: t.study.table.sharpe,
     align: "right",
     render: (c) => (
       <span className={signClass(c.sharpe_annualised)}>{fmtNumber(c.sharpe_annualised, 2)}</span>
@@ -54,7 +54,7 @@ const columns: Column<StudyRegimeCell>[] = [
   },
   {
     key: "p",
-    header: es.study.table.pValue,
+    header: t.study.table.pValue,
     align: "right",
     render: (c) => fmtNumber(c.p_value, 4),
   },
@@ -70,6 +70,8 @@ const distinct = (cells: StudyRegimeCell[], field: keyof StudyRegimeCell) => {
 };
 
 export function RegimePanel() {
+  const t = useI18n();
+  const columns = buildColumns(t);
   const { data, error, isLoading } = useStudyRegimes();
   const [family, setFamily] = useState(ALL);
   const [dimension, setDimension] = useState(ALL);
@@ -93,44 +95,44 @@ export function RegimePanel() {
 
   return (
     <Card>
-      <CardHeader title={es.study.regimes.title} subtitle={es.study.regimes.subtitle} />
+      <CardHeader title={t.study.regimes.title} subtitle={t.study.regimes.subtitle} />
 
-      <ExploratoryBanner message={es.study.regimes.banner} />
+      <ExploratoryBanner message={t.study.regimes.banner} />
 
       <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label={es.study.regimes.cells} value={fmtInt(correction.n_cells)} />
-        <StatCard label={es.study.regimes.testable} value={fmtInt(correction.n_testable_cells)} />
+        <StatCard label={t.study.regimes.cells} value={fmtInt(correction.n_cells)} />
+        <StatCard label={t.study.regimes.testable} value={fmtInt(correction.n_testable_cells)} />
         <StatCard
-          label={es.study.regimes.excluded}
+          label={t.study.regimes.excluded}
           value={fmtInt(correction.n_excluded_small_cells)}
-          sub={`${es.study.regimes.minBars}: ${fmtInt(correction.min_cell_bars)}`}
+          sub={`${t.study.regimes.minBars}: ${fmtInt(correction.min_cell_bars)}`}
         />
-        <StatCard label={es.study.regimes.survivors} value={fmtInt(survivors.length)} />
+        <StatCard label={t.study.regimes.survivors} value={fmtInt(survivors.length)} />
       </div>
 
       <div className="mt-4 flex flex-wrap items-end gap-4">
         <Select
           id="regime-family"
-          label={es.study.regimes.filterFamily}
+          label={t.study.regimes.filterFamily}
           value={family}
           options={[
-            { value: ALL, label: es.study.table.all },
+            { value: ALL, label: t.study.table.all },
             ...distinct(cells, "family").map((v) => ({ value: v, label: v })),
           ]}
           onChange={setFamily}
         />
         <Select
           id="regime-dimension"
-          label={es.study.regimes.filterDimension}
+          label={t.study.regimes.filterDimension}
           value={dimension}
           options={[
-            { value: ALL, label: es.study.table.all },
+            { value: ALL, label: t.study.table.all },
             ...distinct(cells, "dimension").map((v) => ({ value: v, label: v })),
           ]}
           onChange={setDimension}
         />
         <p className="tabular text-xs text-muted">
-          {es.study.table.shown
+          {t.study.table.shown
             .replace("{n}", fmtInt(rows.length))
             .replace("{total}", fmtInt(cells.length))}
         </p>
@@ -145,20 +147,20 @@ export function RegimePanel() {
             dense
           />
         ) : (
-          <EmptyState title={es.study.regimes.empty} />
+          <EmptyState title={t.study.regimes.empty} />
         )}
       </div>
 
       {data.conclusion && <p className="mt-4 text-sm text-muted">{data.conclusion}</p>}
 
       <div className="mt-4">
-        <CardHeader title={es.study.regimes.candidateTitle} />
+        <CardHeader title={t.study.regimes.candidateTitle} />
         {data.candidate ? (
           <pre className="overflow-x-auto rounded-md border border-border bg-surface-2 p-3 text-xs text-muted">
             {JSON.stringify(data.candidate, null, 2)}
           </pre>
         ) : (
-          <EmptyState title={es.study.regimes.noCandidate} />
+          <EmptyState title={t.study.regimes.noCandidate} />
         )}
       </div>
     </Card>

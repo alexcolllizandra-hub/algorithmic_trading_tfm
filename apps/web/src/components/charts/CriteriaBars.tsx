@@ -1,10 +1,10 @@
 "use client";
 
 import { Badge } from "@/components/ui/Badge";
+import { useI18n } from "@/lib/i18n";
 import type { StudyCriterion, StudyMinTradesVeto } from "@/lib/api-types";
 import { cn } from "@/lib/cn";
 import { fmtInt } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
 import { criterionPercent } from "@/lib/study";
 
 function Bar({
@@ -18,6 +18,7 @@ function Bar({
   required: number;
   met: boolean;
 }) {
+  const t = useI18n();
   const width = criterionPercent(passed, of);
   const marker = criterionPercent(required, of);
   return (
@@ -28,7 +29,7 @@ function Bar({
       />
       <span
         aria-hidden
-        title={`${es.study.criteria.required} ${required}/${of}`}
+        title={`${t.study.criteria.required} ${required}/${of}`}
         className="absolute top-0 h-full w-px bg-fg/70"
         style={{ left: `${marker}%` }}
       />
@@ -49,6 +50,7 @@ export function CriteriaBars({
   veto?: StudyMinTradesVeto | null;
   gloss?: Record<string, string>;
 }) {
+  const t = useI18n();
   return (
     <div className="space-y-4">
       <ul className="space-y-3">
@@ -61,7 +63,7 @@ export function CriteriaBars({
                   {fmtInt(criterion.passed)}/{fmtInt(criterion.of)}
                 </span>
                 <span className="tabular text-muted">
-                  {es.study.criteria.required} {fmtInt(criterion.required)}/{fmtInt(criterion.of)}
+                  {t.study.criteria.required} {fmtInt(criterion.required)}/{fmtInt(criterion.of)}
                 </span>
               </span>
             </div>
@@ -80,16 +82,16 @@ export function CriteriaBars({
         <div className="rounded-md border border-dashed border-border bg-surface-2 px-3 py-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm text-fg">
-              {es.study.criteria.vetoLabel}
+              {t.study.criteria.vetoLabel}
               <Badge tone={veto.triggered ? "negative" : "neutral"} className="ml-2">
-                {veto.triggered ? es.study.criteria.vetoTriggered : es.study.criteria.vetoClear}
+                {veto.triggered ? t.study.criteria.vetoTriggered : t.study.criteria.vetoClear}
               </Badge>
             </span>
             <span className="tabular text-xs text-muted">
               {fmtInt(veto.passed)}/{fmtInt(veto.of)}
             </span>
           </div>
-          <p className="mt-2 text-xs text-muted">{es.study.criteria.vetoNote}</p>
+          <p className="mt-2 text-xs text-muted">{t.study.criteria.vetoNote}</p>
         </div>
       )}
     </div>

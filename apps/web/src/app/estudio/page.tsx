@@ -14,10 +14,11 @@ import { RegimePanel } from "@/components/study/RegimePanel";
 import { StudyUnavailable } from "@/components/study/StudyUnavailable";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState, Skeleton } from "@/components/ui/States";
-import { es } from "@/lib/i18n/es";
+import { useI18n } from "@/lib/i18n";
 import { useStudySummary } from "@/lib/hooks";
 
 function EstudioInner() {
+  const t = useI18n();
   const { data: summary, error, isLoading } = useStudySummary();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
@@ -38,8 +39,8 @@ function EstudioInner() {
         <FamilyDetail familyKey={selectedKey} families={summary.families} />
       ) : (
         <Card>
-          <CardHeader title={es.study.detail.hypothesis} />
-          <EmptyState title={es.study.detail.empty} />
+          <CardHeader title={t.study.detail.hypothesis} />
+          <EmptyState title={t.study.detail.empty} />
         </Card>
       )}
 
@@ -51,16 +52,17 @@ function EstudioInner() {
 }
 
 export default function EstudioPage() {
-  const s = es.sections.estudio;
+  const t = useI18n();
+  const s = t.sections.estudio;
   return (
     <PageShell title={s.title}>
       <SectionIntro title={s.title} subtitle={s.subtitle} questions={s} />
       <EstudioInner />
       <HowToRead>
         <p>{s.porQueAnswer}</p>
-        <p>{es.study.fan.caption}</p>
-        <p>{es.study.corrections.pboCaption}</p>
-        <p>{es.study.holdout.deliberateAbsence}</p>
+        <p>{t.study.fan.caption}</p>
+        <p>{t.study.corrections.pboCaption}</p>
+        <p>{t.study.holdout.deliberateAbsence}</p>
       </HowToRead>
     </PageShell>
   );

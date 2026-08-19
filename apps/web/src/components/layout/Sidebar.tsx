@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { NAV } from "@/components/layout/nav";
+import { navItems } from "@/components/layout/nav";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 
 export function Sidebar() {
+  const t = useI18n();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -25,13 +27,13 @@ export function Sidebar() {
         {!collapsed && (
           <div className="leading-tight">
             <div className="font-semibold">perp-lab</div>
-            <div className="text-xs text-muted">plataforma de investigación</div>
+            <div className="text-xs text-muted">{t.app.tagline}</div>
           </div>
         )}
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-3" aria-label="Primary">
-        {NAV.map((item) => (
+        {navItems(t).map((item) => (
           <Link
             key={item.href}
             href={item.href}

@@ -5,8 +5,8 @@ import { StudyUnavailable } from "@/components/study/StudyUnavailable";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState, Skeleton } from "@/components/ui/States";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useI18n } from "@/lib/i18n";
 import { useStudyHoldout } from "@/lib/hooks";
-import { es } from "@/lib/i18n/es";
 
 /**
  * The frozen partition is UNAUDITED, so this panel is deliberately metric-free:
@@ -15,6 +15,7 @@ import { es } from "@/lib/i18n/es";
  * populated or not.
  */
 export function HoldoutPanel() {
+  const t = useI18n();
   const { data, error, isLoading } = useStudyHoldout();
 
   if (error) return <StudyUnavailable error={error} />;
@@ -28,19 +29,19 @@ export function HoldoutPanel() {
   return (
     <Card>
       <CardHeader
-        title={es.study.holdout.title}
-        subtitle={es.study.holdout.subtitle}
+        title={t.study.holdout.title}
+        subtitle={t.study.holdout.subtitle}
         right={<StatusBadge status={status} />}
       />
 
-      <InterpretationBox tone="warning" title={es.study.holdout.lockedTitle}>
-        <p>{es.study.holdout.lockedBody}</p>
+      <InterpretationBox tone="warning" title={t.study.holdout.lockedTitle}>
+        <p>{t.study.holdout.lockedBody}</p>
       </InterpretationBox>
 
       <dl className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-card border border-border bg-surface-2 px-4 py-3">
           <dt className="text-xs font-semibold uppercase tracking-wide text-accent">
-            {es.study.holdout.period}
+            {t.study.holdout.period}
           </dt>
           <dd className="mt-1 text-sm text-fg">
             {data.period ? data.period : <StatusBadge status={null} />}
@@ -48,7 +49,7 @@ export function HoldoutPanel() {
         </div>
         <div className="rounded-card border border-border bg-surface-2 px-4 py-3">
           <dt className="text-xs font-semibold uppercase tracking-wide text-accent">
-            {es.study.holdout.reason}
+            {t.study.holdout.reason}
           </dt>
           <dd className="mt-1 text-sm text-fg">
             {data.reason ? data.reason : <StatusBadge status={null} />}
@@ -58,8 +59,8 @@ export function HoldoutPanel() {
 
       <div className="mt-6">
         <CardHeader
-          title={es.study.holdout.requirementsTitle}
-          subtitle={es.study.holdout.requirementsSubtitle}
+          title={t.study.holdout.requirementsTitle}
+          subtitle={t.study.holdout.requirementsSubtitle}
         />
         {requirements.length > 0 ? (
           <ul className="space-y-2">
@@ -77,13 +78,13 @@ export function HoldoutPanel() {
           </ul>
         ) : (
           <EmptyState
-            title={es.study.holdout.requirementsEmpty}
-            hint={es.study.holdout.requirementsEmptyHint}
+            title={t.study.holdout.requirementsEmpty}
+            hint={t.study.holdout.requirementsEmptyHint}
           />
         )}
       </div>
 
-      <p className="mt-4 text-sm text-muted">{es.study.holdout.deliberateAbsence}</p>
+      <p className="mt-4 text-sm text-muted">{t.study.holdout.deliberateAbsence}</p>
     </Card>
   );
 }

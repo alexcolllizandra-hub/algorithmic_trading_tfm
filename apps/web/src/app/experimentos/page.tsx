@@ -23,8 +23,8 @@ import type {
   MethodComparison,
   RunSummary,
 } from "@/lib/api-types";
+import { useI18n } from "@/lib/i18n";
 import { fmtInt, fmtRatio, fmtSignedPercent, signClass } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
 import { metricHelp } from "@/lib/metrics";
 import { useAnalytics, useCandidates, useComparison, useFolds, useRun, useRuns } from "@/lib/hooks";
 
@@ -36,6 +36,7 @@ const FAMILIES = ["", "momentum", "breakout", "mean_reversion"];
 const KINDS = ["", "development", "synthetic-smoke", "final-holdout"];
 
 function ExperimentosInner() {
+  const t = useI18n();
   const params = useSearchParams();
   const router = useRouter();
   const runId = useSelectedRun();
@@ -47,7 +48,7 @@ function ExperimentosInner() {
     router.replace(`/experimentos?${sp.toString()}`);
   };
 
-  const s = es.sections.experimentos;
+  const s = t.sections.experimentos;
 
   return (
     <div className="space-y-6">
@@ -82,8 +83,8 @@ function ExperimentosInner() {
       {tab === "fairness" && <FairnessPanel runId={runId} />}
 
       <HowToRead>
-        <p>{es.glossary.fairBudget.definition}</p>
-        <p>{es.glossary.oos.definition}</p>
+        <p>{t.glossary.fairBudget.definition}</p>
+        <p>{t.glossary.oos.definition}</p>
       </HowToRead>
     </div>
   );
@@ -205,10 +206,11 @@ function FilterSelect({
 }
 
 function RunDetail({ runId }: { runId: string | null }) {
+  const t = useI18n();
   const [tab, setTab] = useState<DetailTab>("comparison");
   const { data: run, error, isLoading } = useRun(runId);
 
-  if (!runId) return <EmptyState title={es.common.selectRun} />;
+  if (!runId) return <EmptyState title={t.common.selectRun} />;
   if (isLoading) return <Skeleton className="h-40" />;
   if (error) return <ErrorState title="Run no encontrado" detail={error.message} />;
 
@@ -492,8 +494,9 @@ function FoldsTab({ runId }: { runId: string }) {
 }
 
 function AnalyticsTab({ runId }: { runId: string | null }) {
+  const t = useI18n();
   const { data, error, isLoading } = useAnalytics(runId);
-  if (!runId) return <EmptyState title={es.common.selectRun} />;
+  if (!runId) return <EmptyState title={t.common.selectRun} />;
   if (isLoading) return <Skeleton className="h-72" />;
   if (error) return <ErrorState title="Sin analytics" detail={error.message} />;
   if (!data) return <EmptyState title="Sin artefacto analytics" />;
@@ -545,8 +548,9 @@ function AnalyticsTab({ runId }: { runId: string | null }) {
 }
 
 export default function ExperimentosPage() {
+  const t = useI18n();
   return (
-    <PageShell title={es.sections.experimentos.title}>
+    <PageShell title={t.sections.experimentos.title}>
       <Suspense fallback={<Skeleton className="h-72" />}>
         <ExperimentosInner />
       </Suspense>

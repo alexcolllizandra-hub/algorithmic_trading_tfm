@@ -8,10 +8,10 @@ import { Select } from "@/components/ui/Select";
 import { EmptyState } from "@/components/ui/States";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DataTable, type Column } from "@/components/ui/Table";
+import { useI18n } from "@/lib/i18n";
 import type { StudyFamilySummary } from "@/lib/api-types";
 import { cn } from "@/lib/cn";
 import { fmtInt, fmtNumber, fmtSignedPercent, signClass } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
 import {
   ALL,
   NO_FILTERS,
@@ -35,12 +35,13 @@ function SortHeader({
   direction: SortDirection;
   onSort: (key: StudySortKey) => void;
 }) {
+  const t = useI18n();
   const active = activeKey === columnKey;
   return (
     <button
       type="button"
       onClick={() => onSort(columnKey)}
-      aria-label={`${label} (${direction === "asc" ? es.study.table.sortAsc : es.study.table.sortDesc})`}
+      aria-label={`${label} (${direction === "asc" ? t.study.table.sortAsc : t.study.table.sortDesc})`}
       className={cn(
         "inline-flex items-center gap-1 uppercase tracking-wide hover:text-fg",
         active && "text-accent"
@@ -63,6 +64,7 @@ export function MasterTable({
   selectedKey: string | null;
   onSelect: (key: string) => void;
 }) {
+  const t = useI18n();
   const [filters, setFilters] = useState(NO_FILTERS);
   const [sortKey, setSortKey] = useState<StudySortKey>("total_return");
   const [direction, setDirection] = useState<SortDirection>("desc");
@@ -82,23 +84,23 @@ export function MasterTable({
   };
 
   const options = (field: keyof StudyFamilySummary) => [
-    { value: ALL, label: es.study.table.all },
+    { value: ALL, label: t.study.table.all },
     ...distinctValues(families, field).map((v) => ({ value: v, label: v })),
   ];
 
   const columns: Column<StudyFamilySummary>[] = [
     {
       key: "family",
-      header: es.study.table.family,
+      header: t.study.table.family,
       render: (r) => <span className="font-medium text-fg">{r.family}</span>,
     },
-    { key: "gate", header: es.study.table.gate, render: (r) => <Badge>{r.gate}</Badge> },
-    { key: "symbol", header: es.study.table.symbol, render: (r) => r.symbol },
+    { key: "gate", header: t.study.table.gate, render: (r) => <Badge>{r.gate}</Badge> },
+    { key: "symbol", header: t.study.table.symbol, render: (r) => r.symbol },
     {
       key: "total_return",
       header: (
         <SortHeader
-          label={es.study.table.totalReturn}
+          label={t.study.table.totalReturn}
           columnKey="total_return"
           activeKey={sortKey}
           direction={direction}
@@ -114,7 +116,7 @@ export function MasterTable({
       key: "sharpe",
       header: (
         <SortHeader
-          label={es.study.table.sharpe}
+          label={t.study.table.sharpe}
           columnKey="sharpe"
           activeKey={sortKey}
           direction={direction}
@@ -126,7 +128,7 @@ export function MasterTable({
     },
     {
       key: "max_drawdown",
-      header: es.study.table.maxDrawdown,
+      header: t.study.table.maxDrawdown,
       align: "right",
       render: (r) => (
         <span className={signClass(r.max_drawdown)}>{fmtSignedPercent(r.max_drawdown)}</span>
@@ -136,7 +138,7 @@ export function MasterTable({
       key: "p_value",
       header: (
         <SortHeader
-          label={es.study.table.pValue}
+          label={t.study.table.pValue}
           columnKey="p_value"
           activeKey={sortKey}
           direction={direction}
@@ -148,19 +150,19 @@ export function MasterTable({
     },
     {
       key: "holm",
-      header: es.study.table.holm,
+      header: t.study.table.holm,
       align: "right",
       render: (r) => fmtNumber(r.holm_adjusted_p, 3),
     },
     {
       key: "bh",
-      header: es.study.table.bh,
+      header: t.study.table.bh,
       align: "right",
       render: (r) => fmtNumber(r.bh_adjusted_p, 4),
     },
     {
       key: "verdict",
-      header: es.study.table.verdict,
+      header: t.study.table.verdict,
       render: (r) => <StatusBadge status={r.verdict} />,
     },
     {
@@ -173,7 +175,7 @@ export function MasterTable({
           onClick={() => onSelect(r.key)}
           className="rounded border border-border px-2 py-0.5 text-xs text-accent hover:bg-accent/10"
         >
-          {es.study.table.open}
+          {t.study.table.open}
         </button>
       ),
     },
@@ -181,39 +183,39 @@ export function MasterTable({
 
   return (
     <Card>
-      <CardHeader title={es.study.table.title} subtitle={es.study.table.subtitle} />
+      <CardHeader title={t.study.table.title} subtitle={t.study.table.subtitle} />
 
       <div className="mb-4 flex flex-wrap items-end gap-4">
         <Select
           id="study-gate"
-          label={es.study.table.filterGate}
+          label={t.study.table.filterGate}
           value={filters.gate}
           options={options("gate")}
           onChange={(gate) => setFilters((f) => ({ ...f, gate }))}
         />
         <Select
           id="study-symbol"
-          label={es.study.table.filterSymbol}
+          label={t.study.table.filterSymbol}
           value={filters.symbol}
           options={options("symbol")}
           onChange={(symbol) => setFilters((f) => ({ ...f, symbol }))}
         />
         <Select
           id="study-verdict"
-          label={es.study.table.filterVerdict}
+          label={t.study.table.filterVerdict}
           value={filters.verdict}
           options={options("verdict")}
           onChange={(verdict) => setFilters((f) => ({ ...f, verdict }))}
         />
         <p className="tabular text-xs text-muted">
-          {es.study.table.shown
+          {t.study.table.shown
             .replace("{n}", fmtInt(rows.length))
             .replace("{total}", fmtInt(families.length))}
         </p>
       </div>
 
       {rows.length === 0 ? (
-        <EmptyState title={es.study.table.empty} />
+        <EmptyState title={t.study.table.empty} />
       ) : (
         <DataTable
           columns={columns}
@@ -225,7 +227,7 @@ export function MasterTable({
         />
       )}
 
-      <p className="mt-3 text-xs text-muted">{es.study.table.nullNote}</p>
+      <p className="mt-3 text-xs text-muted">{t.study.table.nullNote}</p>
     </Card>
   );
 }

@@ -13,10 +13,10 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/Table";
 import { EmptyState, ErrorState, PartialNotice, Skeleton } from "@/components/ui/States";
 import { StatCard } from "@/components/ui/StatCard";
+import { useI18n } from "@/lib/i18n";
 import { API_BASE } from "@/lib/api";
 import type { DatasetCoverage, EdaFigureModel } from "@/lib/api-types";
 import { fmtDate, fmtInt } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
 import {
   useEdaFigures,
   useEdaSummary,
@@ -26,6 +26,7 @@ import {
 } from "@/lib/hooks";
 
 function DatosEdaInner() {
+  const t = useI18n();
   const runId = useSelectedRun();
   const { data: research } = useResearchSummary();
   const effectiveRun = runId ?? research?.pilot_run_id ?? null;
@@ -76,12 +77,12 @@ function DatosEdaInner() {
     },
   ];
 
-  const s = es.sections.datosEda;
+  const s = t.sections.datosEda;
 
   return (
     <div className="space-y-6">
       <SectionIntro title={s.title} subtitle={s.subtitle} questions={s} />
-      <PartialNotice>{es.warnings.devPartitionOnly}</PartialNotice>
+      <PartialNotice>{t.warnings.devPartitionOnly}</PartialNotice>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Holdout desde" value={edaSummary?.holdout_start?.slice(0, 10) ?? "—"} />
@@ -107,7 +108,7 @@ function DatosEdaInner() {
       </Card>
 
       <Card>
-        <CardHeader title={es.timeline.title} subtitle="Seleccione un run para ver particiones" />
+        <CardHeader title={t.timeline.title} subtitle="Seleccione un run para ver particiones" />
         <RunPicker selected={effectiveRun} />
         {tlLoading ? (
           <Skeleton className="mt-4 h-48" />
@@ -120,13 +121,13 @@ function DatosEdaInner() {
             <TimelineChart data={timeline} />
           </div>
         ) : (
-          <EmptyState title={es.common.selectRun} />
+          <EmptyState title={t.common.selectRun} />
         )}
       </Card>
 
       <Card>
         <CardHeader
-          title={es.common.keyFindings}
+          title={t.common.keyFindings}
           subtitle={`${keyFigures?.items.length ?? 0} figuras destacadas`}
         />
         {keyFigures && keyFigures.items.length > 0 ? (
@@ -136,7 +137,7 @@ function DatosEdaInner() {
         )}
         <div className="mt-4">
           <a href="#galeria-completa" className="text-sm text-accent hover:underline">
-            {es.common.viewAll} ↓
+            {t.common.viewAll} ↓
           </a>
         </div>
       </Card>
@@ -144,7 +145,7 @@ function DatosEdaInner() {
       <div id="galeria-completa">
         <Card>
           <CardHeader
-            title={es.common.fullGallery}
+            title={t.common.fullGallery}
             subtitle={`${allFigures?.items.length ?? 0} figuras · temas: ${edaSummary?.themes.join(", ") ?? "—"}`}
           />
           {allFigures && allFigures.items.length > 0 ? (
@@ -156,8 +157,8 @@ function DatosEdaInner() {
       </div>
 
       <HowToRead>
-        <p>{es.glossary.pilot.definition}</p>
-        <p>{es.glossary.holdout.definition}</p>
+        <p>{t.glossary.pilot.definition}</p>
+        <p>{t.glossary.holdout.definition}</p>
       </HowToRead>
 
       <InterpretationBox tone="info">{s.queConcluirAnswer}</InterpretationBox>
@@ -191,8 +192,9 @@ function FigureGallery({ figures }: { figures: EdaFigureModel[] }) {
 }
 
 export default function DatosEdaPage() {
+  const t = useI18n();
   return (
-    <PageShell title={es.sections.datosEda.title}>
+    <PageShell title={t.sections.datosEda.title}>
       <Suspense fallback={<Skeleton className="h-72" />}>
         <DatosEdaInner />
       </Suspense>

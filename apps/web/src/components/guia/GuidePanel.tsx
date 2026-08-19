@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/Card";
+import { useI18n } from "@/lib/i18n";
 import { panelAnchor, panelCopy, panelNumber, panelParts, type GuidePanelId } from "@/lib/guia";
 
 /**
@@ -6,9 +7,10 @@ import { panelAnchor, panelCopy, panelNumber, panelParts, type GuidePanelId } fr
  * rendered here and only here, so a panel cannot be added without them.
  */
 export function PanelParts({ id }: { id: GuidePanelId }) {
+  const t = useI18n();
   return (
     <dl data-guide-parts className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
-      {panelParts(id).map((part) => (
+      {panelParts(id, t).map((part) => (
         <div
           key={part.key}
           data-guide-part={part.key}
@@ -29,7 +31,8 @@ export function PanelParts({ id }: { id: GuidePanelId }) {
  * illustration) and the four parts appended by construction.
  */
 export function GuidePanel({ id, children }: { id: GuidePanelId; children?: React.ReactNode }) {
-  const copy = panelCopy(id);
+  const t = useI18n();
+  const copy = panelCopy(id, t);
   const anchor = panelAnchor(id);
   const headingId = `${anchor}-title`;
 

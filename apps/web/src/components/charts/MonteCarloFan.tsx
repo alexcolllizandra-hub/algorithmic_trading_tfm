@@ -11,9 +11,9 @@ import {
 } from "recharts";
 
 import { useChartColors } from "@/components/charts/theme";
+import { useI18n } from "@/lib/i18n";
 import type { StudyMonteCarlo } from "@/lib/api-types";
 import { fmtInt, fmtNumber } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
 import { fanDomain, monteCarloRows, type FanRow } from "@/lib/study";
 
 function FanTooltip({
@@ -25,10 +25,11 @@ function FanTooltip({
   label?: number | string;
   payload?: { payload?: FanRow }[];
 }) {
+  const t = useI18n();
   const row = payload?.[0]?.payload;
   if (!active || !row) return null;
   const lines: [string, number | null][] = [
-    [es.study.fan.observedSeries, row.observed],
+    [t.study.fan.observedSeries, row.observed],
     ["p95", row.p95],
     ["p75", row.p75],
     ["p50", row.p50],
@@ -38,7 +39,7 @@ function FanTooltip({
   return (
     <div className="rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-fg shadow-lg">
       <p className="mb-1 font-medium">
-        {es.study.fan.barLabel} {fmtInt(Number(label))}
+        {t.study.fan.barLabel} {fmtInt(Number(label))}
       </p>
       {lines.map(([name, value]) => (
         <p key={name} className="tabular">
@@ -56,6 +57,7 @@ function FanTooltip({
  * zero by the stack baseline.
  */
 export function MonteCarloFan({ mc, height = 300 }: { mc: StudyMonteCarlo; height?: number }) {
+  const t = useI18n();
   const c = useChartColors();
   const rows = monteCarloRows(mc);
   const [low, high] = fanDomain(rows);
@@ -138,7 +140,7 @@ export function MonteCarloFan({ mc, height = 300 }: { mc: StudyMonteCarlo; heigh
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted">
         <span className="inline-flex items-center gap-2">
           <span aria-hidden className="h-0.5 w-6 rounded" style={{ background: c.accent }} />
-          {es.study.fan.observedSeries}
+          {t.study.fan.observedSeries}
         </span>
         <span className="inline-flex items-center gap-2">
           <span
@@ -146,15 +148,15 @@ export function MonteCarloFan({ mc, height = 300 }: { mc: StudyMonteCarlo; heigh
             className="h-0.5 w-6 rounded opacity-70"
             style={{ background: c.axis }}
           />
-          {es.study.fan.medianSeries}
+          {t.study.fan.medianSeries}
         </span>
         <span className="inline-flex items-center gap-2">
           <span aria-hidden className="h-3 w-6 rounded opacity-30" style={{ background: c.axis }} />
-          {es.study.fan.innerBand}
+          {t.study.fan.innerBand}
         </span>
         <span className="inline-flex items-center gap-2">
           <span aria-hidden className="h-3 w-6 rounded opacity-15" style={{ background: c.axis }} />
-          {es.study.fan.outerBand}
+          {t.study.fan.outerBand}
         </span>
       </div>
     </div>

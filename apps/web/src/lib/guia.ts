@@ -10,7 +10,7 @@
 // No study metric is computed or stored here: those arrive from the API.
 
 import type { StudyCorrections, StudyFamilySummary, StudySummaryResponse } from "@/lib/api-types";
-import { es } from "@/lib/i18n/es";
+import type { Dictionary } from "@/lib/i18n";
 
 // --------------------------------------------------------------------------- //
 // Panel registry
@@ -48,8 +48,8 @@ export interface GuidePanelCopy {
   conclusion: string;
 }
 
-export function panelCopy(id: GuidePanelId): GuidePanelCopy {
-  return es.guia.panels[id];
+export function panelCopy(id: GuidePanelId, t: Dictionary): GuidePanelCopy {
+  return t.guia.panels[id];
 }
 
 export function panelAnchor(id: GuidePanelId): string {
@@ -67,9 +67,9 @@ export interface GuidePart {
 }
 
 /** The four parts of a panel, always in the same order and never empty. */
-export function panelParts(id: GuidePanelId): GuidePart[] {
-  const copy = panelCopy(id);
-  return GUIDE_PART_KEYS.map((key) => ({ key, label: es.guia.parts[key], text: copy[key] }));
+export function panelParts(id: GuidePanelId, t: Dictionary): GuidePart[] {
+  const copy = panelCopy(id, t);
+  return GUIDE_PART_KEYS.map((key) => ({ key, label: t.guia.parts[key], text: copy[key] }));
 }
 
 export interface TocItem {
@@ -79,11 +79,11 @@ export interface TocItem {
   anchor: string;
 }
 
-export function tocItems(): TocItem[] {
+export function tocItems(t: Dictionary): TocItem[] {
   return GUIDE_PANEL_IDS.map((id, i) => ({
     id,
     number: i + 1,
-    title: panelCopy(id).title,
+    title: panelCopy(id, t).title,
     anchor: panelAnchor(id),
   }));
 }

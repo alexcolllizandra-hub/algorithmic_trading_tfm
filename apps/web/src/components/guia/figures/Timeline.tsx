@@ -1,6 +1,6 @@
+import { useI18n, type Dictionary } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 import { segmentWidths, timelineLegend, type GuideTimelineRow, type SegmentTone } from "@/lib/guia";
-import { es } from "@/lib/i18n/es";
 
 const TONE_CLASS: Record<SegmentTone, string> = {
   train: "bg-accent/30",
@@ -16,7 +16,7 @@ const TONE_CLASS: Record<SegmentTone, string> = {
   neutral: "bg-surface-2",
 };
 
-const LEGEND: Record<string, string> = es.guia.legend;
+const LEGEND = (t: Dictionary): Record<string, string> => t.guia.legend;
 
 /**
  * Segmented time bars: the primitive behind every split, fold, purge and
@@ -29,6 +29,7 @@ export function Timeline({
   rows: GuideTimelineRow[];
   rowLabels?: Record<string, string>;
 }) {
+  const t = useI18n();
   return (
     <div className="space-y-3">
       {rows.map((row) => {
@@ -59,7 +60,7 @@ export function Timeline({
               aria-hidden
               className={cn("h-2.5 w-4 rounded-sm border border-border", TONE_CLASS[entry.tone])}
             />
-            {LEGEND[entry.key] ?? entry.key}
+            {LEGEND(t)[entry.key] ?? entry.key}
           </li>
         ))}
       </ul>

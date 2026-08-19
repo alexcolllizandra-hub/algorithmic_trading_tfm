@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 import {
   GUIDE_PANEL_IDS,
@@ -13,7 +14,6 @@ import {
   tocItems,
   type GuidePanelId,
 } from "@/lib/guia";
-import { es } from "@/lib/i18n/es";
 
 /** Reads the OS motion preference, tolerating environments without matchMedia. */
 function usePrefersReducedMotion(): boolean {
@@ -38,9 +38,10 @@ function usePrefersReducedMotion(): boolean {
  * moves focus to the target panel so keyboard users follow the same path.
  */
 export function GuideToc() {
+  const t = useI18n();
   const [active, setActive] = useState<GuidePanelId>(GUIDE_PANEL_IDS[0]);
   const reducedMotion = usePrefersReducedMotion();
-  const items = tocItems();
+  const items = tocItems(t);
 
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
@@ -78,18 +79,18 @@ export function GuideToc() {
 
   return (
     <nav
-      aria-label={es.guia.toc.navLabel}
+      aria-label={t.guia.toc.navLabel}
       className="sticky top-14 z-10 -mx-6 border-b border-border bg-bg/95 px-6 py-3 backdrop-blur"
     >
       <div className="flex flex-wrap items-center gap-3">
         <p className="tabular text-xs font-medium text-fg">
-          {es.guia.toc.progress
+          {t.guia.toc.progress
             .replace("{n}", String(items.find((i) => i.id === active)?.number ?? 1))
             .replace("{total}", String(items.length))}
         </p>
         <div
           role="progressbar"
-          aria-label={es.guia.toc.progressLabel}
+          aria-label={t.guia.toc.progressLabel}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={progress}
@@ -106,7 +107,7 @@ export function GuideToc() {
               type="button"
               onClick={() => jump(item.id)}
               title={item.title}
-              aria-label={es.guia.toc.jump
+              aria-label={t.guia.toc.jump
                 .replace("{n}", String(item.number))
                 .replace("{title}", item.title)}
               aria-current={item.id === active ? "true" : undefined}
@@ -123,7 +124,7 @@ export function GuideToc() {
         ))}
       </ol>
 
-      <p className="mt-1.5 text-xs text-muted">{panelCopy(active).title}</p>
+      <p className="mt-1.5 text-xs text-muted">{panelCopy(active, t).title}</p>
     </nav>
   );
 }

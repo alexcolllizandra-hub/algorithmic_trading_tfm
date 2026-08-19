@@ -10,9 +10,9 @@ import {
 } from "recharts";
 
 import { useChartColors } from "@/components/charts/theme";
+import { useI18n } from "@/lib/i18n";
 import type { StudyFamilyDetail } from "@/lib/api-types";
 import { fmtDate, fmtNumber } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
 import { seedEquitySeries } from "@/lib/study";
 
 interface TooltipEntry {
@@ -32,6 +32,7 @@ function SeedTooltip({
   payload?: TooltipEntry[];
   averageKey: string;
 }) {
+  const t = useI18n();
   if (!active || !payload) return null;
   const entries = payload.filter((p) => p.value != null);
   if (entries.length === 0) return null;
@@ -42,7 +43,7 @@ function SeedTooltip({
         const key = String(entry.dataKey ?? "");
         return (
           <p key={key} className="tabular">
-            {key === averageKey ? es.study.chart.averageSeries : key.replace("seed_", "seed ")}:{" "}
+            {key === averageKey ? t.study.chart.averageSeries : key.replace("seed_", "seed ")}:{" "}
             {fmtNumber(Number(entry.value), 4)}
           </p>
         );
@@ -64,6 +65,7 @@ export function SeedEquityChart({
   detail: StudyFamilyDetail;
   height?: number;
 }) {
+  const t = useI18n();
   const c = useChartColors();
   const { rows, seedKeys, averageKey } = seedEquitySeries(detail);
 
@@ -118,7 +120,7 @@ export function SeedEquityChart({
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted">
         <span className="inline-flex items-center gap-2">
           <span aria-hidden className="h-0.5 w-6 rounded" style={{ background: c.accent }} />
-          {es.study.chart.averageSeries}
+          {t.study.chart.averageSeries}
         </span>
         <span className="inline-flex items-center gap-2">
           <span
@@ -126,10 +128,10 @@ export function SeedEquityChart({
             className="h-0.5 w-6 rounded opacity-50"
             style={{ background: c.axis }}
           />
-          {es.study.chart.seedSeries.replace("{n}", String(seedKeys.length))}
+          {t.study.chart.seedSeries.replace("{n}", String(seedKeys.length))}
         </span>
       </div>
-      <p className="text-xs text-muted">{es.study.chart.seedCaption}</p>
+      <p className="text-xs text-muted">{t.study.chart.seedCaption}</p>
     </div>
   );
 }

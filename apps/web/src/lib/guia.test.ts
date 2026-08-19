@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { es } from "@/lib/i18n/es";
 
 import type { StudyFamilySummary, StudySummaryResponse } from "@/lib/api-types";
 import {
@@ -62,18 +63,18 @@ describe("guide panel registry", () => {
   // they are checked at the copy level as well as in the rendered page.
   it("gives every panel the four labelled parts, all non-empty", () => {
     for (const id of GUIDE_PANEL_IDS) {
-      const parts = panelParts(id);
+      const parts = panelParts(id, es);
       expect(parts.map((p) => p.key)).toEqual([...GUIDE_PART_KEYS]);
       for (const part of parts) {
         expect(part.label.length).toBeGreaterThan(0);
         expect(part.text.length).toBeGreaterThan(20);
       }
-      expect(panelCopy(id).title.length).toBeGreaterThan(0);
+      expect(panelCopy(id, es).title.length).toBeGreaterThan(0);
     }
   });
 
   it("builds a table of contents with one entry per panel", () => {
-    const items = tocItems();
+    const items = tocItems(es);
     expect(items).toHaveLength(13);
     expect(items.map((i) => i.number)).toEqual(GUIDE_PANEL_IDS.map(panelNumber));
     expect(items.every((i) => i.title.length > 0 && i.anchor === panelAnchor(i.id))).toBe(true);

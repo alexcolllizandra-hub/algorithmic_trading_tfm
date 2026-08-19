@@ -16,14 +16,14 @@ import { ExploratoryBanner } from "@/components/ui/ExploratoryBanner";
 import { DataTable, type Column } from "@/components/ui/Table";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/States";
 import { StatCard } from "@/components/ui/StatCard";
+import { useI18n, type Dictionary } from "@/lib/i18n";
 import type { FoldSelection, PerformanceFold, TradeModel } from "@/lib/api-types";
 import { fmtInt, fmtNumber, fmtSignedPercent, fmtTimestamp, signClass } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
 import { useEquity, usePerformance, useTrades } from "@/lib/hooks";
 
-function positionLabel(pos: number | null | undefined): string {
-  if (pos == null || pos === 0) return es.trades.flat;
-  return pos > 0 ? es.trades.long : es.trades.short;
+function positionLabel(pos: number | null | undefined, t: Dictionary): string {
+  if (pos == null || pos === 0) return t.trades.flat;
+  return pos > 0 ? t.trades.long : t.trades.short;
 }
 
 function csvEscape(v: unknown): string {
@@ -51,6 +51,7 @@ function downloadTradesCsv(rows: TradeModel[], name: string) {
 }
 
 function ResultadosInner() {
+  const t = useI18n();
   const params = useSearchParams();
   const router = useRouter();
   const runId = useSelectedRun();
@@ -155,16 +156,16 @@ function ResultadosInner() {
     );
   }, [perf]);
 
-  const s = es.sections.resultados;
+  const s = t.sections.resultados;
 
   return (
     <div className="space-y-6">
       <SectionIntro title={s.title} subtitle={s.subtitle} questions={s} />
       <RunPicker selected={runId} />
-      <ExploratoryBanner kind={perf?.kind} message={perf?.warning ?? es.warnings.exploratory} />
+      <ExploratoryBanner kind={perf?.kind} message={perf?.warning ?? t.warnings.exploratory} />
 
       {!runId ? (
-        <EmptyState title={es.common.selectRun} />
+        <EmptyState title={t.common.selectRun} />
       ) : isLoading ? (
         <Skeleton className="h-72" />
       ) : error ? (
@@ -217,7 +218,7 @@ function ResultadosInner() {
 
       <HowToRead>
         <p>{s.porQueAnswer}</p>
-        <p>{es.glossary.oos.definition}</p>
+        <p>{t.glossary.oos.definition}</p>
       </HowToRead>
     </div>
   );
@@ -230,6 +231,7 @@ function FoldDetail({
   selection: FoldSelection;
   tableFold: PerformanceFold | null;
 }) {
+  const t = useI18n();
   const { runId, method, fold } = selection;
 
   const { data: eqProbe } = useEquity(runId, method, fold, 10000);
@@ -285,23 +287,23 @@ function FoldDetail({
   }
 
   const tradeColumns: Column<TradeModel>[] = [
-    { key: "id", header: "#", align: "right", render: (t) => fmtInt(t.trade_id) },
-    { key: "entry", header: "Entrada", render: (t) => fmtTimestamp(t.entry_time) },
-    { key: "exit", header: "Salida", render: (t) => fmtTimestamp(t.exit_time) },
+    { key: "id", header: "#", align: "right", render: (row) => fmtInt(row.trade_id) },
+    { key: "entry", header: "Entrada", render: (row) => fmtTimestamp(row.entry_time) },
+    { key: "exit", header: "Salida", render: (row) => fmtTimestamp(row.exit_time) },
     {
       key: "pos",
       header: "Posición",
-      render: (t) => (
+      render: (row) => (
         <Badge
           tone={
-            t.position != null && t.position > 0
+            row.position != null && row.position > 0
               ? "positive"
-              : t.position != null && t.position < 0
+              : row.position != null && row.position < 0
                 ? "negative"
                 : "neutral"
           }
         >
-          {positionLabel(t.position)}
+          {positionLabel(row.position, t)}
         </Badge>
       ),
     },
@@ -309,17 +311,17 @@ function FoldDetail({
       key: "ret",
       header: "Retorno neto",
       align: "right",
-      render: (t) => (
-        <span className={signClass(t.net_return)}>{fmtSignedPercent(t.net_return)}</span>
+      render: (row) => (
+        <span className={signClass(row.net_return)}>{fmtSignedPercent(row.net_return)}</span>
       ),
     },
-    { key: "reason", header: "Salida", render: (t) => <Badge>{t.exit_reason ?? "—"}</Badge> },
+    { key: "reason", header: "Salida", render: (row) => <Badge>{row.exit_reason ?? "—"}</Badge> },
   ];
 
   return (
     <div className="space-y-6">
       {integrityIssues.length > 0 && (
-        <InterpretationBox tone="error" title={es.warnings.integrityMismatch}>
+        <InterpretationBox tone="error" title={t.warnings.integrityMismatch}>
           <ul className="list-inside list-disc space-y-1">
             {integrityIssues.map((msg) => (
               <li key={msg}>{msg}</li>
@@ -369,7 +371,7 @@ function FoldDetail({
                 }
                 className="rounded-md border border-border px-3 py-1 text-xs text-accent hover:bg-accent/10"
               >
-                {es.trades.exportCsv}
+                {t.trades.exportCsv}
               </button>
             ) : undefined
           }
@@ -378,7 +380,7 @@ function FoldDetail({
           <DataTable
             columns={tradeColumns}
             rows={tr.items}
-            rowKey={(t) => String(t.trade_id)}
+            rowKey={(row) => String(row.trade_id)}
             dense
           />
         ) : (
@@ -390,8 +392,9 @@ function FoldDetail({
 }
 
 export default function ResultadosPage() {
+  const t = useI18n();
   return (
-    <PageShell title={es.sections.resultados.title}>
+    <PageShell title={t.sections.resultados.title}>
       <Suspense fallback={<Skeleton className="h-72" />}>
         <ResultadosInner />
       </Suspense>

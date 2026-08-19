@@ -4,8 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import GuiaPage from "@/app/guia/page";
 import { GUIDE_PANEL_IDS, panelCopy, panelParts } from "@/lib/guia";
+import { I18nProvider } from "@/lib/i18n";
 import { es } from "@/lib/i18n/es";
 import { HOLDOUT_LEAK_PROBE, HOLDOUT_LEAK_SENTINELS, resolveFixture } from "@/mock/fixtures";
+
+// The shell's Sidebar highlights the active entry via usePathname(), which
+// returns null outside a Next router. Mocking the hook keeps the fix in the
+// test, where the gap is, rather than making production code defend against a
+// situation that cannot happen in the app.
+vi.mock("next/navigation", async () => {
+  const actual = await vi.importActual<typeof import("next/navigation")>("next/navigation");
+  return { ...actual, usePathname: () => "/guia" };
+});
 
 // The guide is served the synthetic fixtures, except for the holdout: that one
 // gets the leak probe, a locked payload that carries a full reading. The page
@@ -28,9 +38,14 @@ function stubApi() {
 }
 
 function renderGuide() {
+  // These assertions are written against the Spanish copy, so the locale is
+  // pinned: jsdom reports navigator.language as en-US, which would otherwise
+  // render the page in English underneath them.
   return render(
     <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
-      <GuiaPage />
+      <I18nProvider forceLocale="es">
+        <GuiaPage />
+      </I18nProvider>
     </SWRConfig>
   );
 }
@@ -65,7 +80,7 @@ describe("/guia", () => {
 
     for (const id of GUIDE_PANEL_IDS) {
       expect(
-        screen.getByRole("heading", { level: 2, name: panelCopy(id).title })
+        screen.getByRole("heading", { level: 2, name: panelCopy(id, es).title })
       ).toBeInTheDocument();
     }
   });
@@ -84,7 +99,7 @@ describe("/guia", () => {
       const scope = within(section as HTMLElement);
 
       expect((section as HTMLElement).querySelectorAll("[data-guide-part]")).toHaveLength(4);
-      for (const part of panelParts(id)) {
+      for (const part of panelParts(id, es)) {
         expect(scope.getByText(part.label)).toBeInTheDocument();
         expect(scope.getByText(part.text)).toBeInTheDocument();
       }
@@ -156,7 +171,7 @@ describe("/guia", () => {
     expect(buttons).toHaveLength(13);
     expect(buttons[0]).toHaveAttribute(
       "aria-label",
-      es.guia.toc.jump.replace("{n}", "1").replace("{title}", panelCopy("pregunta").title)
+      es.guia.toc.jump.replace("{n}", "1").replace("{title}", panelCopy("pregunta", es).title)
     );
     expect(within(nav).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "8");
   });

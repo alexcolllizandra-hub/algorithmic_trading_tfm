@@ -28,9 +28,9 @@ import {
 import { HowToRead } from "@/components/education/HowToRead";
 import { SectionIntro } from "@/components/education/SectionIntro";
 import { PageShell } from "@/components/layout/PageShell";
+import { useI18n } from "@/lib/i18n";
 import type { GuidePanelId } from "@/lib/guia";
 import { useStudySummary } from "@/lib/hooks";
-import { es } from "@/lib/i18n/es";
 
 /**
  * Guided mode: the thesis in thirteen sequential panels, from the plainest
@@ -86,15 +86,16 @@ function GuiaInner() {
 }
 
 export default function GuiaPage() {
-  const s = es.sections.guia;
+  const t = useI18n();
+  const s = t.sections.guia;
   return (
     <PageShell title={s.title}>
       <SectionIntro title={s.title} subtitle={s.subtitle} questions={s} />
       <GuiaInner />
       <HowToRead>
         <p>{s.comoInterpretarAnswer}</p>
-        <p>{es.guia.illustrative.note}</p>
-        <p>{es.study.holdout.deliberateAbsence}</p>
+        <p>{t.guia.illustrative.note}</p>
+        <p>{t.study.holdout.deliberateAbsence}</p>
       </HowToRead>
     </PageShell>
   );
