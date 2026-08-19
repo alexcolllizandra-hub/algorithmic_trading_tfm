@@ -27,7 +27,19 @@ export const en = {
       label: "Study closure",
       description: "13 families, multiple testing and holdout",
     },
+    estrategias: {
+      label: "Strategies",
+      description: "Every family: real equity and metrics",
+    },
     diagnostico: { label: "Diagnostics", description: "Artifacts and system" },
+  },
+
+  navGroups: {
+    start: "Start",
+    learn: "Learn",
+    study: "The study",
+    explore: "Explore",
+    system: "System",
   },
 
   phases: {
@@ -956,6 +968,69 @@ export const en = {
             "It is more permissive than Holm: it accepts some false positives in exchange for detecting more real effects. If nothing survives BH either, the negative conclusion is stronger.",
         },
       },
+    },
+  },
+
+  explorer: {
+    title: "Strategy explorer",
+    subtitle:
+      "All fifteen families with a complete multiseed study: real out-of-sample equity curves and the full metric set, per asset and per seed.",
+    que: "What does this section show?",
+    queAnswer:
+      "Every family evaluated, with the equity curve of its ten seeds over the concatenated out-of-sample window and every metric the robustness battery computed. Nothing is simulated: each point is the exact equity at that instant.",
+    porQue: "Why show rejected strategies?",
+    porQueAnswer:
+      "Because the study's finding is precisely that looking profitable and holding a real edge are different things. Here you can see, family by family, how much the outcome moves with the seed and against buy and hold.",
+    comoInterpretar: "How do you read the curves?",
+    comoInterpretarAnswer:
+      "The thick line is the seed average; the thin ones, each seed on its own. The wider they spread, the more the outcome depends on the search's starting luck. Always compare against buy and hold.",
+    queConcluir: "What NOT to conclude here?",
+    queConcluirAnswer:
+      "A rising curve does not make an edge: the verdict was decided by the closure's statistical correction, not by the return. No family is promoted and no figure is holdout performance.",
+    pickFamily: "Family",
+    pickAsset: "Asset",
+    pickSeed: "Seed",
+    averageSeeds: "Seed average",
+    allSeeds: "All seeds",
+    equityTitle: "Out-of-sample equity",
+    equitySubtitle:
+      "Window {start} — {end} · {bars} bars · engine {engine}. Curves decimated for drawing; every point keeps its exact value.",
+    metricsTitle: "Full metrics",
+    metricsSubtitle: "All sixteen battery metrics, for the current selection.",
+    buyAndHold: "Buy and hold",
+    thesis: "What this family bets on",
+    thesisMissing: "This family's registered hypothesis lives in its round, not in the closure.",
+    round: "Round",
+    verdictRejected: "REJECTED at closure",
+    verdictNotPromotable: "Evaluated post-closure — not promotable (partition consumed)",
+    banner:
+      "Exploratory development results. No family is promoted; the study closed negative, and the later CRT round cannot promote because the reserved partition is consumed.",
+    tableFamily: "Family",
+    tableRound: "Round",
+    tableVerdict: "Verdict",
+    tableMedianReturn: "Median return",
+    tableMedianSharpe: "Median Sharpe",
+    tableBh: "B&H",
+    loading: "Loading the strategy index…",
+    loadError:
+      "Could not load the index. Generate it with: uv run python scripts/export_strategy_explorer.py",
+    metric: {
+      total_return: "Total return",
+      ann_return: "Annualised return",
+      ann_volatility: "Annualised volatility",
+      sharpe: "Sharpe",
+      sortino: "Sortino",
+      calmar: "Calmar",
+      max_drawdown: "Maximum drawdown",
+      time_in_drawdown: "Time in drawdown",
+      hit_rate: "Hit rate",
+      n_trades: "Trades",
+      exposure: "Exposure",
+      turnover: "Turnover",
+      var_95: "VaR 95%",
+      expected_shortfall_95: "ES 95%",
+      skewness: "Skewness",
+      excess_kurtosis: "Excess kurtosis",
     },
   },
 

@@ -20,7 +20,19 @@ export const es = {
       label: "Cierre del estudio",
       description: "13 familias, corrección múltiple y holdout",
     },
+    estrategias: {
+      label: "Estrategias",
+      description: "Todas las familias: equity y métricas reales",
+    },
     diagnostico: { label: "Diagnóstico", description: "Artefactos y sistema" },
+  },
+
+  navGroups: {
+    start: "Inicio",
+    learn: "Aprende",
+    study: "El estudio",
+    explore: "Explora",
+    system: "Sistema",
   },
 
   phases: {
@@ -953,6 +965,69 @@ export const es = {
             "Es más permisiva que Holm: acepta algún falso positivo a cambio de detectar más efectos reales. Si nada sobrevive tampoco a BH, la conclusión negativa es más sólida.",
         },
       },
+    },
+  },
+
+  explorer: {
+    title: "Explorador de estrategias",
+    subtitle:
+      "Las quince familias con estudio multi-semilla completo: curvas de equity fuera de muestra reales y el conjunto íntegro de métricas, por activo y por semilla.",
+    que: "¿Qué muestra esta sección?",
+    queAnswer:
+      "Cada familia evaluada, con la curva de equity de sus diez semillas sobre la ventana out-of-sample concatenada y todas las métricas que calculó la batería de robustez. Nada está simulado: cada punto es la equity exacta de ese instante.",
+    porQue: "¿Por qué enseñar estrategias rechazadas?",
+    porQueAnswer:
+      "Porque el hallazgo del estudio es precisamente que parecer rentable y tener ventaja real son cosas distintas. Aquí se ve, familia a familia, cuánto varía el resultado con la semilla y contra comprar y mantener.",
+    comoInterpretar: "¿Cómo leer las curvas?",
+    comoInterpretarAnswer:
+      "La línea gruesa es la media de las semillas; las finas, cada semilla por separado. Cuanto más se abren, más depende el resultado del azar del arranque de la búsqueda. Compare siempre contra comprar y mantener.",
+    queConcluir: "¿Qué NO concluir aquí?",
+    queConcluirAnswer:
+      "Que una curva suba no la convierte en ventaja: el veredicto lo decidió la corrección estadística del cierre, no el retorno. Ninguna familia está promovida y ninguna cifra es rendimiento del holdout.",
+    pickFamily: "Familia",
+    pickAsset: "Activo",
+    pickSeed: "Semilla",
+    averageSeeds: "Media de las semillas",
+    allSeeds: "Todas las semillas",
+    equityTitle: "Equity fuera de muestra",
+    equitySubtitle:
+      "Ventana {start} — {end} · {bars} barras · motor {engine}. Curvas decimadas para el dibujo; cada punto conserva su valor exacto.",
+    metricsTitle: "Métricas completas",
+    metricsSubtitle: "Las dieciséis métricas de la batería, para la selección actual.",
+    buyAndHold: "Comprar y mantener",
+    thesis: "Qué apuesta esta familia",
+    thesisMissing: "La hipótesis registrada de esta familia vive en su ronda, no en el cierre.",
+    round: "Ronda",
+    verdictRejected: "RECHAZADA en el cierre",
+    verdictNotPromotable: "Evaluada tras el cierre — no promocionable (partición consumida)",
+    banner:
+      "Resultados exploratorios de desarrollo. Ninguna familia está promovida; el estudio cerró en negativo y la ronda CRT posterior no puede promover porque la partición reservada está consumida.",
+    tableFamily: "Familia",
+    tableRound: "Ronda",
+    tableVerdict: "Veredicto",
+    tableMedianReturn: "Retorno mediano",
+    tableMedianSharpe: "Sharpe mediano",
+    tableBh: "B&H",
+    loading: "Cargando el índice de estrategias…",
+    loadError:
+      "No se pudo cargar el índice. Genérelo con: uv run python scripts/export_strategy_explorer.py",
+    metric: {
+      total_return: "Retorno total",
+      ann_return: "Retorno anualizado",
+      ann_volatility: "Volatilidad anualizada",
+      sharpe: "Sharpe",
+      sortino: "Sortino",
+      calmar: "Calmar",
+      max_drawdown: "Drawdown máximo",
+      time_in_drawdown: "Tiempo en drawdown",
+      hit_rate: "Tasa de acierto",
+      n_trades: "Operaciones",
+      exposure: "Exposición",
+      turnover: "Rotación",
+      var_95: "VaR 95%",
+      expected_shortfall_95: "ES 95%",
+      skewness: "Asimetría",
+      excess_kurtosis: "Curtosis en exceso",
     },
   },
 

@@ -7,65 +7,107 @@ export interface NavItem {
   description: string;
 }
 
+export interface NavGroup {
+  key: string;
+  label: string;
+  items: NavItem[];
+}
+
 /**
- * Sidebar entries, built from the active dictionary.
+ * Sidebar entries grouped into the reading order of the site.
  *
- * The labels used to be duplicated here as Spanish literals while the same
- * strings already lived under `nav` in the dictionary; the two drifted apart
- * the moment a second locale existed. Icons stay in code because they carry no
- * language, and the landing entry is the one item with no dictionary key --
- * it points at the public site rather than a panel section.
+ * The grouping is the narrative: start (what this is), learn (the theory,
+ * kept apart from the evidence on purpose), the study itself in the order the
+ * research ran (data → methodology → search → results → closure), then the
+ * explorer for hands-on inspection and the system pages. Labels come from the
+ * active dictionary; icons stay in code because they carry no language.
  */
-export function navItems(t: Dictionary): NavItem[] {
+export function navGroups(t: Dictionary): NavGroup[] {
   return [
     {
-      href: "/",
-      label: "Landing",
-      icon: "◈",
-      description: t.app.tagline,
+      key: "start",
+      label: t.navGroups.start,
+      items: [
+        { href: "/", label: "Landing", icon: "◈", description: t.app.tagline },
+        {
+          href: "/panel",
+          label: t.nav.overview.label,
+          icon: "◉",
+          description: t.nav.overview.description,
+        },
+      ],
     },
     {
-      href: "/panel",
-      label: t.nav.overview.label,
-      icon: "◉",
-      description: t.nav.overview.description,
-    },
-    { href: "/guia", label: t.nav.guia.label, icon: "◔", description: t.nav.guia.description },
-    {
-      href: "/datos-eda",
-      label: t.nav.datosEda.label,
-      icon: "☷",
-      description: t.nav.datosEda.description,
+      key: "learn",
+      label: t.navGroups.learn,
+      items: [
+        { href: "/guia", label: t.nav.guia.label, icon: "◔", description: t.nav.guia.description },
+      ],
     },
     {
-      href: "/metodologia",
-      label: t.nav.metodologia.label,
-      icon: "⚙",
-      description: t.nav.metodologia.description,
+      key: "study",
+      label: t.navGroups.study,
+      items: [
+        {
+          href: "/datos-eda",
+          label: t.nav.datosEda.label,
+          icon: "☷",
+          description: t.nav.datosEda.description,
+        },
+        {
+          href: "/metodologia",
+          label: t.nav.metodologia.label,
+          icon: "⚙",
+          description: t.nav.metodologia.description,
+        },
+        {
+          href: "/experimentos",
+          label: t.nav.experimentos.label,
+          icon: "≣",
+          description: t.nav.experimentos.description,
+        },
+        {
+          href: "/resultados",
+          label: t.nav.resultados.label,
+          icon: "↗",
+          description: t.nav.resultados.description,
+        },
+        {
+          href: "/estudio",
+          label: t.nav.estudio.label,
+          icon: "⚖",
+          description: t.nav.estudio.description,
+        },
+      ],
     },
     {
-      href: "/experimentos",
-      label: t.nav.experimentos.label,
-      icon: "≣",
-      description: t.nav.experimentos.description,
+      key: "explore",
+      label: t.navGroups.explore,
+      items: [
+        {
+          href: "/estrategias",
+          label: t.nav.estrategias.label,
+          icon: "∿",
+          description: t.nav.estrategias.description,
+        },
+      ],
     },
     {
-      href: "/resultados",
-      label: t.nav.resultados.label,
-      icon: "↗",
-      description: t.nav.resultados.description,
-    },
-    {
-      href: "/estudio",
-      label: t.nav.estudio.label,
-      icon: "⚖",
-      description: t.nav.estudio.description,
-    },
-    {
-      href: "/diagnostico",
-      label: t.nav.diagnostico.label,
-      icon: "▦",
-      description: t.nav.diagnostico.description,
+      key: "system",
+      label: t.navGroups.system,
+      items: [
+        {
+          href: "/diagnostico",
+          label: t.nav.diagnostico.label,
+          icon: "▦",
+          description: t.nav.diagnostico.description,
+        },
+      ],
     },
   ];
+}
+
+/** Flat list, for consumers that only need the items. */
+export function navItems(t: Dictionary): NavItem[] {
+  return navGroups(t).flatMap((group) => group.items);
 }

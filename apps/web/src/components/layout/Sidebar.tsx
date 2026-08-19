@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { navItems } from "@/components/layout/nav";
+import { navGroups } from "@/components/layout/nav";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 
@@ -32,30 +32,39 @@ export function Sidebar() {
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-3" aria-label="Primary">
-        {navItems(t).map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            title={collapsed ? item.label : undefined}
-            aria-current={isActive(item.href) ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-              isActive(item.href)
-                ? "bg-accent/15 text-fg"
-                : "text-muted hover:bg-surface-2 hover:text-fg"
-            )}
-          >
-            <span className="w-5 text-center text-base" aria-hidden>
-              {item.icon}
-            </span>
+      <nav className="flex-1 space-y-4 overflow-y-auto px-2 py-3" aria-label="Primary">
+        {navGroups(t).map((group) => (
+          <div key={group.key} className="space-y-1">
             {!collapsed && (
-              <span className="flex flex-col">
-                <span className="font-medium">{item.label}</span>
-                <span className="text-xs text-muted">{item.description}</span>
-              </span>
+              <p className="px-3 pt-1 text-[10px] font-semibold uppercase tracking-widest text-muted/70">
+                {group.label}
+              </p>
             )}
-          </Link>
+            {group.items.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={collapsed ? item.label : undefined}
+                aria-current={isActive(item.href) ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
+                  isActive(item.href)
+                    ? "bg-accent/15 text-fg"
+                    : "text-muted hover:bg-surface-2 hover:text-fg"
+                )}
+              >
+                <span className="w-5 text-center text-base" aria-hidden>
+                  {item.icon}
+                </span>
+                {!collapsed && (
+                  <span className="flex flex-col">
+                    <span className="font-medium">{item.label}</span>
+                    <span className="text-xs text-muted">{item.description}</span>
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
         ))}
       </nav>
 
