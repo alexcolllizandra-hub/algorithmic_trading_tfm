@@ -225,7 +225,7 @@ Mapped from `docs/methodology/hypothesis_matrix.md`, updated with actual evidenc
 |---|---|---|---|
 | **H1** | Does an interpretable family beat benchmarks net of costs? | **Open — negative so far** | Only momentum tested; 0/40 bootstrap CIs excluded zero |
 | **H2** | Does the GA beat Random Search at equal budget? | **Answered: no evidence** | Paired mean +0.183, 95 % CI [−0.053, +0.419]. **Confounded** — see below |
-| **H3** | Does meta-labeling improve base signals? | **Not started** | No labeling code exists |
+| **H3** | Does meta-labeling improve base signals? | **Unanswerable so far — machinery ready** | No base signal has qualified, so the question has no subject yet. The layer itself is built and validated on synthetic markets ([M1/M2 synthetic validation](m1m2_synthetic_validation.md)); that says nothing about real signals |
 | **H4** | Does performance differ across volatility regimes? | **Not started** | Regime models exist; regime-conditional evaluation does not |
 | **H5** | Is performance robust to perturbation? | **Partially answered** | Battery covers bootstrap, costs, delay, concentration; parameter perturbation and regime conditioning missing |
 

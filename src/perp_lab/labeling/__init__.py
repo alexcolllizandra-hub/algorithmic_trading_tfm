@@ -7,6 +7,8 @@ a primary strategy is eligible.
 """
 
 from perp_lab.labeling.triple_barrier import (
+    FREE_LABELS,
+    LabelCosts,
     LabelSpans,
     TripleBarrierSpec,
     average_uniqueness,
@@ -18,6 +20,8 @@ from perp_lab.labeling.triple_barrier import (
 )
 
 __all__ = [
+    "FREE_LABELS",
+    "LabelCosts",
     "LabelSpans",
     "TripleBarrierSpec",
     "average_uniqueness",

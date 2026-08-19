@@ -8,7 +8,10 @@ import numpy as np
 import polars as pl
 import pytest
 
+from perp_lab.backtesting.engine import run_backtest
 from perp_lab.labeling import (
+    FREE_LABELS,
+    LabelCosts,
     LabelSpans,
     TripleBarrierSpec,
     average_uniqueness,
@@ -150,6 +153,94 @@ def test_a_dead_zone_keeps_negligible_moves_unlabelled() -> None:
         bars, _events([0], 1, bars), _spec(min_return_bps=50.0), volatility_col="vol_frac"
     )
     assert labels.row(0, named=True)["label"] == 0
+
+
+# --------------------------------------------------------------------------- #
+# Costs: the label answers "profitable AFTER costs", not "moved the right way"
+# --------------------------------------------------------------------------- #
+
+
+def test_costs_turn_a_marginal_gross_winner_into_a_labelled_loss() -> None:
+    # +5 bps gross over the holding window against a 10 bps round trip.
+    bars = _bars([100.0 * (1.0001**i) for i in range(12)])
+    events = _events([0], 1, bars)
+    free = triple_barrier_labels(bars, events, _spec(), volatility_col="vol_frac").row(
+        0, named=True
+    )
+    charged = triple_barrier_labels(
+        bars,
+        events,
+        _spec(),
+        volatility_col="vol_frac",
+        costs=LabelCosts(fee_bps_per_side=4.0, slippage_bps_per_side=1.0),
+    ).row(0, named=True)
+
+    assert free["label"] == 1, "the move is favourable before costs"
+    assert charged["label"] == -1, "and unprofitable after them"
+    assert charged["gross_ret"] == pytest.approx(free["ret"])
+    assert charged["cost"] == pytest.approx(10.0 / 1e4)
+    assert charged["ret"] == pytest.approx(charged["gross_ret"] - charged["cost"])
+
+
+def test_funding_is_charged_over_the_bars_the_position_is_held() -> None:
+    bars = _bars([100.0] * 12).with_columns(pl.lit(0.0001).alias("funding_rate_in_bar"))
+    costs = LabelCosts(funding_rate_col="funding_rate_in_bar")
+    spec = _spec(vertical_barrier_bars=5)
+
+    long_row = triple_barrier_labels(
+        bars, _events([0], 1, bars), spec, volatility_col="vol_frac", costs=costs
+    ).row(0, named=True)
+    short_row = triple_barrier_labels(
+        bars, _events([0], -1, bars), spec, volatility_col="vol_frac", costs=costs
+    ).row(0, named=True)
+
+    # Five held bars at 1 bp each; the long pays it and the short receives it.
+    assert long_row["funding"] == pytest.approx(5e-4)
+    assert short_row["funding"] == pytest.approx(-5e-4)
+    assert long_row["label"] == -1
+    assert short_row["label"] == 1
+
+
+def test_a_costed_label_matches_what_the_backtester_would_have_earned() -> None:
+    # The label and the engine must agree, or the model is trained on a return
+    # the strategy could never have realised.
+    rng = np.random.default_rng(11)
+    closes = list(100.0 * np.cumprod(1.0 + rng.normal(0.0002, 0.003, size=40)))
+    bars = _bars(closes)
+    costs = LabelCosts(fee_bps_per_side=4.0, slippage_bps_per_side=1.0)
+    label = triple_barrier_labels(
+        bars, _events([2], 1, bars), _spec(), volatility_col="vol_frac", costs=costs
+    ).row(0, named=True)
+
+    # The engine holds the position while the signal was on the previous bar, so
+    # a signal on [event, exit - 2] is filled at the entry open and closed at the
+    # exit open.
+    signal = np.zeros(bars.height)
+    signal[2 : label["exit_index"] - 1] = 1.0
+    result = run_backtest(
+        bars.select("open_time").with_columns(pl.Series("side", signal)),
+        bars,
+        timeframe="1h",
+        fee_bps_per_side=4.0,
+        slippage_bps_per_side=1.0,
+    )
+    engine_net = float(result.ledger["net_return"].sum())
+    assert engine_net == pytest.approx(label["ret"], abs=5e-5)
+
+
+def test_costless_labels_are_the_documented_default() -> None:
+    bars = _bars([100.0] * 12)
+    labels = triple_barrier_labels(bars, _events([0], 1, bars), _spec(), volatility_col="vol_frac")
+    row = labels.row(0, named=True)
+    assert row["cost"] == 0.0
+    assert row["funding"] == 0.0
+    assert row["ret"] == row["gross_ret"]
+    assert FREE_LABELS.round_trip_cost == 0.0
+
+
+def test_negative_costs_are_refused() -> None:
+    with pytest.raises(ValueError, match="non-negative"):
+        LabelCosts(fee_bps_per_side=-1.0)
 
 
 def test_labeling_rejects_malformed_inputs() -> None:

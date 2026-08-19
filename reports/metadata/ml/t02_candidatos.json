@@ -1,0 +1,38 @@
+{
+  "notebook": "06_meta_etiquetado_supervisado",
+  "analysis_id": "t02_candidatos",
+  "caption": "Los tres candidatos preregistrados en cada fold: disponibilidad, delta de validaci\u00f3n, umbral elegido y AUC de validaci\u00f3n.",
+  "period": "development walk-forward out-of-sample; holdout never loaded",
+  "datasets": {
+    "reports/meta_labeling_real/meta_labeling_real.json": "a4afe162a385acc262d3a51b01c368aea64b1189d1d2fba5ca650db7e07e8128"
+  },
+  "config": {
+    "seed": null,
+    "study_seed": 42,
+    "code_commit_resolved": "f7c0a37c117980c1e93af58fc92066e7501edb90",
+    "data_contract_cutoff": "2026-07-01",
+    "contract_label": "INFRAESTRUCTURA/EXPLORATORIO (seccion 5; ADR 0017)",
+    "family": "crt_htf_range_reversal",
+    "symbol": "BTCUSDT",
+    "n_events": 1172,
+    "models": [
+      "logistic_regression",
+      "random_forest",
+      "lightgbm"
+    ]
+  },
+  "generated_at": "2026-08-18T23:38:06.381502+00:00",
+  "code_commit": null,
+  "output_path": "reports/tables/ml/t02_candidatos.md",
+  "kind": "table",
+  "n_rows": 12,
+  "columns": [
+    "fold",
+    "modelo",
+    "disponible",
+    "delta_validacion",
+    "umbral",
+    "auc_validacion",
+    "elegido"
+  ]
+}
