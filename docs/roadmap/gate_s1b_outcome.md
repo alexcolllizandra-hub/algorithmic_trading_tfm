@@ -3,6 +3,11 @@
 **Run date:** 2026-08-11 · **Status:** S1-B **COMPLETE** · **S1-C not started** ·
 **Nothing promoted, nothing rejected, holdout untouched**
 
+> **Nota de estado (2026-08-19) — el cuerpo del registro no se modifica.**
+> «Holdout untouched» era cierto el 2026-08-11. La partición se abrió el
+> 2026-08-13 y está consumida; véase
+> [holdout_audit_status.md](../methodology/holdout_audit_status.md).
+
 This is a *record of what happened*, kept separately from the frozen
 pre-specification in [gate_s1_batch_01.md](gate_s1_batch_01.md), which may not be
 edited after the first S1-B run started. Read that document first: it defines
