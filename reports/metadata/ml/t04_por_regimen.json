@@ -4,12 +4,12 @@
   "caption": "Eventos y aceptaciones del filtro por r\u00e9gimen de volatilidad y fold.",
   "period": "development walk-forward out-of-sample; holdout never loaded",
   "datasets": {
-    "reports/meta_labeling_real/meta_labeling_real.json": "a4afe162a385acc262d3a51b01c368aea64b1189d1d2fba5ca650db7e07e8128"
+    "reports/meta_labeling_real/meta_labeling_real.json": "5e28d0fe8df464322d5313b95a6f933048dcd33859cb6469499d0c92dcb17e7a"
   },
   "config": {
     "seed": null,
     "study_seed": 42,
-    "code_commit_resolved": "f7c0a37c117980c1e93af58fc92066e7501edb90",
+    "code_commit_resolved": "ff9d9fa23b7e1be18fcaa29ea973161d4b827d8f",
     "data_contract_cutoff": "2026-07-01",
     "contract_label": "INFRAESTRUCTURA/EXPLORATORIO (seccion 5; ADR 0017)",
     "family": "crt_htf_range_reversal",
@@ -21,8 +21,8 @@
       "lightgbm"
     ]
   },
-  "generated_at": "2026-08-18T23:38:06.389184+00:00",
-  "code_commit": null,
+  "generated_at": "2026-08-19T21:09:57.381205+00:00",
+  "code_commit": "ff9d9fa23b7e1be18fcaa29ea973161d4b827d8f",
   "output_path": "reports/tables/ml/t04_por_regimen.md",
   "kind": "table",
   "n_rows": 10,
