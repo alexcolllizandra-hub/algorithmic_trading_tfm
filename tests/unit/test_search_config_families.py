@@ -22,6 +22,7 @@ from perp_lab.search.registry import (
     FAMILIES,
     R3_CLOSED_FAMILIES,
     S1_FAMILIES,
+    S2_FAMILIES,
     available_families,
 )
 
@@ -64,7 +65,7 @@ def test_the_round_groups_partition_the_registry() -> None:
     This is what keeps the multiple-testing denominator honest: a family that
     belongs to no round would be searchable but uncounted.
     """
-    grouped = (*R3_CLOSED_FAMILIES, *S1_FAMILIES, *CRT_INTRADAY_V1_FAMILIES)
+    grouped = (*R3_CLOSED_FAMILIES, *S1_FAMILIES, *S2_FAMILIES, *CRT_INTRADAY_V1_FAMILIES)
     assert sorted(grouped) == sorted(FAMILIES)
     assert len(set(grouped)) == len(grouped), "a family appears in two rounds"
 

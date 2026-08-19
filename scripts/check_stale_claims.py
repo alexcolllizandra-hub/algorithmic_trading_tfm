@@ -44,6 +44,8 @@ ALLOWLIST: dict[str, set[str]] = {
     "docs/methodology/final_holdout_evaluation.md": {"never opened"},
     "docs/roadmap/gate_s1_batch_01.md": {"holdout untouched"},
     "docs/roadmap/gate_s1b_outcome.md": {"holdout untouched"},
+    "docs/roadmap/gate_s2b_outcome.md": {"holdout untouched"},
+    "docs/audit/03_reorganizacion_propuesta.md": {"holdout untouched"},
     "docs/roadmap.md": {"holdout untouched"},
     # This checker and the audit documents quote the phrases in order to ban
     # or report them.
