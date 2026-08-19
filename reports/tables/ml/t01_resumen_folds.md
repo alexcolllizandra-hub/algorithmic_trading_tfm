@@ -1,4 +1,4 @@
-**Table — Cada fold del estudio: modelo elegido, decisión de actuar, economía de ambos brazos y habilidad predictiva donde el filtro operó.**
+**Table — Every fold of the study: model chosen, decision to act, economics of both arms, and predictive skill where the filter traded.**
 
 | fold | n_test | modelo | actuo | señales | ret_primaria | ret_meta | delta | trades_prim | trades_meta | roc_auc | pr_auc_lift | motivo_abstencion |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

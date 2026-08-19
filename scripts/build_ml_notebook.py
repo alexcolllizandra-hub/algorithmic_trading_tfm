@@ -4,8 +4,9 @@ Run with: ``uv run python scripts/build_ml_notebook.py``
 
 The notebook narrates a CLOSED exploratory artifact
 (``reports/meta_labeling_real/meta_labeling_real.json``); it computes nothing
-new and adds nothing to any test count. Figure and table names live under the
-``ml/`` group (m01-m05, t01-t04) and are frozen once the thesis map cites them.
+new and adds nothing to any test count. Prose is English (repo-wide policy,
+2026-08-19). Figure and table names under ``ml/`` (m01-m05, t01-t04) are frozen
+identifiers cited by the thesis map.
 """
 
 from __future__ import annotations
@@ -31,41 +32,41 @@ def code(src: str) -> None:
 # --------------------------------------------------------------------------- #
 md(
     r"""
-# Meta-etiquetado supervisado sobre datos reales
+# Supervised meta-labeling on real data
 
-> **INFRAESTRUCTURA / EXPLORATORIO — §5 del contrato metodológico (ADR 0017).**
-> El estudio que este cuaderno narra corrió sin primaria elegible (el cierre
-> fue negativo), así que nada de lo que sigue es un hallazgo sobre la familia
-> primaria ni promueve candidato alguno. Sus ajustes modelo-x-fold quedan fuera
-> del denominador congelado del cierre y están contados en el artefacto.
+> **INFRASTRUCTURE / EXPLORATORY — methodology contract section 5 (ADR 0017).**
+> The study this notebook narrates ran with no eligible primary (the closure
+> was negative), so nothing here is a finding about the primary family and
+> nothing promotes any candidate. Its model-by-fold fits sit outside the
+> closure's frozen denominator and are counted in the artifact.
 
-**¿Qué pregunta responde este cuaderno?** Si un clasificador —regresión
-logística, random forest o LightGBM, el trío preregistrado en
-`experiment.yaml`— puede decidir *cuándo actuar* sobre las señales de una regla
-primaria, y qué separa una mejora económica de una capacidad predictiva real.
-**¿Con qué datos?** El artefacto cerrado del estudio walk-forward sobre 1.172
-eventos reales de `crt_htf_range_reversal` en BTCUSDT (2020-2025, desarrollo).
-**¿Qué va a encontrar el lector?** Que el brazo filtrado pierde menos dinero
-que la primaria en los cuatro folds, y que esa mejora **no** proviene de saber
-predecir: proviene de abstenerse y de operar menos. La parte incómoda es
-doble: los bloques de test son diminutos (22-48 eventos), y en la primera
-ejecución el trío fue en silencio un dúo — los NaN de warm-up excluían a la
-logística y quedó registrado como «not fittable» en cada fold.
+**What question does this notebook answer?** Whether a classifier — logistic
+regression, random forest or LightGBM, the trio pre-registered in
+`experiment.yaml` — can decide *when to act* on a primary rule's signals, and
+what separates an economic improvement from genuine predictive skill. **On
+what data?** The closed walk-forward artifact over 1,172 real events of
+`crt_htf_range_reversal` on BTCUSDT (2020-2025, development). **What will the
+reader find?** That the filtered arm loses less money than the primary in all
+four folds, and that the improvement does **not** come from knowing how to
+predict: it comes from abstaining and from trading less. The uncomfortable
+part is twofold: the test blocks are tiny (22-48 events), and on the first run
+the trio was silently a duo — warm-up NaNs excluded logistic regression, which
+was recorded as "not fittable" in every fold.
 
-**Qué recibe del anterior.** El 05 cerró el estudio con cero supervivientes;
-este cuaderno usa la mejor familia CRT *rechazada* como banco de pruebas del
-utillaje supervisado. **Qué entrega al siguiente.** La distinción
-económico-vs-predictivo que el 07 (Monte Carlo) generaliza: resultados
-positivos compatibles con azar.
+**What it receives from the previous notebook.** 05 closed the study with zero
+survivors; this one uses the best *rejected* CRT family as a test bench for
+the supervised tooling. **What it hands to the next.** The
+economics-versus-prediction distinction that 07 (Monte Carlo) generalises:
+positive results compatible with chance.
 
-Todos los bloques de este cuaderno son **DESCRIPTIVOS**: leen un artefacto
-cerrado. El único contraste que existió —la selección de modelo y umbral por
-fold— ya está contado dentro del contrato exploratorio del artefacto.
+Every block here is **DESCRIPTIVE**: it reads a closed artifact. The only test
+that ever existed — model and threshold selection per fold — is already
+counted inside the artifact's exploratory contract.
 
-### La pregunta local
+### The local question
 
-- **P1.** ¿La mejora económica del filtro sobrevive a mirar su capacidad
-  predictiva? (Alimenta **RQ3** de la memoria.)
+- **Q1.** Does the filter's economic improvement survive a look at its
+  predictive skill? (Feeds **RQ3** of the thesis.)
 """
 )
 
@@ -190,11 +191,11 @@ print(f"folds                : {SUMMARY['n_folds']} utiles ({len(SUMMARY['notes'
 
 md(
     r"""
-La tasa positiva merece una pausa antes de mirar ningún modelo: **0,495**. De
-cada dos señales de la primaria, una habría sido rentable tras costes y la otra
-no. El clasificador parte de una moneda equilibrada — no hay clase mayoritaria
-que explotar, y cualquier acierto tendrá que venir de las características, no
-del desbalance.
+The base rate deserves a pause before any model is looked at: **0.495**. Of
+every two signals the primary fires, one would have been profitable after
+costs and one would not. The classifier starts from a balanced coin — there is
+no majority class to exploit, and any skill will have to come from the
+features, not from the imbalance.
 """
 )
 
@@ -203,13 +204,13 @@ del desbalance.
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 1. Qué pasó, fold a fold — `DESCRIPTIVO`
+## 1. What happened, fold by fold — `DESCRIPTIVE`
 
-Cada fold entrena en su bloque, calibra y elige umbral **y modelo** en su
-validación, y solo entonces mira el test una vez. El filtro puede abstenerse:
-si ningún candidato mejora el retorno neto de la primaria *en validación*, el
-brazo filtrado no opera ese fold. Abstenerse es una predicción, no una excusa a
-posteriori.
+Each fold trains on its block, calibrates and picks a threshold **and a model**
+on its validation slice, and only then looks at test once. The filter may
+abstain: if no candidate improves the primary's net return *on validation*, the
+filtered arm does not trade that fold. Abstaining is a prediction, not a
+post-hoc excuse.
 """
 )
 
@@ -231,8 +232,8 @@ for f in FOLDS:
     })
 T01 = pl.DataFrame(rows)
 save_table(T01, "t01_resumen_folds", ctx,
-           caption="Cada fold del estudio: modelo elegido, decisión de actuar, economía de ambos "
-                   "brazos y habilidad predictiva donde el filtro operó.")
+           caption="Every fold of the study: model chosen, decision to act, economics of both "
+                   "arms, and predictive skill where the filter traded.")
 display(T01)
 
 acted = T01.filter(pl.col("actuo"))
@@ -253,38 +254,38 @@ abst = [f["abstained"] for f in FOLDS]
 xx = np.arange(len(ff))
 
 fig, ax = plt.subplots(figsize=(10.6, 5.2))
-ax.bar(xx - 0.19, prim, width=0.36, color="#999999", label="primaria sola")
+ax.bar(xx - 0.19, prim, width=0.36, color="#999999", label="primary alone")
 ax.bar(xx + 0.19, meta, width=0.36, color="#0072B2", hatch="///",
-       label="primaria + filtro")
+       label="primary + filter")
 for i, a in enumerate(abst):
     if a:
-        ax.annotate("se abstuvo", xy=(xx[i] + 0.19, 0), xytext=(0, 8),
+        ax.annotate("abstained", xy=(xx[i] + 0.19, 0), xytext=(0, 8),
                     textcoords="offset points", ha="center", fontsize=8.5,
                     color="#0072B2")
 ax.axhline(0, color="black", lw=1.0)
 ax.set_xticks(xx)
 ax.set_xticklabels([f"fold {i}" for i in ff])
-ax.set_ylabel("retorno neto del bloque de test")
-ax.set_title("El filtro pierde menos en los cuatro folds — dos veces por no operar")
+ax.set_ylabel("net return of the test block")
+ax.set_title("The filter loses less in all four folds - twice by not trading")
 ax.legend(fontsize=9)
 ax.grid(axis="x", visible=False)
 fig.tight_layout()
 show(fig, "m01_economia_por_fold",
-     caption="Retorno neto por fold de la primaria sola frente a la primaria filtrada. Donde el "
-             "filtro se abstiene, el brazo filtrado queda plano por construcción.")
+     caption="Net return per fold of the primary alone against the filtered primary. Where the "
+             "filter abstains, the filtered arm is flat by construction.")
 """
 )
 
 md(
     r"""
-Los cuatro deltas son positivos, y la lectura ingenua —«el filtro funciona»—
-dura hasta mirar *de dónde* sale cada delta. En los folds 0 y 3 el filtro no
-operó: mejorar a una regla que pierde absteniéndose no requiere habilidad
-alguna. En los folds 1 y 2 sí operó, con menos operaciones que la primaria
-(26 frente a 44, y 9 frente a 42), y **siguió perdiendo dinero** — solo que
-menos. La pregunta honesta no es si el brazo filtrado acaba mejor, sino si el
-clasificador demuestra saber algo. Eso se mide en la sección siguiente, no en
-esta.
+All four deltas are positive, and the naive reading — "the filter works" —
+survives exactly until you ask *where* each delta comes from. In folds 0 and 3
+the filter did not trade: beating a losing rule by abstaining requires no skill
+whatsoever. In folds 1 and 2 it did trade, with fewer trades than the primary
+(26 against 44, and 9 against 42), and it **still lost money** — just less. The
+honest question is not whether the filtered arm ends up better, but whether the
+classifier demonstrates knowing anything. That is measured in the next section,
+not this one.
 """
 )
 
@@ -293,12 +294,12 @@ esta.
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 2. La habilidad predictiva, separada de la economía — `DESCRIPTIVO`
+## 2. Predictive skill, separated from economics — `DESCRIPTIVE`
 
-El ROC-AUC mide si el clasificador ordena bien los eventos (1 = perfecto,
-0,5 = moneda); el PR-AUC lift compara su precisión-cobertura contra la tasa
-base (1,0 = nada por encima del azar). Se calculan solo en los folds donde el
-filtro actuó, porque en una abstención no hay predicciones que evaluar.
+ROC-AUC measures whether the classifier ranks events well (1 = perfect,
+0.5 = coin); PR-AUC lift compares its precision-recall against the base rate
+(1.0 = nothing above chance). Both are computed only on folds where the filter
+acted, because an abstention leaves no predictions to score.
 """
 )
 
@@ -314,41 +315,41 @@ xx = np.arange(len(act))
 
 fig, (axA, axB) = plt.subplots(1, 2, figsize=(11.6, 4.8))
 axA.bar(xx, auc, width=0.5, color="#0072B2")
-axA.axhline(0.5, color="#D62728", lw=2.0, ls="--", label="moneda (0,5)")
+axA.axhline(0.5, color="#D62728", lw=2.0, ls="--", label="coin (0.5)")
 axA.set_xticks(xx)
 axA.set_xticklabels(labels, fontsize=9)
 axA.set_ylim(0, 1)
-axA.set_ylabel("ROC-AUC en test")
-axA.set_title("(a) Ordenar eventos: al nivel de una moneda")
+axA.set_ylabel("ROC-AUC on test")
+axA.set_title("(a) Ranking events: at coin level")
 axA.legend(fontsize=9)
 axA.grid(axis="x", visible=False)
 
 axB.bar(xx, lift, width=0.5, color="#D55E00", hatch="///")
-axB.axhline(1.0, color="#D62728", lw=2.0, ls="--", label="tasa base (lift 1,0)")
+axB.axhline(1.0, color="#D62728", lw=2.0, ls="--", label="base rate (lift 1.0)")
 axB.set_xticks(xx)
 axB.set_xticklabels(labels, fontsize=9)
-axB.set_ylabel("PR-AUC / tasa base")
-axB.set_title("(b) Precisión-cobertura: idem")
+axB.set_ylabel("PR-AUC / base rate")
+axB.set_title("(b) Precision-recall: same")
 axB.legend(fontsize=9)
 axB.grid(axis="x", visible=False)
 
-fig.suptitle("Con 42-48 eventos por bloque, nada de esto se distingue del azar", fontsize=12)
+fig.suptitle("With 42-48 events per block, none of this separates from chance", fontsize=12)
 fig.tight_layout()
 show(fig, "m02_habilidad_predictiva",
-     caption="ROC-AUC (a) y lift de PR-AUC sobre la tasa base (b) en los folds donde el filtro "
-             "operó, con el modelo elegido y el tamaño del bloque de test.")
+     caption="ROC-AUC (a) and PR-AUC lift over the base rate (b) on the folds where the filter "
+             "traded, with the model chosen and the test block size.")
 """
 )
 
 md(
     r"""
-El 0,601 del fold 1 es el número que más fácil se malinterpreta. Con 48
-eventos y una tasa base del 0,5, el intervalo de un AUC estimado abarca
-holgadamente la moneda: ese valor es tan compatible con azar como el 0,494 del
-fold 2. La mediana entre ambos (0,548) no es evidencia de habilidad — es lo
-que produce el ruido cuando se le dan dos oportunidades. Si el estudio hubiera
-salido con AUC así sobre *miles* de eventos, la conversación sería otra; con
-decenas, la única lectura defendible es la nula.
+Fold 1's 0.601 is the number most easily misread. With 48 events and a base
+rate of 0.5, the interval around an estimated AUC comfortably spans the coin:
+that value is as compatible with chance as fold 2's 0.494. The median of the
+two (0.548) is not evidence of skill — it is what noise produces when given two
+chances. Had the study returned AUCs like these over *thousands* of events, the
+conversation would be different; over dozens, the null is the only defensible
+reading.
 """
 )
 
@@ -357,12 +358,12 @@ decenas, la única lectura defendible es la nula.
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 3. Lo que dicen las probabilidades — `DESCRIPTIVO`
+## 3. What the probabilities say — `DESCRIPTIVE`
 
-Las probabilidades de los clasificadores se calibran (isotónica) en la primera
-mitad de la validación antes de elegir umbral en la segunda. Un modelo
-calibrado y sin señal produce un diagrama de fiabilidad que serpentea alrededor
-de la tasa base con bins minúsculos — exactamente lo que conviene enseñar.
+Classifier probabilities are calibrated (isotonic) on the first half of the
+validation slice before a threshold is chosen on the second. A calibrated model
+with no signal produces a reliability diagram that wanders around the base rate
+in tiny bins — exactly what is worth showing.
 """
 )
 
@@ -382,17 +383,17 @@ for f in act:
                label=f"fold {f['fold']} ({f['selected_model']})")
     for x, y, n in zip(mp, orate, nn, strict=True):
         ax.annotate(str(n), xy=(x, y), fontsize=7.5, ha="center", va="center")
-ax.plot([0, 1], [0, 1], color="black", lw=1.4, ls="--", label="calibración perfecta")
+ax.plot([0, 1], [0, 1], color="black", lw=1.4, ls="--", label="perfect calibration")
 ax.set_xlim(0, 1)
 ax.set_ylim(-0.03, 1.03)
-ax.set_xlabel("probabilidad media predicha (bin)")
-ax.set_ylabel("frecuencia observada de acierto")
-ax.set_title("Fiabilidad por bin — el número es cuántos eventos caen en cada bin")
+ax.set_xlabel("mean predicted probability (bin)")
+ax.set_ylabel("observed hit frequency")
+ax.set_title("Reliability per bin - the number is how many events fall in each bin")
 ax.legend(fontsize=9, loc="upper left")
 fig.tight_layout()
 show(fig, "m03_calibracion",
-     caption="Diagrama de fiabilidad de los folds que actuaron. Bins con 1-3 eventos hacen que "
-             "cualquier desviación de la diagonal sea ruido de conteo, no descalibración.")
+     caption="Reliability diagram of the acting folds. Bins holding 1-3 events make any "
+             "departure from the diagonal counting noise, not miscalibration.")
 """
 )
 
@@ -401,14 +402,13 @@ show(fig, "m03_calibracion",
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 4. Atribuciones sobre señal inexistente — `DESCRIPTIVO`
+## 4. Attributions over a signal that is not there — `DESCRIPTIVE`
 
-SHAP descompone cada predicción del último ganador que actuó en contribuciones
-por característica. Lo mostramos como diagnóstico del utillaje y como
-advertencia: **las atribuciones se calculan igual de bien cuando el modelo no
-sabe clasificar**. Una lista de features «importantes» no es un descubrimiento
-de señal; es la anatomía de las decisiones de un modelo cuya tasa de acierto ya
-medimos arriba.
+SHAP decomposes each prediction of the last acting winner into per-feature
+contributions. We show it as a diagnostic of the tooling and as a warning:
+**attributions compute just as cleanly when the model cannot classify**. A list
+of "important" features is not a signal discovery; it is the anatomy of the
+decisions of a model whose hit rate we measured above.
 """
 )
 
@@ -417,20 +417,20 @@ code(
 shap_rows = STUDY.get("shap_importance") or []
 T03 = pl.DataFrame(shap_rows)
 save_table(T03, "t03_shap", ctx,
-           caption="Importancia media |SHAP| por característica para el último modelo ganador "
-                   "que actuó. Diagnóstico del utillaje, no descubrimiento de señal.")
+           caption="Mean |SHAP| importance per feature for the last acting winning model. A "
+                   "diagnostic of the tooling, not a signal discovery.")
 display(T03)
 
 fig, ax = plt.subplots(figsize=(8.8, 4.8))
 feats_ = [r["feature"] for r in shap_rows][::-1]
 vals = [r["mean_abs_shap"] for r in shap_rows][::-1]
 ax.barh(feats_, vals, color="#0072B2")
-ax.set_xlabel("media de |SHAP| sobre los eventos de test explicados")
-ax.set_title("Un ranking perfectamente computable de un modelo que no acierta")
+ax.set_xlabel("mean |SHAP| over the explained test events")
+ax.set_title("A perfectly computable ranking from a model that does not hit")
 fig.tight_layout()
 show(fig, "m04_shap_importancia",
-     caption="Importancias SHAP del último ganador que actuó. Se muestran como advertencia "
-             "metodológica: la atribución no implica capacidad predictiva.")
+     caption="SHAP importances of the last acting winner, shown as a methodological warning: "
+             "attribution does not imply predictive skill.")
 """
 )
 
@@ -439,11 +439,11 @@ show(fig, "m04_shap_importancia",
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 5. Dónde decide actuar, y en qué régimen — `DESCRIPTIVO`
+## 5. Where it decides to act, and in which regime — `DESCRIPTIVE`
 
-Dos vistas del comportamiento del filtro: cuánta señal deja pasar cada fold
-(con su motivo cuando se abstiene), y cómo se reparten los eventos aceptados
-por régimen de volatilidad.
+Two views of the filter's behaviour: how much signal each fold lets through
+(with its reason when it abstains), and how accepted events distribute across
+volatility regimes.
 """
 )
 
@@ -462,8 +462,8 @@ for f in FOLDS:
         })
 T02 = pl.DataFrame(cand_rows)
 save_table(T02, "t02_candidatos", ctx,
-           caption="Los tres candidatos preregistrados en cada fold: disponibilidad, delta de "
-                   "validación, umbral elegido y AUC de validación.")
+           caption="The three pre-registered candidates in each fold: availability, validation "
+                   "delta, chosen threshold and validation AUC.")
 display(T02)
 
 reg_rows = []
@@ -473,7 +473,7 @@ for f in FOLDS:
                         ("regime", "n_events", "base_rate", "accepted")}})
 T04 = pl.DataFrame(reg_rows)
 save_table(T04, "t04_por_regimen", ctx,
-           caption="Eventos y aceptaciones del filtro por régimen de volatilidad y fold.")
+           caption="Events and filter acceptances by volatility regime and fold.")
 display(T04.head(8))
 """
 )
@@ -491,31 +491,33 @@ bars = axA.bar(xx, sr, width=0.5,
                hatch=["" if f["abstained"] else "///" for f in FOLDS])
 axA.set_xticks(xx)
 axA.set_xticklabels([f"fold {f['fold']}" for f in FOLDS])
-axA.set_ylabel("fracción de señales aceptadas en test")
-axA.set_title("(a) Cuánta señal deja pasar (gris = se abstuvo)")
+axA.set_ylabel("share of signals accepted on test")
+axA.set_title("(a) How much signal it lets through (grey = abstained)")
 axA.grid(axis="x", visible=False)
 
-agg = (T04.group_by("regime")
+# maintain_order: group_by does not guarantee row order; the explicit sort on
+# a unique key makes the result reproducible regardless.
+agg = (T04.group_by("regime", maintain_order=True)
        .agg(pl.col("n_events").sum(), pl.col("accepted").sum())
        .sort("regime"))
 regs = agg["regime"].to_list()
 yy = np.arange(len(regs))
 axB.barh(yy + 0.18, agg["n_events"].to_list(), height=0.34, color="#999999",
-         label="eventos de la primaria")
+         label="primary events")
 axB.barh(yy - 0.18, agg["accepted"].to_list(), height=0.34, color="#0072B2",
-         hatch="///", label="aceptados por el filtro")
+         hatch="///", label="accepted by the filter")
 axB.set_yticks(yy)
 axB.set_yticklabels(regs)
-axB.set_xlabel("eventos (todos los folds)")
-axB.set_title("(b) Aceptación por régimen de volatilidad")
+axB.set_xlabel("events (all folds)")
+axB.set_title("(b) Acceptance by volatility regime")
 axB.legend(fontsize=9)
 axB.grid(axis="y", visible=False)
 
-fig.suptitle("El filtro sobrevive recortando exposición, no eligiendo bien", fontsize=12)
+fig.suptitle("The filter survives by cutting exposure, not by choosing well", fontsize=12)
 fig.tight_layout()
 show(fig, "m05_decision_y_regimen",
-     caption="Fracción de señales aceptadas por fold (a) y reparto de eventos frente a "
-             "aceptaciones por régimen de volatilidad (b).")
+     caption="Share of signals accepted per fold (a) and events against acceptances by "
+             "volatility regime (b).")
 """
 )
 
@@ -524,47 +526,45 @@ show(fig, "m05_decision_y_regimen",
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 6. Lo que este experimento establece — y lo que lo habría contradicho
+## 6. What this experiment establishes — and what would have contradicted it
 
-Establece tres cosas, todas bajo la etiqueta de infraestructura con la que
-abrimos. Primera: la maquinaria supervisada completa —triple barrera sobre
-retornos netos, calibración isotónica, selección de umbral y de modelo en
-bloques purgados, tres backends, SHAP— funciona de punta a punta sobre datos
-reales sin fugas estructurales, porque la función de ajuste ni siquiera acepta
-el bloque de test. Segunda: sobre esta primaria y estas características, la
-mejora económica del filtro es una historia de **abstención y recorte de
-exposición**, no de predicción — los AUC son de moneda y los bloques de test
-son demasiado pequeños para acreditar otra cosa. Tercera: el episodio de la
-logística excluida por NaN quedó registrado como «no disponible» en vez de
-sustituirse en silencio, que es exactamente el comportamiento que se le pide a
-un banco de pruebas.
+It establishes three things, all under the infrastructure label we opened
+with. First: the complete supervised machinery — triple-barrier labels on net
+returns, isotonic calibration, threshold and model selection on purged blocks,
+three backends, SHAP — runs end to end on real data with no structural leakage,
+because the fitting function does not even accept the test block. Second: on
+this primary and these features, the filter's economic improvement is a story
+of **abstention and exposure throttling**, not of prediction — the AUCs are
+coin-level and the test blocks are too small to certify anything else. Third:
+the episode of the NaN-excluded logistic regression was recorded as
+"unavailable" rather than silently substituted, which is exactly the behaviour
+a test bench is supposed to have.
 
-Lo que habría contradicho esta lectura, y no ocurrió: AUC consistentemente por
-encima de 0,5 en bloques grandes, mejora económica concentrada en los folds
-donde el filtro *actúa* con cobertura alta, y un ranking SHAP estable entre
-folds respaldado por aciertos. Ninguna de las tres condiciones se dio.
+What would have contradicted this reading, and did not occur: AUCs
+consistently above 0.5 on large blocks, economic improvement concentrated in
+the folds where the filter *acts* with high coverage, and a SHAP ranking stable
+across folds and backed by hits. None of the three held.
 
-Dejamos también dicho lo que este cuaderno **no** dice: no dice que el
-meta-etiquetado no funcione — dice que no puede rescatar a una primaria sin
-edge, que es distinto y era lo esperable. La capa queda validada y lista para
-el día en que exista una primaria que la merezca, sobre datos nuevos y con su
-denominador contado.
+We also state what this notebook does **not** say: it does not say
+meta-labeling fails — it says it cannot rescue a primary with no edge, which is
+a different claim and was the expected one. The layer stands validated and
+ready for the day an eligible primary exists, on new data and with its own
+denominator counted.
 
-### De la pregunta local a la memoria
+### From the local question to the thesis
 
-| Pregunta local | Alimenta | Cómo |
+| Local question | Feeds | How |
 |---|---|---|
-| P1 (¿economía o predicción?) | RQ3 | respuesta directa bajo contrato exploratorio: la mejora existe y no es predictiva |
+| Q1 (economics or prediction?) | RQ3 | direct answer under the exploratory contract: the improvement is real and is not predictive |
 
 ---
 
-**Qué deja este cuaderno y a dónde va.** Figuras `m01`-`m05` y tablas
-`t01`-`t04` bajo `reports/{figures,tables}/ml/`. Alimentan el capítulo 5.8
-(metodología de la capa) y la subsección RQ3 del capítulo 6; `m04` es también
-material del capítulo 7 (la advertencia sobre atribuciones). El cuaderno 07
-recoge el testigo: si una mejora económica puede no ser predicción, el Monte
-Carlo pregunta cuánto de *cualquier* resultado positivo cabe esperar del puro
-azar.
+**What this notebook leaves behind, and where it goes.** Figures `m01`-`m05`
+and tables `t01`-`t04` under `reports/{figures,tables}/ml/`. They feed chapter
+5.8 (methodology of the layer) and the RQ3 subsection of chapter 6; `m04` is
+also chapter 7 material (the warning about attributions). Notebook 07 takes the
+baton: if an economic improvement can fail to be prediction, Monte Carlo asks
+how much of *any* positive result chance alone would hand out.
 """
 )
 

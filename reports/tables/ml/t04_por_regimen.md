@@ -1,4 +1,4 @@
-**Table — Eventos y aceptaciones del filtro por régimen de volatilidad y fold.**
+**Table — Events and filter acceptances by volatility regime and fold.**
 
 | fold | regime | n_events | base_rate | accepted |
 | --- | --- | --- | --- | --- |

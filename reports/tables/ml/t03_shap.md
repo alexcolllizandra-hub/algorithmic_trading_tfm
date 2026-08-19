@@ -1,4 +1,4 @@
-**Table — Importancia media |SHAP| por característica para el último modelo ganador que actuó. Diagnóstico del utillaje, no descubrimiento de señal.**
+**Table — Mean |SHAP| importance per feature for the last acting winning model. A diagnostic of the tooling, not a signal discovery.**
 
 | feature | mean_abs_shap |
 | --- | --- |

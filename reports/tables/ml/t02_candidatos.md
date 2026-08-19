@@ -1,4 +1,4 @@
-**Table — Los tres candidatos preregistrados en cada fold: disponibilidad, delta de validación, umbral elegido y AUC de validación.**
+**Table — The three pre-registered candidates in each fold: availability, validation delta, chosen threshold and validation AUC.**
 
 | fold | modelo | disponible | delta_validacion | umbral | auc_validacion | elegido |
 | --- | --- | --- | --- | --- | --- | --- |

@@ -1,9 +1,10 @@
-"""Deterministically (re)build the study-closure notebook.
+"""Deterministically (re)build the study-closure notebook (05).
 
 Run with: ``uv run python scripts/build_results_notebook.py``
 
-Prose is Spanish (the thesis language); figure and table names are frozen --
-j01-j04 and t01-t09 regenerate at the same paths the thesis map already cites.
+Prose is English (repo-wide policy, 2026-08-19). Figure and table names are
+frozen identifiers -- j01-j04 and t01-t09 regenerate at the exact paths the
+thesis map cites.
 """
 
 from __future__ import annotations
@@ -25,86 +26,85 @@ def code(src: str) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Apertura
+# Opening
 # --------------------------------------------------------------------------- #
 md(
     r"""
-# Cierre del estudio: resultados, robustez y contraste múltiple
+# Study closure: results, robustness and multiple testing
 
-**¿Qué pregunta responde este cuaderno?** Qué encontró el estudio completo
-—trece familias, dos activos, diez semillas, 496.500 configuraciones— y si algo
-sobrevive a contar honestamente cuántas veces se ha mirado. **¿Con qué datos?**
-Los artefactos de cierre bajo `reports/study_closure/`, congelados al cerrar el
-estudio. **¿Qué va a encontrar el lector?** Un resultado negativo, y el
-argumento de por qué ese negativo es informativo y no solo decepcionante —
-incluida la parte incómoda: la partición reservada se abrió fuera de protocolo
-y su lectura está retenida.
+**What question does this notebook answer?** What the whole study found --
+thirteen families, two assets, ten seeds, 496,500 configurations -- and
+whether anything survives an honest count of how many times we looked. **On
+what data?** The closure artifacts under `reports/study_closure/`, frozen when
+the study closed. **What will the reader find?** A negative result, and the
+argument for why that negative is informative rather than merely
+disappointing -- including the uncomfortable part: the reserved partition was
+opened outside protocol and its reading is withheld.
 
-**Qué recibe de los cuadernos anteriores.** El 02 demostró que las
-características no pueden ver el futuro; el 03, que la ejecución paga lo que se
-paga y que los folds no se tocan; el 04, que la búsqueda estaba operando sobre
-ruido a nivel de fold. **Qué entrega.** El veredicto agregado del estudio y las
-cuatro figuras de cierre (j01-j04) que alimentan los capítulos 6 y 7 de la
-memoria.
+**What it receives from the previous notebooks.** 02 demonstrated that the
+features cannot see the future; 03, that execution pays what it pays and that
+folds do not touch each other; 04, that the search was operating on noise at
+the fold level. **What it hands over.** The study's aggregate verdict and the
+four closure figures (j01-j04) that feed thesis chapters 6 and 7.
 
-**Convención de decimales.** La prosa, los captions y las tablas Markdown de
-la memoria usan coma decimal; los CSV y los ejes de las figuras conservan el
-punto, porque son formato de máquina y los consume código además de personas.
-Lo declaramos una vez aquí y aplica a toda la cadena 01→07.
+**Language and number conventions.** Repository policy (2026-08-19): all
+notebooks, code and technical docs are English, with decimal points
+throughout -- prose, captions, axes and CSVs alike. Artifact names keep their
+original identifiers regardless of language, because renaming published
+identifiers breaks references for zero analytical gain.
 
-Una aclaración de contabilidad antes de empezar: todos los contrastes de este
-cuaderno son **INFERENCIALES ya contados y cerrados** — se ejecutaron una vez,
-quedaron registrados en los artefactos, y aquí se leen y se explican. Este
-cuaderno no añade ninguna prueba nueva al denominador.
+One bookkeeping clarification before anything else: every test in this
+notebook is **INFERENTIAL -- already counted and closed**. Each ran once, was
+recorded in the artifacts, and is read and explained here. This notebook adds
+nothing to any test count.
 
-## 1. Resumen para quien no vaya a leer más
+## 1. The summary for whoever reads no further
 
-De trece familias, **ninguna sobrevive a la corrección por el número de
-hipótesis que el estudio puso a prueba** — y el matiz importante es que ni
-siquiera hace falta la corrección: el p-valor bruto más bajo de todo el estudio
-queda lejísimos del umbral convencional antes de corregir nada. La conclusión
-no depende de qué corrección prefiera el lector.
+Of thirteen families, **none survives correction for the number of hypotheses
+the study tested** -- and the important nuance is that the correction is not
+even needed: the smallest raw p-value anywhere in the study sits far above the
+conventional threshold *before* correcting anything. The conclusion does not
+depend on which correction the reader prefers.
 
-Tres diagnósticos que no tenían por qué estar de acuerdo lo están:
+Three diagnostics that had no obligation to agree, agree:
 
-| Diagnóstico | Qué mide | Resultado |
+| Diagnostic | What it measures | Result |
 |---|---|---|
-| Contrastes por familia | ¿Alguna media de retorno se distingue de cero? | Ninguna, ni sin corregir |
-| Sharpe deflactado | Dado todo lo que probamos, ¿cuán probable es que el mejor sea espurio? | Muy probablemente espurio |
-| PBO | ¿El mejor en muestra sigue siéndolo fuera de ella? | Cara o cruz |
+| Per-family tests | Is any family's mean return distinguishable from zero? | None, even uncorrected |
+| Deflated Sharpe | Given everything we tried, how likely is the best to be spurious? | Very likely spurious |
+| PBO | Does the in-sample best stay best out of sample? | A coin flip |
 
-Un PBO cercano a 0,5 es la firma de una búsqueda operando sobre ruido: el que
-gana en una mitad de los datos no tiene más probabilidad que el azar de ganar
-en la otra.
+A PBO near 0.5 is the signature of a search operating on noise: the winner in
+one half of the data is no likelier than chance to win in the other.
 
-**Lo que deliberadamente no se publica aquí.** El holdout congelado se abrió
-una vez y su lectura existe en disco. No aparece en este cuaderno: el
-repositorio registra esa apertura como `HOLDOUT_LOCKED` a la espera de una
-auditoría de procedencia, y la sección 7 cuenta esa decisión entera. La
-conclusión del estudio no depende de esa cifra.
+**What is deliberately not published here.** The frozen holdout was opened
+once and its reading exists on disk. It does not appear in this notebook: the
+repository records that opening as `HOLDOUT_LOCKED` pending a provenance
+audit, and section 7 tells that decision in full. The study's conclusion does
+not depend on that number.
 
-### Las preguntas de este cuaderno
+### This notebook's questions
 
-- **P1.** ¿Cuántas hipótesis puso a prueba realmente este estudio, y cambia eso la conclusión?
-- **P2.** ¿Alguna familia cumple los criterios de promoción preregistrados?
-- **P3.** ¿Alguna sobrevive a Holm-Bonferroni o a Benjamini-Hochberg?
-- **P4.** ¿Cuán probable es que la mejor familia sea un artefacto estadístico?
-- **P5.** ¿Condicionar por régimen rescata algo que falló sin condicionar?
-- **P6.** ¿Qué se puede y qué no se puede concluir de un negativo con esta forma?
+- **Q1.** How many hypotheses did this study actually test, and does that change the conclusion?
+- **Q2.** Does any family meet the pre-registered promotion criteria?
+- **Q3.** Does any survive Holm-Bonferroni or Benjamini-Hochberg?
+- **Q4.** How likely is the best family to be a statistical artefact?
+- **Q5.** Does conditioning on regime rescue anything that failed unconditionally?
+- **Q6.** What can and cannot be concluded from a negative of this shape?
 """
 )
 
 # --------------------------------------------------------------------------- #
-# Inventario
+# Inventory
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 2. El inventario del estudio — `DESCRIPTIVO`
+## 2. The study inventory — `DESCRIPTIVE`
 
-Los artefactos de cierre agregan todas las puertas del estudio (R2, R3, S1, S2)
-en una sola base de evidencia. Cada familia lleva su desenlace económico entre
-semillas, su p-valor bruto, los dos ajustados, y si cumplió cada criterio de
-promoción preregistrado. Aquí solo los cargamos y los miramos.
+The closure artifacts aggregate every gate of the study (R2, R3, S1, S2) into
+one evidence base. Each family carries its economic outcome across seeds, its
+raw p-value, both adjusted ones, and whether it met each pre-registered
+promotion criterion. Here we only load them and look.
 """
 )
 
@@ -126,8 +126,8 @@ print(f"Repository root: {_root}")
 
 code(
     r"""
-# Contrato del cuaderno: entradas y salidas declaradas y verificadas antes de
-# computar nada. La cadena 01->07 se valida encadenando estos bloques.
+# Notebook contract: inputs and outputs declared and verified before anything
+# is computed. The 01->08 chain validates itself by chaining these blocks.
 import hashlib
 import subprocess
 
@@ -144,20 +144,20 @@ NB_CONTRACT = {
         "tables": [f"t0{i}" for i in range(1, 10)],
         "dirs": ["reports/figures/closure", "reports/tables/closure"],
     },
-    # Este cuaderno no muestrea: lee artefactos cerrados. Se declara para que
-    # la ausencia de semilla sea una afirmacion y no un olvido.
+    # This notebook draws no samples: it reads closed artifacts. Declared so
+    # the absence of a seed is a statement, not an oversight.
     "seed": None,
 }
 
 missing = [f for f in NB_CONTRACT["inputs"] if not Path(f).exists()]
 if missing:
-    raise FileNotFoundError(f"El cuaderno anterior ya no produce: {missing}")
+    raise FileNotFoundError(f"An upstream notebook no longer produces: {missing}")
 
 INPUT_HASHES = {
     f: hashlib.sha256(Path(f).read_bytes()).hexdigest() for f in NB_CONTRACT["inputs"]
 }
-# read_git_commit devuelve null dentro de un worktree; lo resolvemos aqui y lo
-# inyectamos en la huella para que cada figura sea rastreable al commit exacto.
+# read_git_commit returns null inside a worktree; we resolve it here and inject
+# it into the fingerprint so every figure traces to the exact commit.
 REPO_COMMIT = subprocess.run(
     ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
 ).stdout.strip() or None
@@ -180,7 +180,7 @@ import polars as pl
 from IPython.display import display
 
 from perp_lab import __version__ as perp_lab_version
-from perp_lab.config import Paths
+from perp_lab.config import Paths, load_data_contract
 from perp_lab.reporting import ArtifactContext, apply_house_style, save_figure, save_table
 
 apply_house_style()
@@ -211,9 +211,9 @@ print(f"  holdout publication state : {DASH['holdout_publication']}")
 
 code(
     r"""
-from perp_lab.config import load_data_contract
+from perp_lab.config import load_data_contract as _ldc
 
-_contract = load_data_contract("configs/data_contract.yaml")
+_contract = _ldc("configs/data_contract.yaml")
 
 NB_ID = NB_CONTRACT["notebook"]
 ctx = ArtifactContext(
@@ -257,8 +257,8 @@ FAM = pl.DataFrame([
     for f in DASH["families"]
 ]).sort("p_value")
 save_table(FAM, "t01_family_results", ctx,
-           caption="Cada celda familia-activo del estudio, con su desenlace económico, su p-valor "
-                   "bruto y los dos ajustados.")
+           caption="Every family-asset cell in the study with its economic outcome, raw "
+                   "p-value and both adjusted p-values.")
 display(FAM)
 
 print(f"\nCells: {FAM.height} | families: {FAM['family'].n_unique()}")
@@ -271,34 +271,33 @@ print(f"Smallest raw p-value in the study  : {float(FAM['p_value'].min()):.4f} "
 
 md(
     r"""
-El número que más importa de esa tabla es el **p-valor bruto mínimo**. Antes de
-cualquier corrección, antes de deflactar nada, y tomando la familia más
-favorable del estudio al pie de la letra, nadie se acerca a la significación
-convencional.
+The number that matters most in that table is the **smallest raw p-value**.
+Before any correction, before any deflation, and taking the study's most
+favourable family at face value, nobody comes close to conventional
+significance.
 
-Eso es lo que hace la conclusión robusta al desacuerdo metodológico: quien crea
-que Holm-Bonferroni es demasiado conservador, o que el recuento de pruebas se
-eligió con intención, no llega por ello a una respuesta distinta — no hay nada
-desde lo que corregir hacia abajo. Las correcciones que siguen cuantifican *a
-qué distancia* de la significación queda el estudio; el veredicto no cuelga de
-ellas.
+That is what makes the conclusion robust to methodological disagreement:
+whoever finds Holm-Bonferroni too conservative, or suspects the test count was
+chosen tendentiously, does not thereby reach a different answer -- there is
+nothing to correct *down from*. The corrections that follow quantify *how far*
+from significance the study lands; the verdict does not hang on them.
 """
 )
 
 # --------------------------------------------------------------------------- #
-# Criterios de promoción
+# Promotion criteria
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 3. Los criterios de promoción, familia a familia — `INFERENCIAL — cerrado`
+## 3. The promotion criteria, family by family — `INFERENTIAL — closed`
 
-La significación estadística era necesaria pero no suficiente: un candidato
-tenía que superar seis listones económicos preregistrados antes de poder
-aspirar al holdout. Para cada familia y activo contamos cuántas de sus diez
-semillas pasaron cada criterio, contra la mayoría exigida (6 de 10).
+Statistical significance was necessary but not sufficient: a candidate had to
+clear six pre-registered economic bars before it could aspire to the holdout.
+For each family and asset we count how many of its ten seeds passed each
+criterion, against the required majority (6 of 10).
 
-Que los umbrales se fijaran *antes* de ver resultados es lo que hace
-informativo el suspenso: después ya no se pueden renegociar.
+That the thresholds were fixed *before* seeing results is what makes failing
+them informative: afterwards they can no longer be renegotiated.
 """
 )
 
@@ -314,25 +313,27 @@ for f in DASH["families"]:
         })
 CRIT = pl.DataFrame(crit_rows)
 save_table(CRIT, "t02_promotion_criteria", ctx,
-           caption="Criterios de promoción preregistrados: semillas que pasan cada criterio por "
-                   "celda familia-activo.")
+           caption="Pre-registered promotion criteria: seeds passing each criterion per "
+                   "family-asset cell.")
 display(CRIT.head(12))
 
 SUMMARY = (
-    CRIT.group_by("criterion")
+    # maintain_order plus a name tiebreak: group_by does not guarantee row
+    # order, and criteria that tie on share_of_seeds_passing would otherwise
+    # swap places between runs. Caught by scripts/verify_determinism.py.
+    CRIT.group_by("criterion", maintain_order=True)
     .agg(
         pl.len().alias("cells"),
         pl.col("met").sum().alias("cells_meeting"),
         (pl.col("passed").sum() / pl.col("of").sum()).alias("share_of_seeds_passing"),
     )
-    .sort("share_of_seeds_passing", descending=True)
+    .sort(["share_of_seeds_passing", "criterion"], descending=[True, False])
 )
 save_table(SUMMARY, "t03_criteria_summary", ctx,
-           caption="Frecuencia con la que cada criterio de promoción se cumplió en el conjunto "
-                   "del estudio.")
+           caption="How often each promotion criterion was met across the whole study.")
 display(SUMMARY)
 print(f"\nCells meeting ALL criteria: "
-      f"{int(CRIT.group_by('family', 'symbol').agg(pl.col('met').all().alias('all_met'))['all_met'].sum())}"
+      f"{int(CRIT.group_by('family', 'symbol', maintain_order=True).agg(pl.col('met').all().alias('all_met'))['all_met'].sum())}"
       f" / {CRIT['family'].n_unique() * CRIT['symbol'].n_unique()}")
 """
 )
@@ -369,47 +370,48 @@ ax.set_title(f"Promotion criteria, {DASH['primary_symbol']} - a majority (6/10) 
              fontsize=12)
 fig.tight_layout()
 show(fig, "j01_promotion_criteria",
-     caption="Proporción de semillas que pasa cada criterio de promoción preregistrado, por "
-             "familia, en el activo principal.")
+     caption="Share of seeds passing each pre-registered promotion criterion, per family, "
+             "on the primary asset.")
 """
 )
 
 md(
     r"""
-El mapa es abrumadoramente rojo, y los dos criterios que más consistentemente
-fallan son justo los que más importan económicamente: producir retorno neto
-positivo, y que el intervalo bootstrap del Sharpe excluya el cero. Algunas
-familias pasan criterios sueltos en una minoría de semillas — que es
-exactamente lo que se espera del ruido: un criterio que se pasa por azar una
-de cada tres veces se pasará en tres o cuatro semillas de diez — pero la
-mayoría exigida no se alcanza prácticamente nunca.
+The map is overwhelmingly red, and the two criteria that fail most
+consistently are the two that matter most economically: producing a positive
+net return at all, and a bootstrap Sharpe interval that excludes zero. Some
+families pass individual criteria on a minority of seeds -- which is exactly
+what noise is expected to do: a criterion passed by chance one time in three
+will pass on three or four seeds out of ten -- but the required majority is
+essentially never reached.
 
-Aquí se ve el valor del preregistro. Si los umbrales se hubieran puesto
-*después* de mirar, habría sido fácil notar que una familia pasa cuatro de seis
-criterios y argumentar que cuatro es un listón razonable. Como se fijaron
-antes, ese argumento no está disponible, y los suspensos se pueden interpretar.
+The value of pre-registration is visible here. Had the thresholds been set
+*after* looking, it would have been easy to notice that one family passes four
+of six criteria and to argue that four is a reasonable bar. Because they were
+fixed in advance, that argument is unavailable, and the failures can be
+interpreted.
 """
 )
 
 # --------------------------------------------------------------------------- #
-# Contraste múltiple
+# Multiple testing
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 4. Corregir por el número de hipótesis — `INFERENCIAL — cerrado`
+## 4. Correcting for the number of hypotheses — `INFERENTIAL — closed`
 
-Si pruebas trece familias al 5%, esperas más o menos un falso éxito por puro
-azar. ¿Qué queda cuando eso se descuenta?
+Test thirteen families at the 5% level and you expect roughly one false
+success from chance alone. What remains once that is accounted for?
 
-Se aplican las dos correcciones estándar, y reportar ambas es deliberado: si
-discreparan, la conclusión dependería de una elección metodológica y habría que
-decirlo así.
+We apply both standard corrections, and reporting both is deliberate: had they
+disagreed, the conclusion would depend on a methodological choice and would
+have to be stated as such.
 
-- **Holm-Bonferroni** controla la probabilidad de *un solo* falso positivo en
-  todo el estudio (FWER) — la opción conservadora, apropiada cuando una sola
-  afirmación falsa sale cara.
-- **Benjamini-Hochberg** controla la proporción esperada de descubrimientos
-  falsos (FDR) — más permisiva, pensada para cribar.
+- **Holm-Bonferroni** controls the probability of even *one* false positive in
+  the whole study (FWER) -- the conservative choice, appropriate where a
+  single false claim is costly.
+- **Benjamini-Hochberg** controls the expected share of false discoveries
+  (FDR) -- more permissive, built for screening.
 """
 )
 
@@ -434,8 +436,8 @@ COMP = pl.DataFrame({
     ],
 })
 save_table(COMP, "t04_multiple_testing", ctx,
-           caption="Rechazos a alfa = 0.05 antes y después de cada corrección por contraste "
-                   "múltiple.")
+           caption="Rejections at alpha = 0.05 before and after each multiple-testing "
+                   "correction.")
 display(COMP)
 
 print(f"\nTests counted        : {CORR['n_tests']}")
@@ -457,8 +459,8 @@ SENS = pl.DataFrame([
     for k, v in MT["sensitivity"].items()
 ]).sort("n_tests")
 save_table(SENS, "t05_test_count_sensitivity", ctx,
-           caption="Sensibilidad de la conclusión a cómo se define el número de hipótesis "
-                   "contrastadas.")
+           caption="Sensitivity of the conclusion to how the number of tested hypotheses "
+                   "is defined.")
 display(SENS)
 print(f"\nDefinitions under which SOME family survives: "
       f"{int(SENS['any_survive'].sum())} / {SENS.height}")
@@ -481,7 +483,7 @@ bp = [bh["adjusted_p_values"][k] for k in order]
 yy = np.arange(len(order))
 axA.barh(yy - 0.26, raw, height=0.24, color="#999999", label="raw p-value")
 axA.barh(yy, bp, height=0.24, color="#0072B2", hatch="///", label="Benjamini-Hochberg")
-axA.barh(yy + 0.26, hp, height=0.24, color="#D55E00", hatch="\\\\", label="Holm-Bonferroni")
+axA.barh(yy + 0.26, hp, height=0.24, color="#D55E00", hatch="\\\\\\\\", label="Holm-Bonferroni")
 axA.axvline(STUDY["alpha"], color="#D62728", lw=2.0, ls="--")
 axA.text(STUDY["alpha"], -1.0, f" alpha = {STUDY['alpha']}", color="#D62728", fontsize=9)
 axA.set_yticks(yy)
@@ -514,47 +516,47 @@ fig.suptitle(f"Multiple-testing correction across {CORR['n_tests']} families "
              f"({STUDY['n_configurations_evaluated']:,} configurations evaluated)", fontsize=12)
 fig.tight_layout()
 show(fig, "j02_multiple_testing",
-     caption="P-valores brutos y ajustados por familia (a), y sensibilidad del umbral de "
-             "Bonferroni a cómo se cuenta el número de hipótesis (b).")
+     caption="Raw and adjusted p-values per family (a), and the sensitivity of the "
+             "Bonferroni threshold to how the number of hypotheses is counted (b).")
 """
 )
 
 md(
     r"""
-El panel (a) enseña a las dos correcciones empujando cada p ajustado hasta el
-techo de la escala — pero esa no es la parte informativa: las barras grises ya
-estaban lejos del umbral antes de corregir.
+Panel (a) shows both corrections pushing every adjusted p to the top of the
+scale -- but that is not the informative part: the grey bars were already far
+from the threshold before correcting.
 
-El panel (b) es el que cierra la objeción habitual a cualquier argumento de
-contraste múltiple: que el número de pruebas se eligió a conveniencia. Se puede
-contar trece (una por familia), veintidós (familia por activo), ciento cuarenta
-y dos (añadiendo semillas) o casi medio millón (cada configuración evaluada).
-Cuatro órdenes de magnitud de diferencia, umbrales de Bonferroni desde ~4e-3
-hasta ~1e-7 — y **todos quedan por debajo del p bruto mínimo observado**. La
-línea roja discontinua va por encima de la curva azul en todo el rango: no
-existe ninguna versión de este argumento en la que alguna familia sobreviva.
+Panel (b) closes the standard objection to any multiple-testing argument: that
+the number of tests was chosen to suit. One can count thirteen (one per
+family), twenty-two (family by asset), one hundred and forty-two (adding
+seeds), or nearly half a million (every configuration evaluated). Four orders
+of magnitude, Bonferroni thresholds from roughly 4e-3 down to 1e-7 -- and
+**every one of them sits below the smallest raw p observed**. The red dashed
+line stays above the blue curve across the whole range: no version of this
+argument exists in which some family survives.
 """
 )
 
 # --------------------------------------------------------------------------- #
-# DSR y PBO
+# DSR and PBO
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 5. ¿Cuán probable es que el mejor resultado sea un artefacto? — `INFERENCIAL — cerrado`
+## 5. How likely is the best result to be an artefact? — `INFERENTIAL — closed`
 
-Los p-valores responden «¿pudo salir esto por azar?» para una hipótesis. Dos
-diagnósticos construidos a medida responden la pregunta que de verdad se hace
-quien backtestea.
+P-values answer "could this have arisen by chance?" for one hypothesis. Two
+purpose-built diagnostics answer the question a backtester actually faces.
 
-El **Sharpe deflactado** pregunta: dado que probamos N configuraciones, ¿qué
-Sharpe alcanzaría la mejor *solo por suerte*, y supera el observado ese listón?
+The **deflated Sharpe** asks: given that we tried N configurations, what
+Sharpe would the best of them reach *by luck alone*, and does the observed
+best clear that bar?
 
-El **PBO** pregunta algo más directo y más difícil de discutir: parte en dos la
-serie de observaciones muchas veces, elige al mejor en la mitad in-sample y
-mide con qué frecuencia ese elegido cae en la *mitad mala* fuera. Un PBO cerca
-de **0,5** significa que elegir no aporta información: el ganador in-sample es
-una moneda al aire out-of-sample.
+The **PBO** asks something more direct and harder to argue with: split the
+observation series in two many times, pick the in-sample best, and measure how
+often that pick lands in the *bad half* out of sample. A PBO near **0.5**
+means selection carries no information: the in-sample winner is a coin flip
+out of sample.
 """
 )
 
@@ -573,8 +575,8 @@ DS = pl.DataFrame([
     for k, v in ds.items()
 ])
 save_table(DS, "t06_deflated_sharpe", ctx,
-           caption="Sharpe deflactado de la mejor familia del estudio bajo dos definiciones del "
-                   "número de ensayos.")
+           caption="Deflated Sharpe of the study's best family under two definitions of the "
+                   "number of trials.")
 display(DS)
 
 print(f"\nPBO                         : {pbo['pbo']:.4f}")
@@ -631,52 +633,50 @@ axB.grid(axis="y", visible=False)
 fig.suptitle("Two diagnostics built for exactly this question, and they agree", fontsize=12)
 fig.tight_layout()
 show(fig, "j03_deflated_sharpe_pbo",
-     caption="Sharpe deflactado bajo dos recuentos de ensayos (a) y probabilidad de sobreajuste "
-             "del backtest (b).")
+     caption="Deflated Sharpe under two trial counts (a) and the probability of backtest "
+             "overfitting (b).")
 """
 )
 
 md(
     r"""
-El panel (a) hace concreto el argumento de la deflación. Contando solo las
-trece familias como ensayos, el Sharpe que *el mejor de trece* alcanzaría por
-suerte ya supera lo que la mejor familia consiguió de verdad — así que el mejor
-observado no es solo poco impresionante: rinde por debajo del azar. Contando
-las 496.500 configuraciones evaluadas, el listón de la suerte sube un orden de
-magnitud y la probabilidad de que el mejor resultado sea espurio roza la
-certeza.
+Panel (a) makes the deflation argument concrete. Counting only the thirteen
+families as trials, the Sharpe that *the best of thirteen* would reach by luck
+already exceeds what the best family actually achieved -- the observed best is
+not merely unimpressive, it underperforms chance. Counting all 496,500
+evaluated configurations, the luck benchmark rises by an order of magnitude
+and the probability that the best result is spurious approaches certainty.
 
-El panel (b) es el número más limpio de la tesis. El PBO queda pegado a
-**0,5**: elegir al mejor in-sample no da esencialmente ninguna ventaja fuera.
-Es el mismo mecanismo que el cuaderno 04 observó fold a fold, ahora medido
-sobre el estudio entero — así se ve desde dentro una búsqueda que opera sobre
-ruido.
+Panel (b) is the cleanest single number in the thesis. The PBO sits at
+**0.5**: picking the in-sample best confers essentially no advantage out of
+sample. It is the mechanism notebook 04 observed fold by fold, now measured
+over the whole study -- what a search operating on noise looks like from the
+inside.
 
-Conviene ser explícito con lo que el PBO *no* dice: no dice que las estrategias
-sean malas en absoluto, ni que la implementación falle. Dice que **el ranking
-que produce el rendimiento in-sample no se transfiere** — la búsqueda no sirve
-para elegir un ganador, independientemente de lo buenos que pudieran ser los
-candidatos por separado.
+Worth stating what PBO does *not* say: not that the strategies are bad in some
+absolute sense, nor that the implementation is broken. It says **the ranking
+produced by in-sample performance does not transfer** -- the search cannot be
+used to pick a winner, however good the candidates might individually be.
 """
 )
 
 # --------------------------------------------------------------------------- #
-# Régimen
+# Regime
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 6. ¿Condicionar por régimen rescata algo? — `INFERENCIAL — cerrado (exploratorio)`
+## 6. Does conditioning on regime rescue anything? — `INFERENTIAL — closed (exploratory)`
 
-Una estrategia podría tener una ventaja real que solo aparece en ciertas
-condiciones de mercado y que el promedio incondicional difumina. ¿La revela
-partir por régimen de volatilidad?
+A strategy could hold a real edge that only appears in certain market
+conditions and is averaged away unconditionally. Does splitting by volatility
+regime reveal one?
 
-Cada familia se reevalúa dentro de cada celda de régimen —con un tamaño mínimo
-de celda para no contrastar sobre un puñado de barras— y los p resultantes se
-corrigen sobre el conjunto de celdas. El propio artefacto etiqueta este
-análisis como **exploratorio**: multiplica el número de pruebas, así que es el
-lugar más probable de todo el estudio para que aparezca un falso positivo. Que
-no aparezca ninguno es, por eso mismo, una afirmación fuerte.
+Each family is re-evaluated inside each regime cell -- with a minimum cell
+size so nothing is tested on a handful of bars -- and the resulting p-values
+are corrected across all cells. The artifact itself labels this analysis
+**exploratory**: it multiplies the number of tests, making it the likeliest
+place in the whole study for a false positive to appear. That none does is,
+for that very reason, a strong statement.
 """
 )
 
@@ -684,7 +684,7 @@ code(
     r"""
 CELLS_ = pl.DataFrame(REG["cells"]).sort("p_value")
 save_table(CELLS_.head(20), "t07_regime_cells_top20", ctx,
-           caption="Las veinte celdas familia-régimen más favorables, ordenadas por p-valor bruto.")
+           caption="The twenty most favourable family-by-regime cells, ranked by raw p-value.")
 display(CELLS_.head(15))
 
 rc = REG["correction"]
@@ -737,27 +737,26 @@ axB.set_title("(b) No regime is systematically favourable")
 fig.suptitle("Regime-conditioned evaluation - EXPLORATORY, nothing promoted", fontsize=12)
 fig.tight_layout()
 show(fig, "j04_regime_conditioned",
-     caption="Distribución de p-valores brutos en las celdas familia-régimen (a) y retorno total "
-             "de cada celda (b). Ninguna celda sobrevive a la corrección.")
+     caption="Distribution of raw p-values across family-by-regime cells (a) and the total "
+             "return of each cell (b). No cell survives multiple-testing correction.")
 """
 )
 
 md(
     r"""
-El histograma del panel (a) es el diagnóstico que hay que leer. Bajo la nula
-global —ninguna familia tiene ventaja en ningún régimen— los p se distribuyen
-uniformes: histograma plano, con un ~5% de celdas por debajo de alfa por puro
-azar. Eso es prácticamente lo que se observa, y **ninguna celda sobrevive a la
-corrección**. Si hubiera un efecto condicional real, habría un exceso de masa
-cerca de cero que la corrección no borraría. No lo hay. El panel (b) dice lo
-mismo en términos económicos: los retornos se reparten sin ninguna columna
-sistemáticamente favorable — así queda el ruido cuando se ordena en una rejilla.
+The histogram in panel (a) is the diagnostic to read. Under the global null --
+no family has an edge in any regime -- p-values are uniform: a flat histogram,
+with about 5% of cells below alpha by chance alone. That is close to what is
+observed, and **no cell survives correction**. A real conditional effect would
+leave an excess of mass near zero that correction cannot erase; there is none.
+Panel (b) says the same economically: returns scatter across regimes with no
+systematically favourable column -- what noise looks like arranged in a grid.
 
-La reserva honesta: un efecto real pero pequeño y confinado a un régimen
-estrecho podría escapársele a este análisis — condicionar parte la muestra, y
-las celdas pequeñas tienen menos potencia. Esta sección descarta ventajas
-condicionales *fuertes*, no todas las concebibles. Por eso el artefacto la
-etiqueta como exploratoria y de aquí no se promovió ningún candidato.
+The honest reservation: a real effect that is small and confined to a narrow
+regime could escape this analysis -- conditioning splits the sample, and small
+cells have less power. The section rules out *strong* conditional edges, not
+every conceivable one. That is why the artifact labels it exploratory, and why
+no candidate was promoted from it.
 """
 )
 
@@ -766,38 +765,38 @@ etiqueta como exploratoria y de aquí no se promovió ningún candidato.
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 7. El holdout congelado: abierto, registrado y deliberadamente no publicado — `DESCRIPTIVO`
+## 7. The frozen holdout: opened, recorded, deliberately unpublished — `DESCRIPTIVE`
 
-Esta sección reporta una **decisión de proceso**, no un número — y esa
-distinción es el contenido.
+This section reports a **process decision**, not a number -- and that
+distinction is the content.
 
-**Qué pasó.** La partición `[2026-01-01, 2026-07-01)` se congeló al inicio del
-proyecto y no se tocó durante la exploración, el diseño de características, la
-selección de familias ni la búsqueda de parámetros. Se abrió **una vez**, el
-2026-08-13, sobre un candidato cuya regla de selección y parámetros se
-commitearon *antes* de la apertura — un candidato que la corrección a nivel de
-estudio **ya había rechazado**. Esa lectura existe en disco.
+**What happened.** The partition `[2026-01-01, 2026-07-01)` was frozen at the
+project's start and never touched during exploration, feature design, family
+selection or parameter search. It was opened **once**, on 2026-08-13, on a
+candidate whose selection rule and parameters were committed *before* the
+opening -- a candidate the study-level correction had **already rejected**.
+That reading exists on disk.
 
-**Por qué no se publica aquí.** El repositorio registra la apertura como
-`HOLDOUT_LOCKED`: la auditoría de procedencia posterior verificó que la
-autorización prevista por el protocolo no existía en el momento de abrir (el
-único control con ese nombre es un cerrojo de *publicación*, introducido
-después), y quedó abierta una lista de nueve requisitos antes de que la cifra
-pueda citarse. Los detalles, con su cronología y su evidencia, están en
+**Why it is not published here.** The repository records the opening as
+`HOLDOUT_LOCKED`: the subsequent provenance audit established that the
+authorization the protocol required did not exist at opening time (the only
+control bearing that name is a *publication* lock, introduced afterwards), and
+a nine-requirement audit remains open before the number may be cited. The full
+chronology, with its evidence, lives in
 `docs/methodology/holdout_audit_status.md`.
 
-Lo importante: **no se reescribió la historia para ordenar esto.** Reescribirla
-habría destruido justo la propiedad que hace auditable una apertura — que el
-commit que congela al candidato precede de forma comprobable al que registra el
-resultado. La cadena de commits *es* la evidencia.
+The important part: **history was not rewritten to tidy this up.** Rewriting
+it would have destroyed exactly the property that makes an opening auditable
+-- that the commit freezing the candidate verifiably precedes the one
+recording the result. The commit chain *is* the evidence.
 
-**Por qué la conclusión no depende de ello.** El holdout iba a ser la prueba
-confirmatoria de un candidato ya rechazado. El resultado de esta tesis es el
-mapa de trece familias sin supervivientes con PBO en el entorno de 0,5 — y ese
-resultado está completo sin abrir la partición. Publicar la lectura cambiaría
-el énfasis de un párrafo, no la conclusión. Lo que sí se pierde para siempre es
-la posibilidad de una confirmación limpia sobre este histórico: la partición
-está consumida, y cualquier familia futura necesitará datos nuevos.
+**Why the conclusion does not depend on it.** The holdout was to be the
+confirmatory test of an already-rejected candidate. This thesis's result is
+the thirteen-family map with zero survivors and a PBO around 0.5 -- complete
+without opening the partition. Publishing the reading would change a
+paragraph's emphasis, not the conclusion. What is permanently lost is a clean
+confirmation on this history: the partition is consumed, and any future family
+will need new data.
 """
 )
 
@@ -816,8 +815,8 @@ lock_rows = [
 ]
 LOCKS = pl.DataFrame(lock_rows)
 save_table(LOCKS, "t08_holdout_locks", ctx,
-           caption="Controles independientes que impiden publicar la lectura del holdout "
-                   "congelado.")
+           caption="Independent controls preventing publication of the frozen-holdout "
+                   "reading.")
 display(LOCKS)
 
 print(f"Holdout publication state : {DASH['holdout_publication']}")
@@ -829,18 +828,18 @@ print("\nNo holdout metric is computed, displayed or exported by this notebook."
 )
 
 # --------------------------------------------------------------------------- #
-# Conclusiones
+# Conclusions
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 8. Qué establece un negativo con esta forma — `DESCRIPTIVO`
+## 8. What a negative of this shape establishes — `DESCRIPTIVE`
 
-El estudio no encontró nada. ¿Qué se ha aprendido, exactamente?
+The study found nothing. What, exactly, has been learned?
 
-Cada afirmación lleva, además de su base y su límite de alcance, **el resultado
-que la habría contradicho**: es lo que separa un negativo defendible de un
-negativo cómodo. Si ninguna observación concebible pudiera haber tumbado una
-conclusión, esa conclusión no estaría afirmando nada.
+Each claim below carries, besides its evidence and scope limit, **the result
+that would have contradicted it**: that is what separates a defensible
+negative from a comfortable one. If no conceivable observation could have
+overturned a conclusion, that conclusion was not claiming anything.
 """
 )
 
@@ -848,57 +847,56 @@ code(
     r"""
 conclusions = [
     {"id": "C1",
-     "claim": "Ninguna familia del estudio tiene ventaja demostrable en perpetuos BTC/ETH a 1h",
-     "strength": "Fuerte",
-     "basis": f"{FAM['family'].n_unique()} familias, {STUDY['n_units']} unidades, p bruto minimo "
-              f"{float(FAM['p_value'].min()):.3f} antes de correccion alguna",
-     "scope_limit": "Temporalidad 1h, 2020-2025, estos dos activos, estas familias de reglas",
-     "would_have_contradicted": "Una familia con p bruto < 0.05 sostenido en ambos activos"},
+     "claim": "No family in this study has a demonstrable edge on BTC/ETH perpetuals at 1h",
+     "strength": "Strong",
+     "basis": f"{FAM['family'].n_unique()} families, {STUDY['n_units']} units, smallest raw "
+              f"p-value {float(FAM['p_value'].min()):.3f} before any correction",
+     "scope_limit": "1h timeframe, 2020-2025, these two assets, these rule families",
+     "would_have_contradicted": "A family with raw p < 0.05 sustained on both assets"},
     {"id": "C2",
-     "claim": "La conclusion es invariante a como se cuente el numero de hipotesis",
-     "strength": "Fuerte",
-     "basis": f"t05: {SENS.height} convenciones de recuento entre "
-              f"{int(SENS['n_tests'].min())} y {int(SENS['n_tests'].max()):,} pruebas, ninguna produce superviviente",
-     "scope_limit": "Aplica a los contrastes por familia realmente ejecutados",
-     "would_have_contradicted": "Un denominador razonable bajo el cual alguna familia sobreviviera"},
+     "claim": "The conclusion is invariant to how the number of hypotheses is counted",
+     "strength": "Strong",
+     "basis": f"t05: {SENS.height} counting conventions spanning "
+              f"{int(SENS['n_tests'].min())}..{int(SENS['n_tests'].max()):,} tests, none yields a survivor",
+     "scope_limit": "Applies to the family-level tests actually run",
+     "would_have_contradicted": "Any reasonable denominator under which some family survives"},
     {"id": "C3",
-     "claim": "La seleccion in-sample no lleva esencialmente informacion out-of-sample",
-     "strength": "Fuerte",
-     "basis": f"PBO = {pbo['pbo']:.3f} sobre {pbo['n_splits']} particiones; el Sharpe deflactado "
-              f"implica que la mejor familia es espuria con probabilidad "
+     "claim": "In-sample selection carries essentially no out-of-sample information",
+     "strength": "Strong",
+     "basis": f"PBO = {pbo['pbo']:.3f} over {pbo['n_splits']} splits; deflated Sharpe puts the "
+              f"best family spurious with probability "
               f"{ds['family_selection']['probability_best_is_spurious']:.2f}",
-     "scope_limit": "Medido sobre el conjunto de configuraciones de este estudio",
-     "would_have_contradicted": "PBO claramente < 0.5 o un Sharpe deflactado positivo con "
-                                "probabilidad de espurio baja"},
+     "scope_limit": "Measured on this study's configuration set",
+     "would_have_contradicted": "PBO clearly below 0.5, or a positive deflated Sharpe with a "
+                                "low spurious probability"},
     {"id": "C4",
-     "claim": "Condicionar por regimen no rescata ninguna familia",
-     "strength": "Moderada",
-     "basis": f"{rc['n_cells']} celdas, {len(rc['survivors'])} supervivientes tras correccion; "
-              "histograma de p compatible con la nula global",
-     "scope_limit": "Condicionar reduce potencia; un efecto debil y estrecho podria escapar",
-     "would_have_contradicted": "Un exceso de p pequenos sobre lo esperado bajo la nula, con "
-                                "supervivientes tras Holm"},
+     "claim": "Regime conditioning rescues no family",
+     "strength": "Moderate",
+     "basis": f"{rc['n_cells']} cells, {len(rc['survivors'])} survivors after correction; "
+              "p-value histogram consistent with the global null",
+     "scope_limit": "Conditioning cuts power; a weak, narrow effect could escape",
+     "would_have_contradicted": "An excess of small p-values beyond the null expectation, "
+                                "with Holm survivors"},
     {"id": "C5",
-     "claim": "La busqueda evolutiva no ofrece ventaja sobre Random Search aqui",
-     "strength": "Moderada",
-     "basis": "Cuaderno 04: paridad de presupuesto verificada; 1 de 5 familias nominalmente "
-              "significativa, compatible con el azar en cinco pruebas",
-     "scope_limit": "Espacios de este tamano; nada dice de espacios mucho mayores",
-     "would_have_contradicted": "IC pareado GA-RS excluyendo cero a favor del GA de forma "
-                                "consistente entre familias"},
+     "claim": "The evolutionary search offers no advantage over Random Search here",
+     "strength": "Moderate",
+     "basis": "Notebook 04: budget parity verified; 1 of 5 families nominally significant, "
+              "consistent with chance across five tests",
+     "scope_limit": "Spaces of this size; says nothing about far larger spaces",
+     "would_have_contradicted": "A paired GA-RS interval excluding zero in the GA's favour, "
+                                "consistently across families"},
     {"id": "C6",
-     "claim": "El aparato es solido, asi que el negativo habla del mercado y no del utillaje",
-     "strength": "Fuerte",
-     "basis": "Cuaderno 02: garantias de causalidad G1-G7 sobre datos reales; cuaderno 03: guardas "
-              "de ejecucion, coste y geometria verificadas y fallando en cerrado",
-     "scope_limit": "Los costes siguen siendo provisionales (ADR 0005)",
-     "would_have_contradicted": "Una guarda fallando en abierto o la fuga plantada pasando "
-                                "inadvertida"},
+     "claim": "The apparatus is sound, so the negative speaks about the market, not the tooling",
+     "strength": "Strong",
+     "basis": "Notebook 02: causality guarantees G1-G7 pass on real data; notebook 03: "
+              "execution, cost and fold-geometry guards verified and failing closed",
+     "scope_limit": "Costs remain provisional (ADR 0005)",
+     "would_have_contradicted": "A guard failing open, or the planted leak going undetected"},
 ]
 CONC = pl.DataFrame(conclusions)
 save_table(CONC, "t09_conclusions", ctx,
-           caption="Afirmaciones que el estudio sostiene, con su base de evidencia y sus limites "
-                   "de alcance.")
+           caption="Claims the study supports, with their evidence, scope limits, and the "
+                   "result that would have falsified each.")
 display(CONC)
 print(f"\nArtifacts written under : {ctx.figures_dir} | {ctx.tables_dir}")
 """
@@ -906,72 +904,71 @@ print(f"\nArtifacts written under : {ctx.figures_dir} | {ctx.tables_dir}")
 
 md(
     r"""
-Es fácil leer este resultado como «los mercados son eficientes» o «el trading
-algorítmico no funciona». Ninguna de las dos es lo que hemos demostrado.
+It is easy to read this result as "markets are efficient" or "algorithmic
+trading does not work". We have demonstrated neither.
 
-Lo que sí hemos demostrado es más estrecho y, creemos, más útil: dentro de un
-espacio bien acotado —trece familias interpretables, dos perpetuos líquidos,
-velas de una hora, seis años, un modelo de costes realista— una búsqueda
-rigurosa no encuentra nada que sobreviva a contar honestamente cuántas veces se
-ha mirado. Y esa acotación importa tanto como el hallazgo: cada uno de esos
-límites es un sitio donde otro estudio, con otros datos u otra frecuencia,
-podría llegar a una respuesta distinta. Los límites de alcance van anotados
-junto a cada afirmación, no enterrados.
+What we have demonstrated is narrower and, we believe, more useful: within a
+well-bounded space -- thirteen interpretable families, two liquid perpetuals,
+hourly bars, six years, a realistic cost model -- a rigorous search finds
+nothing that survives an honest count of how many times we looked. The bound
+matters as much as the finding: each of those limits is a place where another
+study, on other data or another frequency, could reach a different answer.
+Scope limits travel next to each claim, not buried.
 
-Nos fiamos de este negativo por tres razones, y las enunciamos como decisiones
-nuestras y no como circunstancias: validamos el utillaje antes de usarlo y
-comprobamos que detecta al instante una fuga plantada a propósito (cuadernos 02
-y 03); dimos a la búsqueda una oportunidad justa, con presupuesto igualado y
-verificado en cada familia; y contrastamos el veredicto con tres diagnósticos
-metodológicamente independientes —contraste de hipótesis, Sharpe deflactado y
-PBO— que podían haber discrepado y no lo hicieron.
+We trust this negative for three reasons, and we state them as our decisions
+rather than as circumstances: we validated the tooling before using it and
+confirmed it catches a deliberately planted leak instantly (notebooks 02 and
+03); we gave the search a fair chance, with the budget matched and verified in
+every family; and we cross-checked the verdict with three methodologically
+independent diagnostics -- hypothesis tests, deflated Sharpe and PBO -- that
+could have disagreed and did not.
 
-Lo que cambiaría la conclusión: datos de mayor frecuencia, donde vive la
-microestructura; un espacio de hipótesis más rico; activos con menos
-participación institucional; o una estructura de costes de quien solo aporta
-liquidez. Cada una es una extensión concreta y falsable, no una excusa.
+What would change the conclusion: higher-frequency data, where microstructure
+lives; a richer hypothesis space; assets with less institutional
+participation; or a maker-only cost structure. Each is a concrete, falsifiable
+extension, not a hedge.
 
-Sobre la capa de meta-etiquetado, una nota con su etiqueta delante:
-**INFRAESTRUCTURA / EXPLORATORIO (§5 del contrato metodológico; ADR 0017).**
-Como el estudio cerró sin primaria elegible, la puerta del meta-etiquetado
-nunca llegó a abrirse; la ejecutamos igualmente sobre datos reales bajo ese
-contrato para no dejar RQ3 sin evidencia. El resultado —mejora económica en
-todos los folds con ROC-AUC por debajo de 0,5: toda la ganancia viene de
-abstenerse, no de predecir— es un diagnóstico del utillaje y del espacio, **no
-un hallazgo sobre la familia primaria**, que ya estaba rechazada. Esa ejecución
-no entra en el denominador congelado de este cierre; si algún trabajo futuro
-quisiera afirmarse sobre ella, sus ajustes modelo-x-fold tendrían que contarse.
+On the meta-labeling layer, one note with its label in front:
+**INFRASTRUCTURE / EXPLORATORY (methodology contract section 5; ADR 0017).**
+Since the study closed with no eligible primary, the meta-labeling gate never
+opened; we ran the layer on real data anyway under that contract so RQ3 would
+not remain without evidence. The outcome -- economic improvement in every fold
+with ROC-AUC around 0.5: all of the gain comes from abstaining, none from
+predicting -- is a diagnostic of the tooling and the space, **not a finding
+about the rejected primary**. Those runs sit outside this closure's frozen
+denominator; any future claim built on them would have to count its
+model-by-fold fits. Notebook 06 narrates it in full.
 
-La aportación metodológica es la más transferible: no el veredicto sobre
-ninguna familia, sino la demostración de que el veredicto es *de fiar* — cada
-paso entre el dato crudo y la conclusión es auditable, cada guarda falla en
-cerrado en vez de avisar, y el único momento en que el proceso se torció quedó
-registrado a la vista en lugar de alisado. Un estudio que publica su propia
-discrepancia es más creíble que uno que solo reporta aciertos.
+The methodological contribution is the most transferable: not the verdict on
+any family, but the demonstration that the verdict can be *trusted* -- every
+step from raw data to conclusion is auditable, every guard fails closed
+rather than warning, and the one moment the process wobbled was recorded in
+the open instead of smoothed away.
 
-### De las preguntas locales a las de la memoria
+### From the local questions to the thesis
 
-| Pregunta local | Alimenta | Cómo |
+| Local question | Feeds | How |
 |---|---|---|
-| P1 (recuento de hipótesis) | RQ5 (robustez) | la sensibilidad del denominador es la prueba de robustez del veredicto |
-| P2 (criterios de promoción) | RQ1 (rentabilidad neta) | los seis listones económicos son la operacionalización de RQ1 |
-| P3 (correcciones) | RQ1 | el «no» de RQ1, corregido por haber mirado trece veces |
-| P4 (¿artefacto?) | RQ1 + RQ5 | DSR y PBO cuantifican cuánto fiarse del mejor resultado |
-| P5 (régimen) | RQ4 (dependencia de régimen) | respuesta directa: no hay rescate condicional |
-| P6 (alcance del negativo) | transversal | fija qué afirma y qué no afirma la tesis |
+| Q1 (test count) | RQ5 (robustness) | the denominator sensitivity is the verdict's robustness proof |
+| Q2 (promotion criteria) | RQ1 (net profitability) | the six economic bars operationalise RQ1 |
+| Q3 (corrections) | RQ1 | RQ1's "no", corrected for having looked thirteen times |
+| Q4 (artefact?) | RQ1 + RQ5 | DSR and PBO quantify how much to trust the best result |
+| Q5 (regime) | RQ4 (regime dependence) | direct answer: no conditional rescue |
+| Q6 (scope of the negative) | cross-cutting | fixes what the thesis does and does not claim |
 
-RQ2 (GA frente a RS) se responde en el cuaderno 04; RQ3 (meta-etiquetado), en
-la nota de infraestructura de arriba.
+RQ2 (GA vs RS) is answered in notebook 04; RQ3 (meta-labeling), in the
+infrastructure note above and in notebook 06.
 
 ---
 
-**Qué deja este cuaderno y a dónde va.** Figuras `j01` (criterios de
-promoción), `j02` (corrección múltiple y sensibilidad del recuento), `j03`
-(Sharpe deflactado y PBO) y `j04` (régimen), y tablas `t01`-`t09`, todas bajo
-`reports/{figures,tables}/closure/`. Alimentan el capítulo 6 (resultados: j01,
-j02, t01-t05), el capítulo 7 (limitaciones: j02b, t08 y la sección del holdout)
-y el capítulo 8 (discusión: j03, j04, t09). El cuaderno 06 recoge el testigo:
-toma la mejor familia rechazada y la sitúa dentro de la distribución del azar.
+**What this notebook leaves behind, and where it goes.** Figures `j01`
+(promotion criteria), `j02` (multiple testing and count sensitivity), `j03`
+(deflated Sharpe and PBO) and `j04` (regime), plus tables `t01`-`t09`, all
+under `reports/{figures,tables}/closure/`. They feed chapter 6 (results: j01,
+j02, t01-t05), chapter 7 (limitations: j02b, t08 and the holdout section) and
+chapter 8 (discussion: j03, j04, t09). Notebook 06 takes the baton: the
+supervised layer on real data, and what separates economic improvement from
+predictive skill.
 """
 )
 
@@ -991,4 +988,4 @@ def _write() -> None:
 
 
 if __name__ == "__main__":
-    raise SystemExit(_write())
+    _write()

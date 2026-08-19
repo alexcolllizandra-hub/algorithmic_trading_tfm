@@ -27,8 +27,8 @@ actuales son estables y ya están citados por tablas y web: no se renombran.
 
 1. ~~Español~~ **DECISIÓN 2026-08-19: INGLÉS en todo el repositorio** (código,
    notebooks, docs técnicos) — el repo y la plataforma son públicos e
-   internacionales. Estado de migración: 07 ✅ EN; 05, 06 y 08 pendientes de
-   retraducir; 01-04 ya estaban en EN (solo necesitan patrón+tono). ÚNICA
+   internacionales. Estado de migración: 05, 06, 07 y 08 ✅ EN (19-08);
+   01-04 ya estaban en EN y solo necesitan patrón+tono. ÚNICA
    excepción abierta: `docs/thesis/` (borradores de la memoria) sigue en
    español hasta que el autor confirme el idioma de entrega. Antes decía:
    Español, el idioma de la memoria. Términos técnicos consagrados se dejan

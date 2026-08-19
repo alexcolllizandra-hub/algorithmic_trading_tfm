@@ -49,27 +49,26 @@ def fig(name: str) -> str:
 # --------------------------------------------------------------------------- #
 md(
     r"""
-# El argumento completo, de una lectura
+# The complete argument, in one reading
 
-**¿Qué pregunta responde este cuaderno?** Ninguna nueva: encadena lo que los
-cuadernos 01-07 ya establecieron, en el orden en que el argumento se sostiene.
-**¿Con qué datos?** Con sus figuras, tal cual quedaron guardadas — aquí no se
-computa nada y no hay una sola celda de análisis. **¿Qué va a encontrar el
-lector?** La tesis entera en doce imágenes: un mercado difícil, un aparato que
-no se engaña, una búsqueda que encuentra ruido, y dos capas — aprendizaje
-supervisado y Monte Carlo — que confirman el veredicto desde ángulos que no
-tenían por qué coincidir.
+**What question does this notebook answer?** None that is new: it chains what
+notebooks 01-07 already established, in the order the argument holds together.
+**On what data?** On their figures, exactly as they were saved -- nothing is
+computed here and there is not a single analysis cell. **What will the reader
+find?** The whole thesis in twelve images: a difficult market, an apparatus
+that does not fool itself, a search that finds noise, and two layers --
+supervised learning and Monte Carlo -- that confirm the verdict from angles
+that had no obligation to agree.
 
-Si solo se dispone de diez minutos para evaluar este trabajo, este es el
-documento.
+If only ten minutes are available to assess this work, this is the document.
 """
 )
 
 code(
     r"""
-# Contrato: este cuaderno solo embebe figuras. Verificamos que existen y
-# registramos su hash, para que la cadena rompa en alto si un cuaderno
-# anterior deja de producir lo que este muestra.
+# Contract: this notebook only embeds figures. We verify they exist and record
+# their hashes, so the chain breaks loudly if an upstream notebook stops
+# producing what this one shows.
 import hashlib
 import os
 import sys
@@ -102,7 +101,7 @@ NB_CONTRACT = {
 
 missing = [f for f in NB_CONTRACT["inputs"] if not Path(f).exists()]
 if missing:
-    raise FileNotFoundError(f"Un cuaderno anterior ya no produce: {missing}")
+    raise FileNotFoundError(f"An upstream notebook no longer produces: {missing}")
 for f in NB_CONTRACT["inputs"]:
     digest = hashlib.sha256(Path(f).read_bytes()).hexdigest()
     print(f"{digest[:16]}  {f}")
@@ -111,118 +110,116 @@ for f in NB_CONTRACT["inputs"]:
 
 md(
     rf"""
-## 1. El terreno: seis años que contienen de todo
+## 1. The terrain: six years containing everything
 
 {fig("eda/f03_price_evolution_drawdown")}
 
-Dos activos líquidos, 2020-2025: una caída del 68% desde máximos, dos mercados
-alcistas, meses laterales interminables. Quien afirme una ventaja en este
-periodo no puede atribuirla a haber visto solo un régimen — y quien no la
-encuentre, tampoco puede excusarse en que faltara variedad. *(Cuaderno 01.)*
+Two liquid assets, 2020-2025: a 68% drawdown from highs, two bull markets,
+endless sideways months. Anyone claiming an edge over this period cannot
+attribute it to having seen only one regime -- and anyone failing to find one
+cannot plead a shortage of variety either. *(Notebook 01.)*
 
-## 2. El aparato se ganó la confianza antes de opinar
+## 2. The apparatus earned trust before it gave an opinion
 
 {fig("features/g04_leakage_counterexample")}
 
-Antes de evaluar ninguna estrategia, plantamos una fuga de información a
-propósito — una característica que lee el futuro — y comprobamos que los tests
-de causalidad la detectan al instante. Un aparato que no es capaz de encontrar
-la trampa que tú mismo le pones tampoco merece que le creas el resto.
-*(Cuaderno 02.)*
+Before evaluating any strategy, we planted an information leak on purpose -- a
+feature that reads the future -- and confirmed the causality tests catch it
+instantly. Tooling that cannot find the trap you set for it yourself has not
+earned belief in anything else it reports. *(Notebook 02.)*
 
-## 3. El tiempo se respeta y los costes se pagan
+## 3. Time is respected and costs are paid
 
 {fig("backtest/h05_walk_forward_geometry")}
 
 {fig("backtest/h02_cost_decomposition")}
 
-Quince pliegues walk-forward con purga y embargo derivados — no elegidos a
-ojo — y una contabilidad de ejecución que cobra comisión, deslizamiento y
-funding en cada barra. La señal se decide con la vela cerrada y se ejecuta en
-la apertura siguiente: el primer precio alcanzable sin clarividencia.
-*(Cuaderno 03.)*
+Fifteen walk-forward folds with purge and embargo derived rather than chosen
+by eye, and an execution ledger charging fee, slippage and funding on every
+bar. The signal is decided on the closed candle and executed at the next open:
+the first price reachable without clairvoyance. *(Notebook 03.)*
 
-## 4. La búsqueda encuentra... lo que el ruido reparte
+## 4. The search finds... what noise hands out
 
 {fig("search/i02_selection_optimism")}
 
 {fig("search/i05_seed_instability")}
 
-El optimismo de selección medido: lo que el ganador de la validación promete y
-lo que después entrega en test. Y la inestabilidad entre semillas: cambiar el
-azar inicial de la búsqueda cambia al ganador — catorce parametrizaciones
-distintas en quince pliegues en la ronda posterior. Una búsqueda que opera
-sobre estructura converge; una que opera sobre ruido, baraja. *(Cuaderno 04.)*
+Selection optimism, measured: what the validation winner promises against what
+it then delivers on test. And seed instability: changing the search's initial
+randomness changes the winner -- fourteen distinct parameterisations across
+fifteen folds in the later round. A search operating on structure converges;
+one operating on noise shuffles. *(Notebook 04.)*
 
-## 5. El veredicto, contado honestamente
+## 5. The verdict, told honestly
 
 {fig("closure/j02_multiple_testing")}
 
 {fig("closure/j03_deflated_sharpe_pbo")}
 
-Trece familias, 496.500 configuraciones examinadas, y el p-valor bruto más
-bajo del estudio queda en 0,345 — lejos del umbral *antes* de corregir nada, y
-el panel (b) muestra que ninguna forma razonable de contar las pruebas cambia
-eso. El Sharpe deflactado dice que el mejor resultado no supera lo que la
-suerte prometía; el PBO, pegado a 0,5, dice que elegir al mejor in-sample es
-una moneda al aire. Tres diagnósticos independientes, un solo mensaje.
-*(Cuaderno 05.)*
+Thirteen families, 496,500 configurations examined, and the study's smallest
+raw p-value sits at 0.345 -- far from the threshold *before* correcting
+anything, and panel (b) shows no reasonable way of counting the tests changes
+that. The deflated Sharpe says the best result does not clear what luck already
+promised; the PBO, pinned at 0.5, says picking the in-sample best is a coin
+toss. Three independent diagnostics, one message. *(Notebook 05.)*
 
-## 6. ¿Y con aprendizaje supervisado? Mejora sin saber
+## 6. And with supervised learning? It improves without knowing
 
 {fig("ml/m01_economia_por_fold")}
 
 {fig("ml/m02_habilidad_predictiva")}
 
-El trío preregistrado — regresión logística, random forest, LightGBM — decide
-cuándo actuar sobre las señales de una primaria. El brazo filtrado pierde menos
-en todos los pliegues... con un AUC de moneda: toda la mejora viene de
-abstenerse y recortar exposición, no de predecir. Una mejora económica no es
-evidencia de conocimiento, y tenerlas separadas es lo que evita publicar la
-primera como si fuera lo segundo. *(Cuaderno 06, contrato exploratorio.)*
+The pre-registered trio -- logistic regression, random forest, LightGBM --
+decides when to act on a primary's signals. The filtered arm loses less in
+every fold... at a coin-level AUC: the entire improvement comes from abstaining
+and cutting exposure, not from predicting. An economic improvement is not
+evidence of knowledge, and keeping the two apart is what stops the first being
+published as if it were the second. *(Notebook 06, exploratory contract.)*
 
-## 7. La imagen que resume el trabajo
+## 7. The image that summarises the work
 
 {fig("montecarlo/k03_nula_con_la_estrategia_dentro")}
 
-La mejor familia del estudio — ya rechazada por la estadística — frente a mil
-versiones de sí misma con las posiciones rotadas al azar sobre las mismas
-barras: misma exposición, mismos costes, cero información. Las diez ejecuciones
-reales caen repartidas dentro de la banda del azar, en percentiles de 0,22 a
-0,97 — exactamente como se reparten diez sorteos. Todo el capítulo 5 de
-estadística está en esta imagen. *(Cuaderno 07.)*
+The study's best family -- already rejected by the statistics -- against a
+thousand versions of itself with the positions rotated at random over the same
+bars: same exposure, same costs, zero information. The ten real runs scatter
+inside the chance band, at percentiles from 0.22 to 0.97 -- exactly the way ten
+draws scatter. The whole of chapter 5's statistics lives in this image.
+*(Notebook 07.)*
 
-## 8. Y la advertencia con número propio
+## 8. And the warning with a number of its own
 
 {fig("montecarlo/k05_cuenta_fondeada")}
 
-Bajo reglas típicas de cuenta fondeada — declaradas y ajustables — esta
-estrategia indistinguible del azar supera la fase 1 el 31% de las veces y las
-dos fases el 11,5%. Una de cada tres personas que la operasen "pasaría la
-prueba" y se creería con ventaja. Ese es el mecanismo por el que la industria
-de señales y evaluaciones fabrica convencidos, y la razón de que el simulador
-de la plataforma exista. *(Cuaderno 07.)*
+Under the published rules of two real crypto prop firms -- mapped with their
+sources, and with every unmodelled rule making passing harder -- this
+chance-indistinguishable strategy clears phase 1 between 13.7% and 17.8% of the
+time. A coin flip with the same trade timing and costs clears it between 9.2%
+and 12.8%: a gap on the order of its own sampling error. Evaluation passes are
+handed out to randomness often enough to manufacture believers, which is why
+the platform's simulator exists. *(Notebook 07.)*
 
 ---
 
-## Lo que estas doce imágenes afirman, y lo que no
+## What these twelve images claim, and what they do not
 
-Afirman: que en este espacio acotado — reglas interpretables y su capa de
-meta-etiquetado, dos perpetuos, velas de una hora, seis años, costes
-realistas — una búsqueda rigurosa no encuentra nada que sobreviva a contar
-cuántas veces se miró, y que el instrumento de medida quedó validado antes y
-después con trampas plantadas, presupuestos verificados y nulas a medida.
+They claim: that within this bounded space -- interpretable rules and their
+meta-labeling layer, two perpetuals, hourly bars, six years, realistic costs --
+a rigorous search finds nothing that survives counting how many times we
+looked, and that the measuring instrument was validated before and after with
+planted traps, verified budgets and purpose-built nulls.
 
-No afirman: que los mercados sean eficientes, que el trading algorítmico no
-funcione, ni que otro espacio — más frecuencia, más activos, otra información —
-fuera a dar lo mismo. Cada límite del alcance es una extensión falsable, y las
-tres primeras están preregistradas en el trabajo futuro.
+They do not claim: that markets are efficient, that algorithmic trading does
+not work, or that another space -- higher frequency, more assets, different
+information -- would return the same. Every limit of scope is a falsifiable
+extension, and the first three are pre-registered in the future work.
 
-Queda dicho también lo que más costó decir: la partición reservada se abrió
-fuera de protocolo, la lectura está retenida, y la cadena de commits que lo
-prueba se conservó intacta a propósito. Un estudio que publica su propia
-discrepancia pide ser creído por sus registros, no por su palabra — y ese es,
-al final, el estándar que este trabajo propone.
+The hardest thing to say is said too: the reserved partition was opened outside
+protocol, the reading is withheld, and the commit chain proving it was kept
+intact on purpose. A study that publishes its own discrepancy asks to be
+believed on its records rather than its word -- and that, in the end, is the
+standard this work proposes.
 """
 )
 

@@ -1,7 +1,7 @@
 {
   "notebook": "06_meta_etiquetado_supervisado",
   "analysis_id": "t03_shap",
-  "caption": "Importancia media |SHAP| por caracter\u00edstica para el \u00faltimo modelo ganador que actu\u00f3. Diagn\u00f3stico del utillaje, no descubrimiento de se\u00f1al.",
+  "caption": "Mean |SHAP| importance per feature for the last acting winning model. A diagnostic of the tooling, not a signal discovery.",
   "period": "development walk-forward out-of-sample; holdout never loaded",
   "datasets": {
     "reports/meta_labeling_real/meta_labeling_real.json": "5e28d0fe8df464322d5313b95a6f933048dcd33859cb6469499d0c92dcb17e7a"
@@ -9,7 +9,7 @@
   "config": {
     "seed": null,
     "study_seed": 42,
-    "code_commit_resolved": "ff9d9fa23b7e1be18fcaa29ea973161d4b827d8f",
+    "code_commit_resolved": "e4a75f51b124cd727f8428c383d97b80610df7c3",
     "data_contract_cutoff": "2026-07-01",
     "contract_label": "INFRAESTRUCTURA/EXPLORATORIO (seccion 5; ADR 0017)",
     "family": "crt_htf_range_reversal",
@@ -21,8 +21,8 @@
       "lightgbm"
     ]
   },
-  "generated_at": "2026-08-19T21:09:56.985374+00:00",
-  "code_commit": "ff9d9fa23b7e1be18fcaa29ea973161d4b827d8f",
+  "generated_at": "2026-08-19T21:33:25.272517+00:00",
+  "code_commit": "e4a75f51b124cd727f8428c383d97b80610df7c3",
   "output_path": "reports/tables/ml/t03_shap.md",
   "kind": "table",
   "n_rows": 10,

@@ -1,7 +1,7 @@
 {
   "notebook": "06_meta_etiquetado_supervisado",
   "analysis_id": "m01_economia_por_fold",
-  "caption": "Retorno neto por fold de la primaria sola frente a la primaria filtrada. Donde el filtro se abstiene, el brazo filtrado queda plano por construcci\u00f3n.",
+  "caption": "Net return per fold of the primary alone against the filtered primary. Where the filter abstains, the filtered arm is flat by construction.",
   "period": "development walk-forward out-of-sample; holdout never loaded",
   "datasets": {
     "reports/meta_labeling_real/meta_labeling_real.json": "5e28d0fe8df464322d5313b95a6f933048dcd33859cb6469499d0c92dcb17e7a"
@@ -9,7 +9,7 @@
   "config": {
     "seed": null,
     "study_seed": 42,
-    "code_commit_resolved": "ff9d9fa23b7e1be18fcaa29ea973161d4b827d8f",
+    "code_commit_resolved": "e4a75f51b124cd727f8428c383d97b80610df7c3",
     "data_contract_cutoff": "2026-07-01",
     "contract_label": "INFRAESTRUCTURA/EXPLORATORIO (seccion 5; ADR 0017)",
     "family": "crt_htf_range_reversal",
@@ -21,8 +21,8 @@
       "lightgbm"
     ]
   },
-  "generated_at": "2026-08-19T21:09:55.875390+00:00",
-  "code_commit": "ff9d9fa23b7e1be18fcaa29ea973161d4b827d8f",
+  "generated_at": "2026-08-19T21:33:24.171139+00:00",
+  "code_commit": "e4a75f51b124cd727f8428c383d97b80610df7c3",
   "output_path": "reports/figures/ml/m01_economia_por_fold.png",
   "kind": "figure",
   "dpi": 300,

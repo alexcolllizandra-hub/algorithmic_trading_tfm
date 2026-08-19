@@ -1,7 +1,7 @@
 {
   "notebook": "06_meta_etiquetado_supervisado",
   "analysis_id": "m05_decision_y_regimen",
-  "caption": "Fracci\u00f3n de se\u00f1ales aceptadas por fold (a) y reparto de eventos frente a aceptaciones por r\u00e9gimen de volatilidad (b).",
+  "caption": "Share of signals accepted per fold (a) and events against acceptances by volatility regime (b).",
   "period": "development walk-forward out-of-sample; holdout never loaded",
   "datasets": {
     "reports/meta_labeling_real/meta_labeling_real.json": "5e28d0fe8df464322d5313b95a6f933048dcd33859cb6469499d0c92dcb17e7a"
@@ -9,7 +9,7 @@
   "config": {
     "seed": null,
     "study_seed": 42,
-    "code_commit_resolved": "ff9d9fa23b7e1be18fcaa29ea973161d4b827d8f",
+    "code_commit_resolved": "e4a75f51b124cd727f8428c383d97b80610df7c3",
     "data_contract_cutoff": "2026-07-01",
     "contract_label": "INFRAESTRUCTURA/EXPLORATORIO (seccion 5; ADR 0017)",
     "family": "crt_htf_range_reversal",
@@ -21,8 +21,8 @@
       "lightgbm"
     ]
   },
-  "generated_at": "2026-08-19T21:09:57.822288+00:00",
-  "code_commit": "ff9d9fa23b7e1be18fcaa29ea973161d4b827d8f",
+  "generated_at": "2026-08-19T21:33:26.060067+00:00",
+  "code_commit": "e4a75f51b124cd727f8428c383d97b80610df7c3",
   "output_path": "reports/figures/ml/m05_decision_y_regimen.png",
   "kind": "figure",
   "dpi": 300,
