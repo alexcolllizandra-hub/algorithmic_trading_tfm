@@ -3,10 +3,13 @@ import type { Metadata } from "next";
 import { Architecture } from "@/components/landing/Architecture";
 import { Concepts } from "@/components/landing/Concepts";
 import { CostErosion } from "@/components/landing/CostErosion";
+import { FamilyZoo } from "@/components/landing/FamilyZoo";
 import { FinalCta } from "@/components/landing/FinalCta";
+import { FundedOdds } from "@/components/landing/FundedOdds";
 import { Hero } from "@/components/landing/Hero";
 import { Integrity } from "@/components/landing/Integrity";
 import { MarketDashboard } from "@/components/landing/MarketDashboard";
+import { NullDistribution } from "@/components/landing/NullDistribution";
 import { Overfitting } from "@/components/landing/Overfitting";
 import { Pipeline } from "@/components/landing/Pipeline";
 import { PlainExplanation } from "@/components/landing/PlainExplanation";
@@ -34,7 +37,10 @@ export default function LandingPage() {
       <Architecture />
       <Integrity />
       <MarketDashboard />
+      <FamilyZoo />
       <Verdict />
+      <NullDistribution />
+      <FundedOdds />
       <Roadmap />
       <FinalCta />
     </>
