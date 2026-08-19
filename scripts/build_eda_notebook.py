@@ -1993,7 +1993,7 @@ ax.set_yticks(range(7), ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
 ax.set_xlabel("UTC hour"); ax.set_title("Appendix: BTC mean |return| by weekday x UTC hour (bps, 5m, development)")
 fig.colorbar(im, ax=ax, label="mean |return| (bps)")
 show(fig, "fa2_seasonality_heatmap", caption="Appendix - BTC mean |return| by weekday and UTC hour (5m, development)")
-print("Notebook complete: all sections executed on development data only; holdout untouched.")
+print("Notebook complete: all sections executed on development data only; holdout partition not read.")
 """
 )
 

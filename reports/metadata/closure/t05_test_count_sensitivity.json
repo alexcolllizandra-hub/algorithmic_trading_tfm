@@ -1,10 +1,18 @@
 {
   "notebook": "05_study_closure_and_multiple_testing",
   "analysis_id": "t05_test_count_sensitivity",
-  "caption": "Sensitivity of the conclusion to how the number of tested hypotheses is defined.",
+  "caption": "Sensibilidad de la conclusi\u00f3n a c\u00f3mo se define el n\u00famero de hip\u00f3tesis contrastadas.",
   "period": "development walk-forward out-of-sample; holdout NOT published",
-  "datasets": {},
+  "datasets": {
+    "reports/study_closure/study_dashboard.json": "bdbd51becfe3f071e7eb68ebe8bae8691b4d6f80e67fcaf4542395f70914e313",
+    "reports/study_closure/study_level_multiple_testing.json": "5489799d8ff0f555b536ba3a3ba9cf1cd80ccbef6119aa03fae4c06000c6942d",
+    "reports/study_closure/regime_conditioned.json": "92e40adf94b5371bbc0b0d1bdbdf358e25c548fc09e1f833aa5ac8fb048c2e9e"
+  },
   "config": {
+    "seed": null,
+    "code_commit_resolved": "a7d41eb511c9d8a66ac8fb92d75068e8de916a49",
+    "data_contract_cutoff": "2026-07-01",
+    "holdout_start": "2026-01-01",
     "n_families": 13,
     "n_units": 284,
     "n_configurations": 496500,
@@ -12,8 +20,8 @@
     "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
     "holdout_publication": "AUDIT_PENDING"
   },
-  "generated_at": "2026-08-15T10:35:37.203933+00:00",
-  "code_commit": "739416e39bf9406f9d0bf0b0a02e997e563d3b86",
+  "generated_at": "2026-08-18T23:07:26.244836+00:00",
+  "code_commit": null,
   "output_path": "reports/tables/closure/t05_test_count_sensitivity.md",
   "kind": "table",
   "n_rows": 4,

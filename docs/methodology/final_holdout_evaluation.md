@@ -14,6 +14,10 @@
 **Version:** 0.1.0 (pre-declaration) · **Date:** 2026-08-13
 **Holdout status at the time of writing: CLOSED. Never opened.**
 
+> **Nota de estado (2026-08-19).** La línea anterior era cierta al redactarse.
+> La partición se abrió el 2026-08-13 y está consumida; véase
+> [holdout_audit_status.md](holdout_audit_status.md).
+
 > This half of the document is committed **before** any holdout row is read. The
 > commit that contains it must precede, in git history, the commit that contains
 > the result. That ordering is the evidence that the candidate was frozen before
