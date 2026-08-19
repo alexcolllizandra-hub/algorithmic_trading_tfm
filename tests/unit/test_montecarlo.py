@@ -7,9 +7,11 @@ import polars as pl
 import pytest
 
 from perp_lab.evaluation.montecarlo import (
+    PROP_FIRM_PRESETS,
     PropFirmRules,
     bar_net_returns,
     breakeven_multiplier,
+    coin_flip_pass_probability,
     cost_multiplier_sweep,
     iid_trade_bootstrap,
     null_circular_shifts,
@@ -120,3 +122,24 @@ def test_prop_firm_rules_pass_and_breach() -> None:
     loser = np.full(200, -0.02)
     out = prop_firm_pass_probability(loser, rules=rules, block_length=8, n_paths=30, seed=5)
     assert out["pass_phase1"] == 0.0
+
+
+def test_presets_carry_source_and_rules() -> None:
+    for name, preset in PROP_FIRM_PRESETS.items():
+        assert isinstance(preset["rules"], PropFirmRules), name
+        assert preset["source"].startswith("https://"), name
+        assert preset["retrieved"], name
+
+
+def test_coin_flip_is_deterministic_and_bounded(ledger: pl.DataFrame) -> None:
+    rules = PropFirmRules(
+        profit_target=0.02,
+        max_total_drawdown=0.10,
+        max_daily_loss=0.05,
+        max_days=5,
+        bars_per_day=4,
+    )
+    a = coin_flip_pass_probability(ledger, rules=rules, n_paths=60, seed=13)
+    b = coin_flip_pass_probability(ledger, rules=rules, n_paths=60, seed=13)
+    assert a == b
+    assert 0.0 <= a["pass_both"] <= a["pass_phase1"] <= 1.0

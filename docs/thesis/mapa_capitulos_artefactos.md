@@ -36,7 +36,7 @@ palabras. Estados: **escribible ya** / **falta ejecutar** / **falta decidir**.
 
 | Figura | Sección | Cómo se genera |
 |---|---|---|
-| ~~Distribución nula de Monte Carlo~~ **HECHA 19-08**: `montecarlo/k01-k05` + tablas `t01-t05` (nula por rotación con las 10 semillas dentro, percentiles 0,22-0,97; cruce de costes ~2,3x; prop-firm 31%/11,5%) | Cap 6/anexo — **la figura que resume el TFM es k03** | `scripts/build_montecarlo_notebook.py` (cuaderno 07); módulo `src/perp_lab/evaluation/montecarlo.py` con 8 tests; determinismo verificado 10/10 |
+| ~~Distribución nula de Monte Carlo~~ **HECHA 19-08**: `montecarlo/k01-k05` + tablas `t01-t05` (nula por rotación con las 10 semillas dentro, percentiles 0,22-0,97; cruce de costes ~2,3x; prop-firm con reglas REALES mapeadas (Breakout, HyroTrader) y baseline coin-flip: estrategia 13,7-17,8% fase 1 vs moneda 9,2-12,8%) | Cap 6/anexo — **la figura que resume el TFM es k03** | `scripts/build_montecarlo_notebook.py` (cuaderno 07); módulo `src/perp_lab/evaluation/montecarlo.py` con 8 tests; determinismo verificado 10/10 |
 | Resultados CRT V1 agregados | Cap 6 | al cierre de la ronda: `uv run python scripts/summarise_multiseed.py artifacts/runs/crt_v1_budget100/<familia>` + builder de figura a añadir |
 | `ml/m01-m05`: economía vs AUC por fold, calibración, SHAP, abstención (estudio meta real, trío LR/RF/LightGBM completado 19-08) | Cap 5.8 y 6 (RQ3) | `build_ml_notebook.py` (cuaderno 06 nuevo; el estudio ya corre con los tres modelos preregistrados + SHAP en la rama `feat/meta-labeling-real-data`, commit `c42e4c3`) |
 | Pipeline y esquema temporal como imagen | Cap 5 | exportar los Mermaid de `docs/methodology/pipeline_end_to_end.md` (mmdc o captura) |

@@ -332,3 +332,107 @@ def prop_firm_pass_probability(
         "pass_both": p_both / n,
         "n_paths": float(n),
     }
+
+
+# Published evaluation rules of real crypto-perp prop firms, mapped 2026-08-19.
+# Only the three quantitative gates our simulator models are encoded (profit
+# target, trailing max drawdown, daily loss). Rules we deliberately do NOT
+# model -- consistency caps, mandatory stop-losses, minimum trading days --
+# would each make passing HARDER, so the pass probabilities reported against
+# these presets are optimistic upper bounds, which is the safe direction for a
+# cautionary result. `max_days` is our evaluation horizon, not a firm rule.
+PROP_FIRM_PRESETS: dict[str, dict[str, Any]] = {
+    "breakout_1step_classic": {
+        "rules": PropFirmRules(
+            profit_target=0.10,
+            max_total_drawdown=0.06,
+            max_daily_loss=0.03,
+            max_days=60,
+            bars_per_day=24,
+        ),
+        "source": "https://www.kraken.com/learn/breakout-vs-hyrotrader",
+        "retrieved": "2026-08-19",
+        "notes": "Published target range 9-12% (10% modelled); Classic 6% DD, 3% daily; "
+        "no minimum days. Not modelled: none material for this preset.",
+    },
+    "hyrotrader_2step": {
+        "rules": PropFirmRules(
+            profit_target=0.10,
+            max_total_drawdown=0.06,
+            max_daily_loss=0.04,
+            max_days=60,
+            bars_per_day=24,
+        ),
+        "source": "https://www.hyrotrader.com/evaluations/",
+        "retrieved": "2026-08-19",
+        "notes": "10% target per phase, 6% max loss, 4% daily. Not modelled: 40% "
+        "consistency cap, 5-minute stop-loss rule, 5 minimum trading days -- "
+        "all of which only lower the true pass rate.",
+    },
+}
+
+
+def _trade_segments(position: np.ndarray) -> list[tuple[int, int]]:
+    """Contiguous nonzero blocks of the position series as (start, end) pairs."""
+    segments: list[tuple[int, int]] = []
+    in_seg = False
+    start = 0
+    for i, p_ in enumerate(position):
+        if p_ != 0 and not in_seg:
+            in_seg, start = True, i
+        elif p_ == 0 and in_seg:
+            in_seg = False
+            segments.append((start, i))
+    if in_seg:
+        segments.append((start, position.size))
+    return segments
+
+
+def coin_flip_pass_probability(
+    ledger: pl.DataFrame,
+    *,
+    rules: PropFirmRules,
+    n_paths: int = 1000,
+    seed: int = 42,
+) -> dict[str, float]:
+    """Pass probability of a coin flip with the strategy's own timing and costs.
+
+    Each path keeps the real ledger's trade timing and sizes (the |position|
+    pattern) and flips a fair coin for the DIRECTION of every trade segment,
+    re-pricing costs from the flipped turnover at the run's realised cost rate
+    and funding from the flipped positions. The evaluation windows start at a
+    random day so paths sample the whole history. This is the honest baseline
+    the strategy has to beat: same activity, zero information.
+    """
+    position = ledger["position"].to_numpy().astype(float)
+    oo = ledger["oo_return"].to_numpy().astype(float)
+    funding_rate = ledger["funding_rate_in_bar"].to_numpy().astype(float)
+
+    turnover_real = np.abs(np.diff(position, prepend=0.0)).sum()
+    cost_real = float((ledger["fee"] + ledger["slippage"]).sum())
+    cost_per_turnover = (cost_real / turnover_real) if turnover_real > 0 else 0.0
+
+    segments = _trade_segments(position)
+    horizon = 2 * rules.max_days * rules.bars_per_day
+    half = rules.max_days * rules.bars_per_day
+    n = position.size
+    if n <= horizon:
+        raise ValueError("Ledger shorter than two evaluation windows.")
+
+    rng = np.random.default_rng(seed)
+    p1 = 0
+    p_both = 0
+    for _ in range(int(n_paths)):
+        signs = rng.choice([-1.0, 1.0], size=len(segments))
+        pos = np.zeros(n)
+        for (a, b), sgn in zip(segments, signs, strict=True):
+            pos[a:b] = sgn * np.abs(position[a:b])
+        net = pos * oo - cost_per_turnover * np.abs(np.diff(pos, prepend=0.0)) + pos * funding_rate
+        start = int(rng.integers(0, n - horizon))
+        window = net[start : start + horizon]
+        first = _phase_outcome(window[:half], rules)
+        p1 += int(first)
+        if first:
+            p_both += int(_phase_outcome(window[half:], rules))
+    denom = max(int(n_paths), 1)
+    return {"pass_phase1": p1 / denom, "pass_both": p_both / denom, "n_paths": float(denom)}

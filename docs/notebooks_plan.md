@@ -25,7 +25,13 @@ actuales son estables y ya están citados por tablas y web: no se renombran.
 
 ## Guía de estilo (vinculante para los builders)
 
-1. **Español**, el idioma de la memoria. Términos técnicos consagrados se dejan
+1. ~~Español~~ **DECISIÓN 2026-08-19: INGLÉS en todo el repositorio** (código,
+   notebooks, docs técnicos) — el repo y la plataforma son públicos e
+   internacionales. Estado de migración: 07 ✅ EN; 05, 06 y 08 pendientes de
+   retraducir; 01-04 ya estaban en EN (solo necesitan patrón+tono). ÚNICA
+   excepción abierta: `docs/thesis/` (borradores de la memoria) sigue en
+   español hasta que el autor confirme el idioma de entrega. Antes decía:
+   Español, el idioma de la memoria. Términos técnicos consagrados se dejan
    en inglés la primera vez con traducción entre paréntesis.
 2. Primera persona del plural, prosa continua. La pregunta se plantea como
    pregunta real, no como epígrafe de plantilla; la respuesta admite lo que

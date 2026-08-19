@@ -1,4 +1,4 @@
-**Table — Las diez semillas reales de volatility_breakout BTCUSDT/random_search sobre su ledger out-of-sample concatenado.**
+**Table — The ten real volatility_breakout BTCUSDT/random_search seeds on their concatenated out-of-sample ledgers.**
 
 | seed | n_bars | n_trades | exposure | total_return | sharpe | max_drawdown | time_under_water |
 | --- | --- | --- | --- | --- | --- | --- | --- |

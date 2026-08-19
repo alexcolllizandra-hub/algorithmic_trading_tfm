@@ -1,4 +1,4 @@
-**Table — Longitud de bloque del bootstrap estacionario, derivada de la ACF de los retornos netos por barra de la semilla mediana.**
+**Table — Stationary-bootstrap block length derived from the ACF of the median seed's per-bar net returns.**
 
 | block_length | last_significant_lag | noise_band | n_bars |
 | --- | --- | --- | --- |

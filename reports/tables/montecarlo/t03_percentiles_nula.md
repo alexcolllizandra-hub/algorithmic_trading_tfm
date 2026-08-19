@@ -1,4 +1,4 @@
-**Table — Percentil de cada semilla real dentro de su propia distribución nula por rotación circular (1.000 rotaciones por semilla).**
+**Table — Percentile of each real seed inside its own circular-shift null distribution (1,000 rotations per seed).**
 
 | seed | real_total_return | null_percentile | exposure |
 | --- | --- | --- | --- |

@@ -1,4 +1,4 @@
-**Table — Métricas del camino real de la semilla mediana re-cobrado a múltiplos del coste pagado.**
+**Table — Metrics of the median seed's real path re-charged at multiples of the cost paid.**
 
 | multiplier | total_return | sharpe | max_drawdown | time_under_water |
 | --- | --- | --- | --- | --- |

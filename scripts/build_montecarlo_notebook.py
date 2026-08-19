@@ -3,8 +3,10 @@
 Run with: ``uv run python scripts/build_montecarlo_notebook.py``
 
 The notebook narrates DESCRIPTIVE resampling of the study's best -- and
-rejected -- strategy. Figure and table names live under the ``montecarlo/``
-group (k01-k05, t01-t05) and are frozen once the thesis map cites them.
+rejected -- strategy. Figure and table names are frozen identifiers cited by
+the thesis map (k01-k05, t01-t05 under ``montecarlo/``); the Spanish-era names
+stay even though the prose is English, because renaming published artifact
+identifiers breaks every reference for zero analytical gain.
 """
 
 from __future__ import annotations
@@ -26,50 +28,54 @@ def code(src: str) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Apertura
+# Opening
 # --------------------------------------------------------------------------- #
 md(
     r"""
-# Monte Carlo: la mejor estrategia dentro de la distribución del azar
+# Monte Carlo: the best strategy inside the distribution of chance
 
-> **EVIDENCIA NEGATIVA ADICIONAL — todo el cuaderno es `DESCRIPTIVO`.** La
-> estrategia analizada, `volatility_breakout` en BTCUSDT (random_search), está
-> **RECHAZADA**: p bruto 0,345, PBO del estudio 0,486, cero supervivientes bajo
-> Holm y Benjamini-Hochberg — y fue además la que consumió el holdout. Este
-> análisis existe por dos razones legítimas: demostrar que la maquinaria de
-> riesgo funciona, y cuantificar cuán poco distinguible del azar es la mejor
-> candidata. Nada de lo que sigue es una prueba de hipótesis nueva ni un caso
-> de uso operativo, y ningún resultado puede promover nada: la partición
-> reservada está consumida.
+> **ADDITIONAL NEGATIVE EVIDENCE — every block in this notebook is
+> `DESCRIPTIVE`.** The strategy analysed, `volatility_breakout` on BTCUSDT
+> (random_search), is **REJECTED**: raw p 0.345, study PBO 0.486, zero
+> survivors under Holm or Benjamini-Hochberg — and it is, besides, the family
+> that consumed the holdout. This analysis exists for two legitimate reasons:
+> to demonstrate that the risk machinery works, and to quantify how little the
+> study's best candidate is distinguishable from luck. Nothing below is a new
+> hypothesis test or an operational use case, and nothing here can promote
+> anything: the reserved partition is consumed.
 
-**¿Qué pregunta responde este cuaderno?** Cuánto de lo que la mejor estrategia
-del estudio muestra en backtest cabe esperar del puro azar — en retorno, en
-secuencia y en supervivencia a reglas de cuenta fondeada. **¿Con qué datos?**
-Los ledgers out-of-sample reales de las diez semillas BTCUSDT/random_search del
-estudio R3 cerrado. **¿Qué va a encontrar el lector?** La figura que resume la
-tesis: las diez ejecuciones reales cayendo dentro de la distribución de mil
-versiones de sí mismas a las que se les ha quitado lo único que las hacía
-"estrategia" — saber dónde estaban los retornos.
+**What question does this notebook answer?** How much of what the study's best
+strategy shows in a backtest is what pure chance would deliver — in returns,
+in sequencing, and in survival against funded-account evaluation rules,
+including the published rules of real crypto prop firms and an explicit coin
+flip baseline. **On what data?** The real out-of-sample ledgers of the ten
+BTCUSDT/random_search seeds from the closed R3 study — Binance USDT-margined
+perpetual futures, 2022-2025, the same fifteen test folds the study used. No
+account, no live connection, no external trading data. **What will the reader
+find?** The picture that summarises the thesis: the ten real runs falling
+inside the distribution of a thousand versions of themselves with the one
+thing removed that made them a "strategy" — knowing where the returns were.
 
-**Qué recibe del anterior.** El 06 mostró una mejora económica sin capacidad
-predictiva; este cuaderno generaliza la sospecha: ¿cuánto resultado positivo
-produce el azar sin ayuda de nadie? **Qué entrega al siguiente.** Al 08, la
-pieza central del argumento visual completo.
+**What it receives from the previous notebook.** 06 showed an economic
+improvement with no predictive skill; this one generalises the suspicion: how
+much positive result does chance produce entirely on its own? **What it hands
+to the next.** To 08, the centrepiece of the complete visual argument.
 
-Los métodos de remuestreo se explican donde se usan: qué asume cada uno, qué
-puede detectar y qué no. La honestidad del capítulo depende de esas letras
-pequeñas.
+Each resampling method is explained where it is used: what it assumes, what it
+can detect and what it cannot. The honesty of the chapter lives in that fine
+print.
 
-### La pregunta local
+### The local question
 
-- **P1.** ¿En qué percentil de su propia nula cae la estrategia real, y
-  sobrevive algo de ella a costes crecientes o a reglas de cuenta fondeada?
-  (Alimenta **RQ5** — robustez — y cierra el argumento de **RQ1**.)
+- **Q1.** At what percentile of its own null does the real strategy sit, and
+  does anything survive rising costs, real prop-firm rules, or a comparison
+  with a coin flip? (Feeds **RQ5** — robustness — and closes the argument of
+  **RQ1**.)
 """
 )
 
 # --------------------------------------------------------------------------- #
-# Setup + contrato
+# Setup + contract
 # --------------------------------------------------------------------------- #
 code(
     r"""
@@ -89,8 +95,8 @@ print(f"Repository root: {_root}")
 
 code(
     r"""
-# Contrato del cuaderno: entradas y salidas declaradas y verificadas antes de
-# computar nada. La cadena 01->08 se valida encadenando estos bloques.
+# Notebook contract: inputs and outputs declared and verified before anything
+# is computed. The 01->08 chain validates itself by chaining these blocks.
 import hashlib
 import subprocess
 
@@ -107,13 +113,13 @@ NB_CONTRACT = {
                     "t04_barrido_costes", "t05_cuenta_fondeada"],
         "dirs": ["reports/figures/montecarlo", "reports/tables/montecarlo"],
     },
-    # Una unica semilla gobierna todo el remuestreo del cuaderno.
+    # One seed governs every resample in the notebook.
     "seed": 42,
 }
 
 missing = [f for f in NB_CONTRACT["inputs"] if not Path(f).exists()]
 if missing:
-    raise FileNotFoundError(f"El cuaderno anterior ya no produce: {missing}")
+    raise FileNotFoundError(f"An upstream notebook no longer produces: {missing}")
 
 INPUT_HASHES = {
     f: hashlib.sha256(Path(f).read_bytes()).hexdigest() for f in NB_CONTRACT["inputs"]
@@ -139,9 +145,10 @@ from IPython.display import display
 
 from perp_lab.config import Paths, load_data_contract
 from perp_lab.evaluation.montecarlo import (
-    PropFirmRules,
+    PROP_FIRM_PRESETS,
     bar_net_returns,
     breakeven_multiplier,
+    coin_flip_pass_probability,
     cost_multiplier_sweep,
     iid_trade_bootstrap,
     null_circular_shifts,
@@ -161,7 +168,7 @@ SEED = NB_CONTRACT["seed"]
 
 ROB = json.loads(Path(NB_CONTRACT["inputs"][0]).read_text(encoding="utf-8"))
 UNITS = {k: v for k, v in ROB["per_run"].items() if "BTCUSDT" in k and "random_search" in k}
-print(f"unidades BTCUSDT/random_search: {len(UNITS)}")
+print(f"BTCUSDT/random_search units: {len(UNITS)}")
 
 _contract = load_data_contract("configs/data_contract.yaml")
 ctx = ArtifactContext(
@@ -192,18 +199,18 @@ def show(fig, name, caption=""):
 )
 
 # --------------------------------------------------------------------------- #
-# 1. Las diez ejecuciones reales
+# 1. The ten real runs
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 1. Las diez ejecuciones reales, y cuál narra el detalle — `DESCRIPTIVO`
+## 1. The ten real runs, and which one narrates the detail — `DESCRIPTIVE`
 
-Cargamos el ledger out-of-sample concatenado de cada semilla (los quince folds
-de test, contiguos y sin solape). Para las secciones que analizan una sola
-serie elegimos **la semilla cuyo retorno total es la mediana de las diez** —
-una regla fijada antes de mirar distribución alguna, precisamente para no
-elegir ni la mejor (maquillaje) ni la peor (dramatismo). La figura central de
-la sección 3 muestra las diez.
+We load each seed's concatenated out-of-sample ledger (the fifteen test folds,
+contiguous and non-overlapping). For the sections that analyse a single series
+we pick **the seed whose total return is the median of the ten** — a rule fixed
+before looking at any distribution, precisely so we choose neither the
+flattering best nor the dramatic worst. The central figure of section 3 shows
+all ten.
 """
 )
 
@@ -228,8 +235,8 @@ for key, entry in sorted(UNITS.items()):
 
 T01 = pl.DataFrame(rows).sort("total_return")
 save_table(T01, "t01_semillas_reales", ctx,
-           caption="Las diez semillas reales de volatility_breakout BTCUSDT/random_search sobre "
-                   "su ledger out-of-sample concatenado.")
+           caption="The ten real volatility_breakout BTCUSDT/random_search seeds on their "
+                   "concatenated out-of-sample ledgers.")
 display(T01)
 
 median_row = T01.row(T01.height // 2, named=True)
@@ -238,30 +245,29 @@ LED = ledgers[MEDIAN_KEY]
 TRADES = trades[MEDIAN_KEY]
 BAR_R = bar_net_returns(LED)
 REAL = path_metrics(BAR_R)
-print(f"\nsemilla mediana: {median_row['seed']} | retorno {REAL['total_return']:+.4f} | "
-      f"trades {TRADES.size} | barras {BAR_R.size}")
+print(f"\nmedian seed: {median_row['seed']} | return {REAL['total_return']:+.4f} | "
+      f"trades {TRADES.size} | bars {BAR_R.size}")
 """
 )
 
 # --------------------------------------------------------------------------- #
-# 2. Bootstrap
+# 2. Bootstraps
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 2. Dos bootstraps, y por qué hacen falta los dos — `DESCRIPTIVO`
+## 2. Two bootstraps, and why both are needed — `DESCRIPTIVE`
 
-El **bootstrap IID de operaciones** remuestrea con reemplazo la bolsa de
-operaciones cerradas. Asume que las operaciones son intercambiables e
-independientes; con eso puede responder «¿qué caminos podía haber producido
-esta colección de resultados?», y no puede ver nada que dependa del orden real
-ni de la dependencia temporal entre barras.
+The **IID trade bootstrap** resamples the bag of closed trades with
+replacement. It assumes trades are exchangeable and independent; under that
+assumption it answers "what paths could this collection of outcomes have
+produced?", and it cannot see anything that depends on the real ordering or on
+serial dependence between bars.
 
-El **bootstrap estacionario por bloques** (Politis-Romano) remuestrea barras en
-bloques de longitud geométrica, preservando la autocorrelación local. Su
-parámetro es la longitud media de bloque, y no la elegimos a ojo: la derivamos
-del último retardo cuya autocorrelación sobresale de la banda de ruido
-2/√n, acotada a [6, 168] barras, y publicamos la ACF para que la elección sea
-inspeccionable.
+The **stationary block bootstrap** (Politis-Romano) resamples bars in blocks of
+geometric length, preserving local autocorrelation. Its parameter is the mean
+block length, and we do not pick it by eye: we derive it from the last lag
+whose autocorrelation clears the 2/sqrt(n) noise band, bounded to [6, 168]
+bars, and we publish the ACF so the choice is inspectable.
 """
 )
 
@@ -276,77 +282,76 @@ T02 = pl.DataFrame({
     "n_bars": [BAR_R.size],
 })
 save_table(T02, "t02_bloque_acf", ctx,
-           caption="Longitud de bloque del bootstrap estacionario, derivada de la ACF de los "
-                   "retornos netos por barra de la semilla mediana.")
+           caption="Stationary-bootstrap block length derived from the ACF of the median "
+                   "seed's per-bar net returns.")
 display(T02)
 
 boot_iid = iid_trade_bootstrap(TRADES, n_resamples=1000, seed=SEED)
 boot_bar = stationary_bar_bootstrap(BAR_R, block_length=BLOCK, n_resamples=1000, seed=SEED)
-print(f"bloque medio: {BLOCK} barras | IID sobre {TRADES.size} trades | "
-      f"estacionario sobre {BAR_R.size} barras")
+print(f"mean block: {BLOCK} bars | IID over {TRADES.size} trades | "
+      f"stationary over {BAR_R.size} bars")
 """
 )
 
 code(
     r"""
-# --- K01: distribuciones bootstrap con la realidad marcada ---------------------
+# --- K01: bootstrap distributions with reality marked --------------------------
 fig, axes = plt.subplots(1, 3, figsize=(13.6, 4.6))
 panels = [
-    ("total_return", "retorno total compuesto", REAL["total_return"]),
-    ("sharpe", "Sharpe por observación", REAL["sharpe"]),
-    ("max_drawdown", "drawdown máximo", REAL["max_drawdown"]),
+    ("total_return", "compounded total return", REAL["total_return"]),
+    ("sharpe", "per-observation Sharpe", REAL["sharpe"]),
+    ("max_drawdown", "maximum drawdown", REAL["max_drawdown"]),
 ]
 for ax, (key, label, real_v) in zip(axes, panels, strict=True):
     ax.hist(boot_iid[key], bins=40, density=True, histtype="step", lw=1.8,
-            color="#0072B2", label="IID de operaciones")
+            color="#0072B2", label="IID trades")
     ax.hist(boot_bar[key], bins=40, density=True, histtype="step", lw=1.8,
-            ls="--", color="#D55E00", label="estacionario por bloques")
+            ls="--", color="#D55E00", label="stationary blocks")
     ax.axvline(real_v, color="black", lw=2.2, label="real")
     ax.set_xlabel(label)
     ax.set_yticks([])
 axes[0].legend(fontsize=8.5, loc="upper left")
 fig.suptitle(
-    f"Mil remuestreos de la propia estrategia (semilla mediana, bloque {BLOCK} barras)",
+    f"One thousand resamples of the strategy's own record (median seed, {BLOCK}-bar blocks)",
     fontsize=12,
 )
 fig.tight_layout()
 show(fig, "k01_bootstrap_distribuciones",
-     caption="Distribuciones bootstrap del retorno, el Sharpe y el drawdown de la semilla "
-             "mediana bajo remuestreo IID de operaciones y estacionario por bloques, con el "
-             "valor real marcado.")
+     caption="Bootstrap distributions of return, Sharpe and drawdown for the median seed "
+             "under IID trade resampling and stationary block resampling, real value marked.")
 """
 )
 
 md(
     r"""
-La lectura importante no es dónde cae la línea negra — es **lo anchas que son
-las distribuciones**. La misma bolsa de operaciones, recompuesta mil veces,
-produce desde pérdidas severas hasta ganancias que cualquier vendedor de
-señales enmarcaría. Cuando el intervalo que la propia estrategia genera sobre
-sí misma es así de ancho, un backtest puntual es una anécdota, no una medida.
+The important reading is not where the black line falls — it is **how wide the
+distributions are**. The same bag of trades, recomposed a thousand times,
+produces everything from severe losses to gains any signal seller would frame.
+When the interval a strategy generates over itself is this wide, a single
+backtest number is an anecdote, not a measurement.
 """
 )
 
 # --------------------------------------------------------------------------- #
-# 3. Permutacion y nula
+# 3. Permutation and the null
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 3. Separar la suerte de secuencia, y después quitar la señal entera — `DESCRIPTIVO`
+## 3. Isolating sequencing luck, then removing the signal entirely — `DESCRIPTIVE`
 
-La **permutación del orden** baraja las mismas operaciones sin reemplazo. El
-retorno total compuesto es invariante por construcción — reordenar factores no
-cambia el producto — así que toda la dispersión que aparezca en drawdown y en
-tiempo bajo el agua es **suerte de secuencia** pura: el mismo conjunto de
-aciertos y fallos, en otro orden, habría dolido más o menos.
+The **order permutation** shuffles the same trades without replacement. The
+compounded total return is invariant by construction — reordering factors does
+not change the product — so all the spread that appears in drawdown and
+time-under-water is pure **sequencing luck**: the same wins and losses, in
+another order, would have hurt more or less.
 
-La **nula por rotación circular** va más lejos: desplaza la serie de posiciones
-un offset aleatorio contra las mismas barras, y re-cobra costes y funding
-idénticamente. La rotación conserva exactamente la exposición, el número de
-operaciones y la rotación de cartera; lo único que destruye es la alineación
-entre la señal y los retornos que tenía delante. Si la estrategia real no se
-distingue de sus mil versiones rotadas, lo que el backtest midió era la
-distribución del mercado, no una habilidad de la regla.
+The **circular-shift null** goes further: it rotates the position series by a
+random offset against the same bars, and re-charges costs and funding
+identically. The rotation preserves exposure, trade count and turnover
+exactly; the only thing it destroys is the alignment between the signal and
+the returns it faced. If the real strategy cannot be told apart from a
+thousand rotated versions of itself, what the backtest measured was the
+market's distribution — not any skill of the rule.
 """
 )
 
@@ -356,32 +361,31 @@ perm = permutation_paths(TRADES, n_resamples=1000, seed=SEED)
 
 fig, (axA, axB) = plt.subplots(1, 2, figsize=(11.8, 4.6))
 axA.hist(perm["max_drawdown"], bins=40, color="#0072B2", edgecolor="white", lw=0.4)
-axA.axvline(REAL["max_drawdown"], color="black", lw=2.2, label="orden real")
-axA.set_xlabel("drawdown máximo")
-axA.set_ylabel("permutaciones")
-axA.set_title("(a) El mismo resultado, otros órdenes")
+axA.axvline(REAL["max_drawdown"], color="black", lw=2.2, label="real order")
+axA.set_xlabel("maximum drawdown")
+axA.set_ylabel("permutations")
+axA.set_title("(a) Same outcome, other orders")
 axA.legend(fontsize=9)
 
 axB.hist(perm["time_under_water"], bins=40, color="#D55E00", hatch="///",
          edgecolor="white", lw=0.4)
-axB.axvline(REAL["time_under_water"], color="black", lw=2.2, label="orden real")
-axB.set_xlabel("fracción del tiempo bajo el máximo previo")
-axB.set_title("(b) Tiempo bajo el agua")
+axB.axvline(REAL["time_under_water"], color="black", lw=2.2, label="real order")
+axB.set_xlabel("share of time below the prior peak")
+axB.set_title("(b) Time under water")
 axB.legend(fontsize=9)
 
-fig.suptitle("Permutación de operaciones: el retorno total es idéntico en las mil; "
-             "solo cambia el sufrimiento", fontsize=11.5)
+fig.suptitle("Trade-order permutation: total return is identical in all one thousand; "
+             "only the pain differs", fontsize=11.5)
 fig.tight_layout()
 show(fig, "k02_permutacion_secuencia",
-     caption="Drawdown máximo y tiempo bajo el agua bajo mil permutaciones del orden de las "
-             "operaciones de la semilla mediana. El retorno total es invariante por "
-             "construcción.")
+     caption="Maximum drawdown and time under water across one thousand permutations of the "
+             "median seed's trade order. Total return is invariant by construction.")
 """
 )
 
 code(
     r"""
-# --- K03: LA figura -- las diez reales dentro de su nula -----------------------
+# --- K03: THE figure -- the ten real runs inside their null --------------------
 nulls = {}
 for key, led in ledgers.items():
     nulls[key] = null_circular_shifts(led, n_shifts=1000, seed=SEED)
@@ -398,67 +402,65 @@ T03 = pl.DataFrame([
     for k in sorted(nulls)
 ]).sort("null_percentile")
 save_table(T03, "t03_percentiles_nula", ctx,
-           caption="Percentil de cada semilla real dentro de su propia distribución nula por "
-                   "rotación circular (1.000 rotaciones por semilla).")
+           caption="Percentile of each real seed inside its own circular-shift null "
+                   "distribution (1,000 rotations per seed).")
 display(T03)
 
 fig, ax = plt.subplots(figsize=(11.6, 5.6))
 ax.hist(pooled_null, bins=80, density=True, color="#BBBBBB", edgecolor="white", lw=0.3,
-        label="nula: 10 semillas x 1.000 rotaciones de posiciones")
+        label="null: 10 seeds x 1,000 position rotations")
 for i, (_k, v) in enumerate(sorted(reals.items(), key=lambda kv: kv[1])):
     ax.axvline(v, color="#0072B2", lw=1.8,
-               label="estrategia real (10 semillas)" if i == 0 else None)
+               label="real strategy (10 seeds)" if i == 0 else None)
 lo, hi = np.percentile(pooled_null, [2.5, 97.5])
-ax.axvspan(lo, hi, color="#999999", alpha=0.18,
-           label="95% central de la nula")
-ax.set_xlabel("retorno total neto del periodo out-of-sample")
+ax.axvspan(lo, hi, color="#999999", alpha=0.18, label="central 95% of the null")
+ax.set_xlabel("net total return over the out-of-sample period")
 ax.set_yticks([])
 ax.legend(fontsize=9, loc="upper left")
 ax.set_title(
-    "La mejor familia del estudio, dentro de la distribución de sus versiones sin señal",
+    "The study's best family, inside the distribution of its own signal-free versions",
     fontsize=12,
 )
 fig.tight_layout()
 show(fig, "k03_nula_con_la_estrategia_dentro",
-     caption="Distribución nula por rotación circular (posiciones desplazadas contra las mismas "
-             "barras, costes y funding re-cobrados) agregada sobre las diez semillas, con el "
-             "retorno real de cada semilla superpuesto.")
+     caption="Circular-shift null distribution (positions rotated against the same bars, "
+             "costs and funding re-charged) pooled over the ten seeds, with each seed's real "
+             "return overlaid.")
 
 inside = sum(1 for v in reals.values() if lo <= v <= hi)
-print(f"semillas reales dentro del 95% central de la nula: {inside}/10")
-print(f"percentiles por semilla: {sorted(round(p, 3) for p in pcts.values())}")
+print(f"real seeds inside the central 95% of the null: {inside}/10")
+print(f"per-seed percentiles: {sorted(round(p, 3) for p in pcts.values())}")
 """
 )
 
 md(
     r"""
-Esta es la figura que resume el trabajo. Las líneas azules — las diez
-ejecuciones reales de la mejor familia del estudio — caen dentro de la banda
-gris que producen sus propias posiciones rotadas al azar. No hace falta
-estadística sofisticada para leerla, y toda la estadística sofisticada del
-cuaderno 05 dice lo mismo que se ve a simple vista: **lo que el backtest midió
-es indistinguible de la distribución del mercado repartida al azar sobre la
-misma exposición.**
+This is the picture that summarises the work. The blue lines — the ten real
+runs of the study's best family — fall inside the grey band produced by their
+own randomly rotated positions. No sophisticated statistics are needed to read
+it, and all the sophisticated statistics of notebook 05 say what the eye sees:
+**what the backtest measured is indistinguishable from the market's
+distribution spread at random over the same exposure.**
 
-La letra pequeña honesta: la rotación conserva la estructura de la exposición
-pero no las propiedades condicionales finas (una señal que solo operase tras
-eventos concretos rotaría hacia barras sin el evento). Para una familia con
-ventaja real, eso haría a esta nula *fácil* de batir — lo que hace más
-informativo que no la bata nadie.
+The honest fine print: rotation preserves the exposure structure but not fine
+conditional properties (a signal that only traded after specific events would
+rotate onto bars without the event). For a family with a real edge that makes
+this null *easy* to beat — which makes it the more informative that nobody
+beats it.
 """
 )
 
 # --------------------------------------------------------------------------- #
-# 4. Costes
+# 4. Costs
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 4. Sensibilidad a costes — `DESCRIPTIVO`
+## 4. Cost sensitivity — `DESCRIPTIVE`
 
-Re-cobramos el camino real a múltiplos del coste efectivamente pagado
-(comisión + deslizamiento), con las posiciones intactas — la misma convención
-que el estrés 2x de la batería de robustez. El múltiplo donde el retorno cruza
-cero dice cuánto margen de error deja el supuesto de costes del estudio.
+We re-charge the real path at multiples of the cost actually paid (fee plus
+slippage), positions untouched — the same convention as the robustness
+battery's 2x stress. The multiple where total return crosses zero says how
+much room for error the study's cost assumption leaves.
 """
 )
 
@@ -467,8 +469,8 @@ code(
 sweep = cost_multiplier_sweep(LED, multipliers=(0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0))
 be = breakeven_multiplier(sweep)
 save_table(sweep, "t04_barrido_costes", ctx,
-           caption="Métricas del camino real de la semilla mediana re-cobrado a múltiplos del "
-                   "coste pagado.")
+           caption="Metrics of the median seed's real path re-charged at multiples of the "
+                   "cost paid.")
 display(sweep)
 
 fig, ax = plt.subplots(figsize=(9.6, 5.0))
@@ -478,118 +480,194 @@ ax.plot(sw_sorted["multiplier"], sw_sorted["total_return"], marker="o", ms=7,
 ax.axhline(0, color="black", lw=1.2, ls="--")
 if be is not None:
     ax.axvline(be, color="#D62728", lw=2.0, ls=":",
-               label=f"cruce en {be:.2f}x el coste pagado")
+               label=f"crossing at {be:.2f}x the cost paid")
     ax.legend(fontsize=9.5)
 ax.axvline(1.0, color="#999999", lw=1.4)
-ax.annotate("coste del estudio (1x)", xy=(1.0, ax.get_ylim()[0]), xytext=(6, 10),
+ax.annotate("study cost (1x)", xy=(1.0, ax.get_ylim()[0]), xytext=(6, 10),
             textcoords="offset points", fontsize=9, color="#555555", rotation=90)
-ax.set_xlabel("múltiplo del coste por operación pagado")
-ax.set_ylabel("retorno total neto")
-ax.set_title("Cuánto coste extra aguanta el resultado antes de anularse", fontsize=12)
+ax.set_xlabel("multiple of the per-trade cost paid")
+ax.set_ylabel("net total return")
+ax.set_title("How much extra cost the result survives before it vanishes", fontsize=12)
 fig.tight_layout()
 show(fig, "k04_barrido_costes",
-     caption="Retorno total de la semilla mediana re-cobrando comisión y deslizamiento a "
-             "múltiplos del coste realmente pagado, posiciones intactas.")
+     caption="Total return of the median seed re-charging fee and slippage at multiples of "
+             "the cost actually paid, positions untouched.")
 """
 )
 
 # --------------------------------------------------------------------------- #
-# 5. Cuenta fondeada
+# 5. Funded accounts: real firm rules, and the coin flip
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 5. Reglas de cuenta fondeada — `DESCRIPTIVO`, parámetros como entradas
+## 5. Funded-account rules: real firms, the strategy, and a coin flip — `DESCRIPTIVE`
 
-Aplicamos reglas tipo *prop firm* — objetivo de beneficio, drawdown máximo,
-pérdida diaria máxima, ventana de días — a mil caminos bootstrap de los
-retornos netos de la propia estrategia. Dos aclaraciones obligatorias. Primera:
-**los parámetros de la firma son entradas ajustables del análisis, no un
-resultado**; los declaramos en la tabla y cualquiera puede re-ejecutar con
-otros. Segunda: la fase 2 se evalúa sobre la *continuación* del mismo camino,
-de modo que ambas fases comparten régimen en vez de ser sorteos independientes
-— que es como funcionan de verdad.
+Three clarifications before the numbers, because this section is easy to
+misread.
+
+**Where the rules come from.** From the published evaluation pages of real
+crypto-perp prop firms, mapped on 2026-08-19 with their source URLs recorded
+in code (`PROP_FIRM_PRESETS`): Breakout's 1-step Classic (10% target within
+the published 9-12% range, 6% max drawdown, 3% daily loss) and HyroTrader's
+2-step (10% per phase, 6% max loss, 4% daily). We model only the three
+quantitative gates; the rules we do not model — consistency caps, mandatory
+stop-losses, minimum trading days — would each make passing *harder*, so
+every pass rate below is an optimistic upper bound. That is the safe direction
+for a cautionary result.
+
+**Where the trading data comes from.** From nowhere new: the strategy arm
+resamples the strategy's own per-bar net returns (stationary bootstrap, block
+length from section 2); the coin-flip arm keeps the real ledger's trade timing,
+sizes and cost rate and flips a fair coin for the *direction* of every trade.
+Same activity, zero information — the baseline any strategy has to beat.
+
+**What the comparison can show.** Whether the strategy's pass rate is
+distinguishable from the coin flip's. If it is not, an evaluation pass carries
+no evidence of skill — which is the educational point of the platform's
+funded-account simulator.
 """
 )
 
 code(
     r"""
-RULES = PropFirmRules(
-    profit_target=0.08, max_total_drawdown=0.10, max_daily_loss=0.05,
-    max_days=60, bars_per_day=24,
-)
-result = prop_firm_pass_probability(
-    BAR_R, rules=RULES, block_length=BLOCK, n_paths=1000, seed=SEED
-)
-T05 = pl.DataFrame([{**RULES.to_dict(), **result}])
+rows = []
+for firm, preset in PROP_FIRM_PRESETS.items():
+    rules = preset["rules"]
+    strat = prop_firm_pass_probability(
+        BAR_R, rules=rules, block_length=BLOCK, n_paths=1000, seed=SEED
+    )
+    coin = coin_flip_pass_probability(LED, rules=rules, n_paths=1000, seed=SEED)
+    for arm, res in (("strategy", strat), ("coin_flip", coin)):
+        rows.append({
+            "firm": firm, "arm": arm,
+            "pass_phase1": res["pass_phase1"], "pass_both": res["pass_both"],
+            "profit_target": rules.profit_target,
+            "max_total_drawdown": rules.max_total_drawdown,
+            "max_daily_loss": rules.max_daily_loss,
+            "source": preset["source"],
+        })
+T05 = pl.DataFrame(rows)
 save_table(T05, "t05_cuenta_fondeada", ctx,
-           caption="Reglas de cuenta fondeada aplicadas (entradas del análisis) y probabilidad "
-                   "estimada de superarlas sobre caminos bootstrap de la semilla mediana.")
+           caption="Published prop-firm rules (mapped 2026-08-19, sources in code) applied to "
+                   "bootstrap paths of the median seed and to coin flips with the same "
+                   "timing and costs.")
 display(T05)
-
-fig, ax = plt.subplots(figsize=(8.0, 4.6))
-labels = ["supera fase 1", "supera fases 1 y 2"]
-values = [result["pass_phase1"], result["pass_both"]]
-bars = ax.bar(labels, values, width=0.5, color=["#0072B2", "#D55E00"],
-              hatch=["", "///"])
-for b, v in zip(bars, values, strict=True):
-    ax.annotate(f"{v:.1%}", xy=(b.get_x() + b.get_width() / 2, v), xytext=(0, 6),
-                textcoords="offset points", ha="center", fontsize=11, fontweight="bold")
-ax.set_ylim(0, 1)
-ax.set_ylabel("probabilidad sobre 1.000 caminos bootstrap")
-ax.set_title(
-    f"Objetivo {RULES.profit_target:.0%} · DD máx {RULES.max_total_drawdown:.0%} · "
-    f"pérdida diaria {RULES.max_daily_loss:.0%} · {RULES.max_days} días",
-    fontsize=10.5,
+"""
 )
+
+code(
+    r"""
+# --- K05: strategy vs coin flip under real firm rules --------------------------
+firms = list(PROP_FIRM_PRESETS)
+x = np.arange(len(firms))
+width = 0.19
+
+def col(arm, metric):
+    return [
+        T05.filter((pl.col("firm") == f) & (pl.col("arm") == arm))[metric][0]
+        for f in firms
+    ]
+
+fig, ax = plt.subplots(figsize=(10.6, 5.2))
+ax.bar(x - 1.5 * width, col("strategy", "pass_phase1"), width, color="#0072B2",
+       label="strategy - passes phase 1")
+ax.bar(x - 0.5 * width, col("coin_flip", "pass_phase1"), width, color="#0072B2",
+       hatch="///", alpha=0.55, label="coin flip - passes phase 1")
+ax.bar(x + 0.5 * width, col("strategy", "pass_both"), width, color="#D55E00",
+       label="strategy - passes both")
+ax.bar(x + 1.5 * width, col("coin_flip", "pass_both"), width, color="#D55E00",
+       hatch="///", alpha=0.55, label="coin flip - passes both")
+for xi, f in zip(x, firms, strict=True):
+    for dx, arm, metric in ((-1.5, "strategy", "pass_phase1"),
+                             (-0.5, "coin_flip", "pass_phase1"),
+                             (0.5, "strategy", "pass_both"),
+                             (1.5, "coin_flip", "pass_both")):
+        v = T05.filter((pl.col("firm") == f) & (pl.col("arm") == arm))[metric][0]
+        ax.annotate(f"{v:.0%}", xy=(xi + dx * width, v), xytext=(0, 4),
+                    textcoords="offset points", ha="center", fontsize=8.5)
+ax.set_xticks(x)
+ax.set_xticklabels([f.replace("_", " ") for f in firms], fontsize=10)
+ax.set_ylim(0, 1)
+ax.set_ylabel("estimated pass probability (1,000 paths)")
+ax.set_title("A rejected strategy vs a coin flip, under real published evaluation rules",
+             fontsize=12)
+ax.legend(fontsize=8.5, ncols=2)
+ax.grid(axis="x", visible=False)
 fig.tight_layout()
 show(fig, "k05_cuenta_fondeada",
-     caption="Probabilidad de superar una evaluación de cuenta fondeada (parámetros en el "
-             "título, ajustables) con caminos bootstrap de la estrategia mediana.")
+     caption="Pass probabilities under the mapped rules of two real crypto prop firms, for "
+             "the median-seed strategy (bootstrap paths) and for a coin flip with the same "
+             "trade timing and costs. Unmodelled qualitative rules would lower all bars.")
+
+for f in firms:
+    s1 = T05.filter((pl.col("firm") == f) & (pl.col("arm") == "strategy"))["pass_phase1"][0]
+    c1 = T05.filter((pl.col("firm") == f) & (pl.col("arm") == "coin_flip"))["pass_phase1"][0]
+    se = float(np.sqrt(s1 * (1 - s1) / 1000 + c1 * (1 - c1) / 1000))
+    print(f"{f}: strategy-coin gap phase1 = {s1 - c1:+.3f} (binomial SE ~{se:.3f})")
+"""
+)
+
+md(
+    r"""
+The reading, in one sentence: **under both firms' published rules, a certified
+no-edge strategy and a literal coin flip pass evaluations at material rates,
+and the gap between them is of the order of its own sampling error.** Whether
+the strategy edges the coin or the coin edges the strategy on a given preset
+is noise — which is precisely the point. An evaluation pass, at these rule
+settings, is not evidence that the trader knows anything; it is a draw from a
+distribution that hands out passes to randomness one time in several.
+
+One scope note rather than an excuse: this notebook does not touch **risk
+management overlays** — position sizing, volatility targeting, drawdown-scaled
+exposure. Those change *which* paths a given signal produces, and evaluating
+them properly belongs to future work with its own pre-registration; bolting
+them on here would be a second search wearing a helmet.
 """
 )
 
 # --------------------------------------------------------------------------- #
-# Cierre
+# Close
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 6. Qué establece este cuaderno — y qué lo habría contradicho
+## 6. What this notebook establishes — and what would have contradicted it
 
-Tres cosas. Primera: la maquinaria de riesgo — cuatro remuestreadores, barrido
-de costes, simulador de reglas de cuenta — funciona de punta a punta sobre
-ledgers reales, con semilla única y salida determinista. Segunda: la mejor
-familia del estudio vive dentro de su propia nula; el resultado que el cuaderno
-05 estableció por inferencia, aquí se ve en una sola imagen. Tercera: un Sharpe
-alto puntual en backtest es compatible con todo lo anterior siendo ruido — las
-distribuciones de la sección 2 muestran cuánta variación produce la propia
-estrategia sobre sí misma sin cambiar nada.
+Three things. First: the risk machinery — four resamplers, a cost sweep, a
+funded-account simulator with real published rule presets and a coin-flip
+baseline — works end to end on real ledgers, single-seeded and deterministic.
+Second: the study's best family lives inside its own null; what notebook 05
+established by inference is visible here in one image. Third: a strong
+standalone backtest number is compatible with all of it being noise — the
+section 2 distributions show how much variation the strategy produces over
+itself without changing anything.
 
-Lo que habría contradicho esta lectura, y no ocurrió: las diez semillas reales
-agrupadas en la cola derecha de la nula (percentiles altos y consistentes), un
-retorno que sobreviviera holgadamente a 2-3x los costes, o una probabilidad de
-superar dos fases de evaluación fondeada muy por encima de lo que la banda gris
-de la nula produce sola.
+What would have contradicted this reading, and did not happen: the ten real
+seeds clustered in the right tail of the null (high, consistent percentiles);
+a return that survived 2-3x costs comfortably; or a strategy pass rate that
+separated from the coin flip's by more than sampling error under either
+firm's rules.
 
-Y lo que este cuaderno **no** dice: no dice que ninguna estrategia pueda pasar
-una evaluación fondeada — dice que *esta*, la mejor de un estudio cerrado en
-negativo, ofrece las probabilidades que se ven arriba bajo reglas declaradas.
-Cambiar las reglas cambia el número; no cambia de qué lado de la nula vive la
-estrategia.
+And what this notebook does **not** say: it does not say no strategy can pass
+a funded evaluation — it says *this* one, the best of a study closed negative,
+offers the probabilities shown above under rules mapped from real firms, and
+that a coin flip with the same activity does about as well. Changing the rules
+changes the numbers; it does not change which side of the null the strategy
+lives on.
 
-### De la pregunta local a la memoria
+### From the local question to the thesis
 
-| Pregunta local | Alimenta | Cómo |
+| Local question | Feeds | How |
 |---|---|---|
-| P1 (¿percentil en la nula, supervivencia a costes y reglas?) | RQ5 y cierre de RQ1 | evidencia negativa adicional en formato visual; la figura k03 es el resumen del TFM |
+| Q1 (null percentile; survival vs costs, real rules, coin flip) | RQ5 and the close of RQ1 | additional negative evidence in visual form; k03 is the thesis-summary figure, k05 the platform's educational number |
 
 ---
 
-**Qué deja este cuaderno y a dónde va.** Figuras `k01`-`k05` y tablas
-`t01`-`t05` bajo `reports/{figures,tables}/montecarlo/`. `k03` es la figura
-central del capítulo 6 y del anexo Monte Carlo; `k04` alimenta la sección de
-costes del capítulo 7; `k05`, la discusión del simulador de cuentas en la
-plataforma. El 08 encadena las figuras clave de 01-07 en el argumento completo,
-de una lectura.
+**What this notebook leaves behind, and where it goes.** Figures `k01`-`k05`
+and tables `t01`-`t05` under `reports/{figures,tables}/montecarlo/`. `k03` is
+the central figure of chapter 6 and the Monte Carlo annex; `k04` feeds the
+cost section of chapter 7; `k05` feeds the funded-account simulator's
+discussion on the platform. Notebook 08 chains the key figures of 01-07 into
+the complete argument, in one reading.
 """
 )
 
