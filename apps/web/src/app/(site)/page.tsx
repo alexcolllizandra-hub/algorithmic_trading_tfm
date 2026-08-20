@@ -13,6 +13,7 @@ import { MarketStructure } from "@/components/landing/MarketStructure";
 import { MetaFilter } from "@/components/landing/MetaFilter";
 import { NullDistribution } from "@/components/landing/NullDistribution";
 import { SearchAnatomy } from "@/components/landing/SearchAnatomy";
+import { StudyNumbers } from "@/components/landing/StudyNumbers";
 import { Overfitting } from "@/components/landing/Overfitting";
 import { Pipeline } from "@/components/landing/Pipeline";
 import { PlainExplanation } from "@/components/landing/PlainExplanation";
@@ -48,6 +49,7 @@ export default function LandingPage() {
       <MetaFilter />
       <FundedOdds />
       <Roadmap />
+      <StudyNumbers />
       <FinalCta />
     </>
   );

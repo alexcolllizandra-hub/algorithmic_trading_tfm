@@ -734,6 +734,18 @@ export const en: LandingCopy = {
       "statistics — corrected p-values, deflated Sharpe, PBO — converge on the same " +
       "conclusion. It is the visual verification of the principal finding, under identical " +
       "costs, identical exposure, and zero information.",
+    sweepTitle: "Monte Carlo: the margin against costs",
+    sweepCaption:
+      "Figure 17 · Total return as the cost structure is multiplied by ×0–×4, median-seed " +
+      "unit of the Monte Carlo study (notebook 07). The breakeven point is interpolated " +
+      "between the two multipliers that change sign.",
+    sweepBreakeven: "cost multiplier that zeroes the return",
+    sweepZeroCost: "return at zero cost (the gross that erosion consumes)",
+    sweepBody:
+      "All of the best family's apparent margin lives below ×2.3 the real costs. An " +
+      "optimistic slippage estimate, a poorly negotiated fee, or adverse funding is enough " +
+      "to consume it: the result has no economic slack.",
+    sweepAxis: "cost multiplier",
   },
 
   mlfilter: {
@@ -746,7 +758,7 @@ export const en: LandingCopy = {
     barPrimary: "base strategy",
     barMeta: "with ML filter",
     caption:
-      "Figure 17 · Out-of-sample total return of the base strategy and of the same strategy " +
+      "Figure 18 · Out-of-sample total return of the base strategy and of the same strategy " +
       "filtered. {family} · {symbol} · {n} events labelled by triple barrier with embedded " +
       "costs · validation on purged chronological folds.",
     roc: "median classifier ROC — consistent with chance",
@@ -772,7 +784,7 @@ export const en: LandingCopy = {
     armStrategy: "strategy",
     armCoin: "fair coin",
     caption:
-      "Figure 18 · {paths} paths per arm. Rules transcribed from each firm's public pages " +
+      "Figure 19 · {paths} paths per arm. Rules transcribed from each firm's public pages " +
       "(sources and retrieval date in the artifact). Unmodelled qualitative rules — " +
       "consistency, mandatory stop, minimum trading days — would only lower the rates, so " +
       "these figures are upper bounds.",
@@ -790,12 +802,30 @@ export const en: LandingCopy = {
       "the strategy sits on.",
   },
 
+  numbers: {
+    eyebrow: "The study in numbers",
+    title: "All the work, counted",
+    lead: "Every figure comes from a repository artifact and can be regenerated.",
+    bars: "development hourly candles (BTC + ETH)",
+    runs: "experiment runs recorded",
+    familiesRegistered: "strategy families implemented",
+    familiesClosure: "families in the statistical closure",
+    configs: "search evaluations in the best family",
+    rotations: "rotations in the randomisation test",
+    maxTests: "tests under the strictest denominator",
+    promoted: "strategies promoted",
+  },
+
   roadmap: {
     eyebrow: "Project status",
     title: "Completed phases and future work",
     lead:
       "Two decision gates closed negative and are documented as such. In research, a " +
       "negative closure under pre-specified criteria is a result, not a setback.",
+    stepperAria: "Phase progress",
+    stepperDone: "completed",
+    stepperReview: "under review",
+    stepperPlanned: "planned",
     phases: [
       {
         id: "fase-1",

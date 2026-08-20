@@ -745,6 +745,18 @@ export const es = {
       "estudio — p-valores corregidos, Sharpe deflactado, PBO — converge en la misma " +
       "conclusión. Es la verificación visual del resultado principal, con idénticos costes, " +
       "idéntica exposición y ninguna información.",
+    sweepTitle: "Monte Carlo: el margen frente a los costes",
+    sweepCaption:
+      "Figura 17 · Retorno total al multiplicar la estructura de costes por ×0–×4, unidad de " +
+      "semilla mediana del estudio Monte Carlo (cuaderno 07). El punto de equilibrio se " +
+      "interpola entre los dos multiplicadores que cambian de signo.",
+    sweepBreakeven: "multiplicador de costes que anula el retorno",
+    sweepZeroCost: "retorno con costes cero (el bruto que erosionan)",
+    sweepBody:
+      "Todo el aparente margen de la mejor familia vive por debajo de ×2,3 los costes " +
+      "reales. Una estimación optimista del deslizamiento, una comisión mal negociada o un " +
+      "funding adverso bastan para consumirlo: el resultado no tiene holgura económica.",
+    sweepAxis: "multiplicador de costes",
   },
 
   mlfilter: {
@@ -757,7 +769,7 @@ export const es = {
     barPrimary: "estrategia base",
     barMeta: "con filtro ML",
     caption:
-      "Figura 17 · Retorno total out-of-sample de la estrategia base y de la misma " +
+      "Figura 18 · Retorno total out-of-sample de la estrategia base y de la misma " +
       "estrategia filtrada. {family} · {symbol} · {n} eventos etiquetados por triple " +
       "barrera con costes · validación por pliegues cronológicos purgados.",
     roc: "ROC mediana del clasificador — compatible con el azar",
@@ -783,7 +795,7 @@ export const es = {
     armStrategy: "estrategia",
     armCoin: "moneda equilibrada",
     caption:
-      "Figura 18 · {paths} trayectorias por brazo. Reglas transcritas de las páginas públicas " +
+      "Figura 19 · {paths} trayectorias por brazo. Reglas transcritas de las páginas públicas " +
       "de cada firma (fuentes y fecha de consulta en el artefacto). Las reglas cualitativas " +
       "no modeladas — consistencia, stop obligatorio, mínimo de días — solo reducirían las " +
       "tasas, por lo que estas cifras son cotas superiores.",
@@ -801,6 +813,20 @@ export const es = {
       "encuentra la estrategia.",
   },
 
+  numbers: {
+    eyebrow: "El estudio en cifras",
+    title: "Todo el trabajo, contado",
+    lead: "Cada cifra procede de un artefacto del repositorio y puede regenerarse.",
+    bars: "velas horarias de desarrollo (BTC + ETH)",
+    runs: "ejecuciones de experimento registradas",
+    familiesRegistered: "familias de estrategia implementadas",
+    familiesClosure: "familias en el cierre estadístico",
+    configs: "evaluaciones de búsqueda en la mejor familia",
+    rotations: "rotaciones del contraste de aleatorización",
+    maxTests: "contrastes en el denominador más exigente",
+    promoted: "estrategias promovidas",
+  },
+
   roadmap: {
     eyebrow: "Estado del proyecto",
     title: "Fases completadas y trabajo futuro",
@@ -808,6 +834,10 @@ export const es = {
       "Dos de las puertas de decisión se cerraron en negativo y así están documentadas. En " +
       "investigación, un cierre negativo con criterios prefijados es un resultado, no un " +
       "contratiempo.",
+    stepperAria: "Progreso de las fases",
+    stepperDone: "completadas",
+    stepperReview: "en revisión",
+    stepperPlanned: "planificadas",
     phases: [
       {
         id: "fase-1",

@@ -362,6 +362,47 @@ def market_structure_block() -> dict:
     }
 
 
+def cost_sweep_block() -> dict:
+    """Monte Carlo cost-multiplier sweep of notebook 07 (median-seed unit)."""
+    with Path("reports/tables/montecarlo/t04_barrido_costes.csv").open(encoding="utf-8") as fh:
+        rows = [
+            {"m": float(r["multiplier"]), "ret": round(float(r["total_return"]), 4)}
+            for r in csv.DictReader(fh)
+        ]
+    breakeven = None
+    for a, b in zip(rows, rows[1:]):
+        if a["ret"] >= 0 > b["ret"]:
+            breakeven = a["m"] + (b["m"] - a["m"]) * a["ret"] / (a["ret"] - b["ret"])
+            break
+    return {
+        "family": "volatility_breakout",
+        "symbol": "BTCUSDT",
+        "rows": rows,
+        "breakeven_multiplier": round(breakeven, 2) if breakeven is not None else None,
+    }
+
+
+def totals_block() -> dict:
+    """Study-wide counters, each derived from an on-disk artifact."""
+    import polars as pl
+
+    runs_total = sum(1 for p in Path("artifacts/runs").iterdir() if p.is_dir())
+    bars_total = sum(
+        pl.scan_parquet(f"data/processed/{sym}/1h_development.parquet")
+        .select(pl.len())
+        .collect()
+        .item()
+        for sym in ("BTCUSDT", "ETHUSDT")
+    )
+    from perp_lab.search.registry import FAMILIES
+
+    return {
+        "runs_total": runs_total,
+        "bars_total": int(bars_total),
+        "families_registered": len(FAMILIES),
+    }
+
+
 def main() -> int:
     payload = {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -377,6 +418,8 @@ def main() -> int:
         "rs_ga": rs_ga_block(),
         "meta": meta_block(),
         "market_structure": market_structure_block(),
+        "cost_sweep": cost_sweep_block(),
+        "totals": totals_block(),
     }
     OUT.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
     print(

@@ -112,12 +112,27 @@ export interface MarketStructureBlock {
   };
 }
 
+export interface CostSweepBlock {
+  family: string;
+  symbol: string;
+  rows: { m: number; ret: number }[];
+  breakeven_multiplier: number | null;
+}
+
+export interface TotalsBlock {
+  runs_total: number;
+  bars_total: number;
+  families_registered: number;
+}
+
 export interface LandingExtraFull extends LandingExtra {
   mountain: MountainBlock;
   folds: FoldsBlock;
   rs_ga: RsGaBlock;
   meta: MetaBlock;
   market_structure: MarketStructureBlock;
+  cost_sweep: CostSweepBlock;
+  totals: TotalsBlock;
 }
 
 const loadJson = async (path: string): Promise<LandingExtraFull> => {

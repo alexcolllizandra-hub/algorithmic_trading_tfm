@@ -126,6 +126,106 @@ export function NullDistribution() {
           </div>
         </div>
       </Reveal>
+
+      {/* Monte Carlo cost-multiplier sweep: how little economic slack remains. */}
+      <Reveal delay={0.1}>
+        <div className="mt-10 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+          <div className="rounded-card border border-border bg-surface p-6 md:p-7">
+            <p className="rule-label mb-4 text-accent">{c.nullDist.sweepTitle}</p>
+            {data?.cost_sweep ? (
+              <ResponsiveContainer width="100%" height={230}>
+                <AreaChart
+                  data={data.cost_sweep.rows}
+                  margin={{ top: 6, right: 12, bottom: 20, left: 4 }}
+                >
+                  <CartesianGrid
+                    stroke={LANDING_CHART.grid}
+                    strokeDasharray="3 3"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="m"
+                    type="number"
+                    domain={[0, 4]}
+                    ticks={[0, 0.5, 1, 1.5, 2, 3, 4]}
+                    stroke={LANDING_CHART.axis}
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v) => `×${v}`}
+                    label={{
+                      value: c.nullDist.sweepAxis,
+                      position: "insideBottom",
+                      offset: -12,
+                      fill: LANDING_CHART.axis,
+                      fontSize: 11,
+                    }}
+                  />
+                  <YAxis
+                    stroke={LANDING_CHART.axis}
+                    tick={{ fontSize: 11 }}
+                    width={48}
+                    tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`}
+                  />
+                  <ReferenceLine y={0} stroke={LANDING_CHART.reference} strokeDasharray="4 3" />
+                  <ReferenceLine
+                    x={1}
+                    stroke={LANDING_CHART.axis}
+                    strokeDasharray="2 3"
+                    label={{
+                      value: "×1",
+                      position: "insideTopLeft",
+                      fill: LANDING_CHART.axis,
+                      fontSize: 10,
+                    }}
+                  />
+                  {data.cost_sweep.breakeven_multiplier != null && (
+                    <ReferenceLine
+                      x={data.cost_sweep.breakeven_multiplier}
+                      stroke={LANDING_CHART.holdout}
+                      strokeWidth={1.6}
+                    />
+                  )}
+                  <Area
+                    type="monotone"
+                    dataKey="ret"
+                    stroke={LANDING_CHART.accent}
+                    strokeWidth={1.8}
+                    fill={LANDING_CHART.accent}
+                    fillOpacity={0.14}
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[230px] animate-pulse rounded-md bg-surface-2" aria-hidden />
+            )}
+            <p className="mt-4 text-xs leading-relaxed text-muted">{c.nullDist.sweepCaption}</p>
+          </div>
+
+          <div className="flex flex-col justify-center gap-4">
+            {data?.cost_sweep && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-md border border-border bg-surface-2 p-4">
+                  <p className="tabular text-2xl font-semibold tracking-tight text-warn">
+                    ×{data.cost_sweep.breakeven_multiplier?.toFixed(2) ?? "—"}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">
+                    {c.nullDist.sweepBreakeven}
+                  </p>
+                </div>
+                <div className="rounded-md border border-border bg-surface-2 p-4">
+                  <p className="tabular text-2xl font-semibold tracking-tight">
+                    {`+${(data.cost_sweep.rows[0].ret * 100).toFixed(0)}%`}
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted">
+                    {c.nullDist.sweepZeroCost}
+                  </p>
+                </div>
+              </div>
+            )}
+            <p className="leading-relaxed text-muted">{c.nullDist.sweepBody}</p>
+          </div>
+        </div>
+      </Reveal>
     </Section>
   );
 }
