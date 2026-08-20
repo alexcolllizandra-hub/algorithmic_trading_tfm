@@ -12,7 +12,7 @@
   "relative_path": "data/validated/BTCUSDT/5m.parquet",
   "data_sha256": "5b4b87752774679433bc9074dfca26779bfdaea0ff0a9fcb6b58ed68b3866265",
   "code_version": "0.1.0",
-  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
-  "generated_at": "2026-07-30T11:15:59.682365Z",
+  "git_commit": "b3dc8b735af72f2f12221f2be7e3b3d45d50c210",
+  "generated_at": "2026-08-20T06:26:56.092706Z",
   "notes": "Base timeframe downloaded directly from source."
 }

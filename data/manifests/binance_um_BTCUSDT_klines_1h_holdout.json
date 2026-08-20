@@ -12,7 +12,7 @@
   "relative_path": "data/processed/BTCUSDT/1h_holdout.parquet",
   "data_sha256": "dec28172d8089dc77a9c9ed4dfdb5270d23fee2dbf5f45c91b4bb9e7e7b50721",
   "code_version": "0.1.0",
-  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
-  "generated_at": "2026-07-30T11:16:00.506829Z",
+  "git_commit": "b3dc8b735af72f2f12221f2be7e3b3d45d50c210",
+  "generated_at": "2026-08-20T06:26:56.390694Z",
   "notes": "Built from 5m. Partition=holdout. Holdout starts 2026-01-01T00:00:00+00:00 and is frozen."
 }

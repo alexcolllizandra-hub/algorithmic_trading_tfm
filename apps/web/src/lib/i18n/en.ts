@@ -31,6 +31,10 @@ export const en = {
       label: "Strategies",
       description: "Every family: real equity and metrics",
     },
+    laboratorio: {
+      label: "Laboratory",
+      description: "Build and run a strategy on the real data",
+    },
     diagnostico: { label: "Diagnostics", description: "Artifacts and system" },
   },
 
@@ -1044,5 +1048,150 @@ export const en = {
     howToRead: "How to read this section",
     expand: "Expand",
     collapse: "Collapse",
+  },
+
+  lab: {
+    title: "Strategy laboratory",
+    subtitle:
+      "Build a strategy from the study's families, adjust its parameters, and run it on the real " +
+      "hourly BTC and ETH candles — under the same execution model, costs, and funding as the " +
+      "research engine.",
+    banner:
+      "Exploratory, educational tool. The browser engine replicates the study's (next-open " +
+      "execution, real fees, slippage, and funding), but a favourable result here validates " +
+      "NOTHING: the study's battery requires multi-seed runs, walk-forward, and " +
+      "multiple-comparison correction. The holdout period is excluded from this data.",
+    que: "What is this?",
+    queAnswer:
+      "A real backtester running in your browser on the development partition (2020–2025). Four " +
+      "of the study's families are ported line by line from the Python code: same thresholds, " +
+      "same exclusion of the decision bar, same position state machine.",
+    comoFunciona: "How does an order execute?",
+    comoFuncionaAnswer:
+      "The signal is decided on the closed candle and executed at the next open; never at the " +
+      "price that generated the signal. Every position change pays fee and slippage (a " +
+      "long→short flip pays double), and every bar in position settles the funding falling due " +
+      "in its interval.",
+    queNo: "What NOT to conclude here?",
+    queNoAnswer:
+      "That your configuration “works”. With thousands of possible combinations, finding a " +
+      "rising curve is a matter of attempts, not of edge: it is exactly the selection bias the " +
+      "study measures. Use the test battery as what it is — an honest first filter.",
+    pickStrategy: "Family",
+    pickAsset: "Asset",
+    paramsTitle: "Parameters",
+    studyValuesNote: "Marked values belong to the study's own search space.",
+    costsTitle: "Costs",
+    fee: "Fee (bps per side)",
+    slippage: "Slippage (bps per side)",
+    costsNote: "Defaults: taker 4 bps + 1 bps — the study's.",
+    splitLabel: "In-sample / out-of-sample split",
+    splitNote:
+      "Indicators are computed causally over the full series; metrics are separated into the " +
+      "two phases by entry date.",
+    run: "Run backtest",
+    running: "Running…",
+    dataLoading: "Loading the real candles…",
+    dataError:
+      "The lab data could not be loaded. Generate it with: uv run python " +
+      "scripts/export_lab_data.py",
+    dataFootnote:
+      "{n} 1h candles · {start} — {end} · development partition, holdout excluded · real " +
+      "Binance funding ({nf} events).",
+    strategies: {
+      momentum: {
+        name: "Momentum (moving-average crossover)",
+        tagline: "Follow the trend when the fast average crosses the slow one.",
+        how:
+          "Long when the fast SMA is above the slow one; short when below. The most classical " +
+          "trend-following family and the genre's historical benchmark.",
+      },
+      mean_reversion: {
+        name: "Mean reversion (z-score)",
+        tagline: "Bet that price returns after an extreme.",
+        how:
+          "Measures how many standard deviations price sits from its rolling mean. Short above " +
+          "+entry z, long below −entry z, close when it returns inside ±exit z.",
+      },
+      breakout: {
+        name: "Channel breakout (Donchian)",
+        tagline: "Enter when price breaks its recent range.",
+        how:
+          "Long if the close exceeds the previous N bars' high; short if it loses the low. Exit " +
+          "when price re-enters the channel. Multi-bar confirmation optional.",
+      },
+      volatility_breakout: {
+        name: "Volatility-scaled breakout",
+        tagline: "A break only counts if it is large for the moment's volatility.",
+        how:
+          "Like the channel breakout, but the threshold moves a multiple of ATR away: 2% in a " +
+          "calm market is not the same as 2% in a storm. The study's best family — and still " +
+          "rejected.",
+      },
+    },
+    exampleCaption: "Schematic illustration of the rule; not real data.",
+    phasesTitle: "Metrics by phase",
+    phaseIn: "In-sample",
+    phaseOut: "Out-of-sample",
+    phaseFull: "Full series",
+    buyHold: "Buy and hold",
+    strategyLabel: "Strategy",
+    testsTitle: "Test battery (out-of-sample)",
+    testsSubtitle:
+      "Four checks on the phase the strategy has not seen while choosing parameters. Passing " +
+      "them is a necessary condition, never a sufficient one.",
+    testReturn: "Positive net return",
+    testReturnDesc: "The out-of-sample compound return, net of all costs, is greater than zero.",
+    testSharpe: "Positive Sharpe",
+    testSharpeDesc: "The mean per-bar return exceeds its noise (annualised Sharpe > 0).",
+    testBh: "Beats buy and hold",
+    testBhDesc: "Outperforms the passive benchmark with the same costs over the same phase.",
+    testNull: "Distinguishable from its own chance",
+    testNullDesc:
+      "Circular-rotation test: {n} versions of the strategy with positions rotated to a random " +
+      "point, same costs. One-sided p-value of the real return against that null.",
+    pass: "PASSED",
+    fail: "NOT PASSED",
+    pValueLabel: "p-value",
+    testsDisclaimer:
+      "Even with all four green: the study additionally required ten seeds, fifteen " +
+      "walk-forward folds, and Holm correction across every family tried — and none survived. " +
+      "A 4/4 here is an invitation to distrust, not a discovery.",
+    equityTitle: "Equity curve",
+    equitySubtitle:
+      "Capital compounded bar by bar, net of costs and funding. The shaded zone is the " +
+      "in-sample phase; the vertical line marks the split.",
+    signalsTitle: "Price and signals",
+    signalsSubtitle:
+      "Window of {bars} bars around the selected point. ▲ long entry · ▼ short entry · ✕ exit " +
+      "to flat.",
+    signalsWindow: "Window position",
+    drawdownTitle: "Drawdown",
+    maefeTitle: "Maximum excursion per trade (MAE / MFE)",
+    maefeSubtitle:
+      "For every trade: how far it went in favour (MFE) and against (MAE) relative to the entry " +
+      "price, measured with the real highs and lows of each bar in position.",
+    maefeX: "MAE — maximum adverse excursion",
+    maefeY: "Net trade return",
+    medianMae: "Median MAE",
+    medianMfe: "Median MFE",
+    eRatio: "e-ratio (mean MFE / mean MAE)",
+    eRatioNote:
+      "An e-ratio ≤ 1 means trades suffer as much or more against as they ever go in favour: " +
+      "the entry rule is capturing no asymmetry.",
+    tradeStatsTitle: "Trade statistics",
+    profitFactor: "Profit factor",
+    expectancy: "Expectancy per trade",
+    tradeHitRate: "Per-trade hit rate",
+    nTradesClosed: "Closed trades",
+    meanDuration: "Mean duration (bars)",
+    ulcer: "Ulcer index",
+    winStreak: "Longest winning streak",
+    lossStreak: "Longest losing streak",
+    pretrainedTitle: "The families already studied",
+    pretrainedBody:
+      "The fifteen families of the formal study — with their ten seeds, full walk-forward, and " +
+      "closure metrics — live in the strategy explorer.",
+    pretrainedLink: "Open the strategy explorer →",
   },
 } as const;

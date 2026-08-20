@@ -12,7 +12,7 @@
   "relative_path": "data/validated/ETHUSDT/fundingRate.parquet",
   "data_sha256": "8168dc2f700469095a5157056a90ba8028629ce3728d1d44b948c62935e3e71c",
   "code_version": "0.1.0",
-  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
-  "generated_at": "2026-07-30T11:21:34.142786Z",
+  "git_commit": "b3dc8b735af72f2f12221f2be7e3b3d45d50c210",
+  "generated_at": "2026-08-20T06:38:57.834445Z",
   "notes": "Funding-rate observations (8h nominal interval)."
 }

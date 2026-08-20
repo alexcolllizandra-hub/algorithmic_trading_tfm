@@ -90,6 +90,12 @@ export function navGroups(t: Dictionary): NavGroup[] {
           icon: "∿",
           description: t.nav.estrategias.description,
         },
+        {
+          href: "/laboratorio",
+          label: t.nav.laboratorio.label,
+          icon: "⚗",
+          description: t.nav.laboratorio.description,
+        },
       ],
     },
     {

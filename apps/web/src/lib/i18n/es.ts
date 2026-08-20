@@ -24,6 +24,10 @@ export const es = {
       label: "Estrategias",
       description: "Todas las familias: equity y métricas reales",
     },
+    laboratorio: {
+      label: "Laboratorio",
+      description: "Construya y ejecute una estrategia sobre los datos reales",
+    },
     diagnostico: { label: "Diagnóstico", description: "Artefactos y sistema" },
   },
 
@@ -1041,6 +1045,153 @@ export const es = {
     howToRead: "Cómo leer esta sección",
     expand: "Expandir",
     collapse: "Contraer",
+  },
+
+  lab: {
+    title: "Laboratorio de estrategias",
+    subtitle:
+      "Construya una estrategia con las familias del estudio, ajuste sus parámetros y ejecútela " +
+      "sobre las velas horarias reales de BTC y ETH — con el mismo modelo de ejecución, costes y " +
+      "funding que el motor de la investigación.",
+    banner:
+      "Herramienta exploratoria y docente. El motor del navegador replica el del estudio " +
+      "(ejecución next-open, comisiones, deslizamiento y funding reales), pero un resultado " +
+      "favorable aquí NO valida nada: la batería del estudio exige multi-semilla, walk-forward y " +
+      "corrección por comparaciones múltiples. El periodo de reserva está excluido de estos datos.",
+    que: "¿Qué es esto?",
+    queAnswer:
+      "Un backtester real que corre en su navegador sobre la partición de desarrollo (2020–2025). " +
+      "Cuatro familias del estudio están portadas línea a línea desde el código Python: mismos " +
+      "umbrales, misma exclusión del bar de decisión, misma máquina de estados de posición.",
+    comoFunciona: "¿Cómo se ejecuta una orden?",
+    comoFuncionaAnswer:
+      "La señal se decide con la vela cerrada y se ejecuta en la apertura de la siguiente; nunca al " +
+      "precio que generó la señal. Cada cambio de posición paga comisión y deslizamiento (un giro " +
+      "largo→corto paga doble), y cada barra en posición liquida el funding que venza en su " +
+      "intervalo.",
+    queNo: "¿Qué NO concluir aquí?",
+    queNoAnswer:
+      "Que su configuración «funciona». Con miles de combinaciones posibles, encontrar una curva " +
+      "ascendente es cuestión de intentos, no de ventaja: es exactamente el sesgo de selección que " +
+      "el estudio mide. Use la batería de contraste como lo que es: un primer filtro honesto.",
+    pickStrategy: "Familia",
+    pickAsset: "Activo",
+    paramsTitle: "Parámetros",
+    studyValuesNote: "Los valores marcados pertenecen al espacio de búsqueda del estudio.",
+    costsTitle: "Costes",
+    fee: "Comisión (pb por lado)",
+    slippage: "Deslizamiento (pb por lado)",
+    costsNote: "Por defecto: taker 4 pb + 1 pb, los del estudio.",
+    splitLabel: "Corte in-sample / out-of-sample",
+    splitNote:
+      "Los indicadores se calculan de forma causal sobre toda la serie; las métricas se separan " +
+      "en las dos fases por fecha de entrada.",
+    run: "Ejecutar backtest",
+    running: "Ejecutando…",
+    dataLoading: "Cargando las velas reales…",
+    dataError:
+      "No se pudieron cargar los datos del laboratorio. Genérelos con: uv run python " +
+      "scripts/export_lab_data.py",
+    dataFootnote:
+      "{n} velas de 1h · {start} — {end} · partición de desarrollo, holdout excluido · " +
+      "funding real de Binance ({nf} eventos).",
+    strategies: {
+      momentum: {
+        name: "Momentum (cruce de medias)",
+        tagline: "Seguir la tendencia cuando la media rápida cruza la lenta.",
+        how:
+          "Largo cuando la SMA rápida supera a la lenta; corto cuando queda por debajo. Es la " +
+          "familia de seguimiento de tendencia más clásica y la referencia histórica del género.",
+      },
+      mean_reversion: {
+        name: "Reversión a la media (z-score)",
+        tagline: "Apostar a que el precio vuelve tras un extremo.",
+        how:
+          "Se mide cuántas desviaciones típicas se aleja el precio de su media móvil. Corto por " +
+          "encima de +z de entrada, largo por debajo de −z, cierre cuando vuelve a ±z de salida.",
+      },
+      breakout: {
+        name: "Ruptura de canal (Donchian)",
+        tagline: "Entrar cuando el precio rompe su rango reciente.",
+        how:
+          "Largo si el cierre supera el máximo de las N barras anteriores; corto si pierde el " +
+          "mínimo. Salida cuando el precio vuelve dentro del canal. Se puede exigir confirmación " +
+          "de varias barras.",
+      },
+      volatility_breakout: {
+        name: "Ruptura escalada por volatilidad",
+        tagline: "Una ruptura solo cuenta si es grande para la volatilidad del momento.",
+        how:
+          "Como la ruptura de canal, pero el umbral se desplaza un múltiplo del ATR: un 2% en " +
+          "mercado tranquilo no es lo mismo que un 2% en plena tormenta. Fue la mejor familia del " +
+          "estudio — y aun así, rechazada.",
+      },
+    },
+    exampleCaption: "Ilustración esquemática de la regla; no son datos reales.",
+    phasesTitle: "Métricas por fase",
+    phaseIn: "In-sample",
+    phaseOut: "Out-of-sample",
+    phaseFull: "Serie completa",
+    buyHold: "Comprar y mantener",
+    strategyLabel: "Estrategia",
+    testsTitle: "Batería de contraste (out-of-sample)",
+    testsSubtitle:
+      "Cuatro comprobaciones sobre la fase que la estrategia no ha visto al elegir parámetros. " +
+      "Superarlas es condición necesaria, jamás suficiente.",
+    testReturn: "Retorno neto positivo",
+    testReturnDesc:
+      "El retorno compuesto out-of-sample, neto de todos los costes, es mayor que cero.",
+    testSharpe: "Sharpe positivo",
+    testSharpeDesc: "La media de los retornos por barra supera su ruido (Sharpe anualizado > 0).",
+    testBh: "Supera a comprar y mantener",
+    testBhDesc: "Rinde más que la referencia pasiva con sus mismos costes en la misma fase.",
+    testNull: "Distinguible de su propio azar",
+    testNullDesc:
+      "Prueba de rotación circular: {n} versiones de la estrategia con las posiciones giradas a un " +
+      "punto aleatorio, mismos costes. p-valor unilateral del retorno real contra ese nulo.",
+    pass: "SUPERADA",
+    fail: "NO SUPERADA",
+    pValueLabel: "p-valor",
+    testsDisclaimer:
+      "Aunque las cuatro salgan verdes: el estudio exigió además diez semillas, quince pliegues " +
+      "walk-forward y corrección de Holm por todas las familias probadas — y ninguna sobrevivió. " +
+      "Un 4/4 aquí es una invitación a desconfiar, no un descubrimiento.",
+    equityTitle: "Curva de equity",
+    equitySubtitle:
+      "Capital compuesto barra a barra, neto de costes y funding. La zona sombreada es la fase " +
+      "in-sample; la línea vertical marca el corte.",
+    signalsTitle: "Precio y señales",
+    signalsSubtitle:
+      "Ventana de {bars} barras alrededor del punto seleccionado. ▲ entrada larga · ▼ entrada " +
+      "corta · ✕ salida a plano.",
+    signalsWindow: "Posición de la ventana",
+    drawdownTitle: "Drawdown",
+    maefeTitle: "Excursión máxima por operación (MAE / MFE)",
+    maefeSubtitle:
+      "Para cada operación: cuánto llegó a ir a favor (MFE) y cuánto en contra (MAE) respecto al " +
+      "precio de entrada, medido con los máximos y mínimos reales de cada barra en posición.",
+    maefeX: "MAE — excursión adversa máxima",
+    maefeY: "Retorno neto de la operación",
+    medianMae: "MAE mediana",
+    medianMfe: "MFE mediana",
+    eRatio: "e-ratio (MFE media / MAE media)",
+    eRatioNote:
+      "Un e-ratio ≤ 1 indica que las operaciones sufren tanto o más en contra de lo que llegan a " +
+      "ir a favor: la regla de entrada no está capturando asimetría alguna.",
+    tradeStatsTitle: "Estadística de operaciones",
+    profitFactor: "Factor de beneficio",
+    expectancy: "Expectativa por operación",
+    tradeHitRate: "Acierto por operación",
+    nTradesClosed: "Operaciones cerradas",
+    meanDuration: "Duración media (barras)",
+    ulcer: "Índice de úlcera",
+    winStreak: "Racha ganadora más larga",
+    lossStreak: "Racha perdedora más larga",
+    pretrainedTitle: "Las familias ya estudiadas",
+    pretrainedBody:
+      "Las quince familias del estudio formal — con sus diez semillas, su walk-forward completo y " +
+      "sus métricas de cierre — se consultan en el explorador de estrategias.",
+    pretrainedLink: "Abrir el explorador de estrategias →",
   },
 } as const;
 

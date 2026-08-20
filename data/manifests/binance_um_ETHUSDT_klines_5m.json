@@ -12,7 +12,7 @@
   "relative_path": "data/validated/ETHUSDT/5m.parquet",
   "data_sha256": "695edc275f449f2955921decb07d9db886729a7662094880bf60f2f6fd187b20",
   "code_version": "0.1.0",
-  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
-  "generated_at": "2026-07-30T11:18:48.805071Z",
+  "git_commit": "b3dc8b735af72f2f12221f2be7e3b3d45d50c210",
+  "generated_at": "2026-08-20T06:34:24.994687Z",
   "notes": "Base timeframe downloaded directly from source."
 }
