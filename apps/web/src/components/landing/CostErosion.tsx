@@ -1,8 +1,7 @@
 "use client";
 
-// "Efficient market", paid off with the study's own numbers instead of a
-// supermarket metaphor. Both series already ship in evidence.json; until now
-// nothing rendered them.
+// Market efficiency, tested with the study's own numbers. Both series ship in
+// evidence.json; this section renders them.
 
 import {
   breakEvenBps,
@@ -10,6 +9,7 @@ import {
   TurnoverWedgeChart,
 } from "@/components/landing/charts/CostErosion";
 import { LANDING_CHART } from "@/components/landing/charts/palette";
+import { useLandingCopy } from "@/components/landing/copy";
 import { Reveal } from "@/components/landing/Reveal";
 import { Section, SectionHeading } from "@/components/landing/Section";
 import { formatSharpe, useEvidence } from "@/lib/evidence";
@@ -37,6 +37,7 @@ function Panel({
 
 export function CostErosion() {
   const { data, error } = useEvidence();
+  const c = useLandingCopy();
 
   if (error) return null;
 
@@ -45,18 +46,14 @@ export function CostErosion() {
 
   return (
     <Section id="costes">
-      <SectionHeading
-        eyebrow="Mercado eficiente"
-        title="La ventaja existe hasta que pagas por ella"
-        lead="La versión de manual dice que si el precio ya incorpora la información, ninguna regla basada en esa información gana dinero. Aquí está la versión medida: la misma estrategia, el mismo periodo, subiendo solo lo que cuesta operar."
-      />
+      <SectionHeading eyebrow={c.costs.eyebrow} title={c.costs.title} lead={c.costs.lead} />
 
       <div className="mt-14 grid gap-6 lg:grid-cols-2">
         <Reveal>
           <Panel
-            label="Erosión por costes"
-            title="Dónde se acaba la ventaja"
-            caption="Sharpe anualizado sobre la partición de desarrollo, variando únicamente el coste de ida y vuelta. Todo lo demás queda fijo."
+            label={c.costs.panels.erosionLabel}
+            title={c.costs.panels.erosionTitle}
+            caption={c.costs.panels.erosionCaption}
           >
             {data ? (
               <CostErosionChart rows={data.cost_sensitivity} />
@@ -68,9 +65,9 @@ export function CostErosion() {
 
         <Reveal delay={0.05}>
           <Panel
-            label="Bruto contra neto"
-            title="Cuanto más operas, más se abre la cuña"
-            caption="Cada par de puntos es una configuración de medias móviles. Arriba el resultado antes de costes; abajo, el mismo después de comisiones, deslizamiento y funding."
+            label={c.costs.panels.wedgeLabel}
+            title={c.costs.panels.wedgeTitle}
+            caption={c.costs.panels.wedgeCaption}
           >
             {data ? (
               <TurnoverWedgeChart grid={data.turnover.grid} />
@@ -89,41 +86,33 @@ export function CostErosion() {
                 <p className="tabular text-2xl font-semibold tracking-tight text-negative">
                   {crossing != null ? `${crossing.toFixed(0)} bps` : "—"}
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-muted">
-                  Coste por vuelta al que la ventaja llega a cero
-                </p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">{c.costs.statCrossing}</p>
               </div>
               <div className="rounded-md border border-border bg-surface-2 p-4">
                 <p className="tabular text-2xl font-semibold tracking-tight text-accent">
                   {formatSharpe(buyAndHold)}
                 </p>
-                <p className="mt-1 text-xs leading-relaxed text-muted">
-                  Sharpe de comprar y esperar en el mismo periodo
-                </p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">{c.costs.statBuyHold}</p>
               </div>
             </div>
 
             <div className="flex flex-col justify-center">
-              <p className="rule-label text-accent">En simple</p>
+              <p className="rule-label text-accent">{c.costs.simpleLabel}</p>
               <p className="mt-3 text-lg leading-relaxed">
-                No hace falta que el mercado sea perfecto para que no ganes.{" "}
-                <strong className="font-semibold">Basta con que cobre por participar.</strong>
+                {c.costs.simpleLede}
+                <strong className="font-semibold">{c.costs.simpleStrong}</strong>
               </p>
               <p className="mt-4 leading-relaxed text-muted">
-                La curva de la izquierda no baja porque la estrategia empeore: es exactamente la
-                misma regla, sobre exactamente los mismos datos. Lo único que sube es el peaje. A{" "}
+                {c.costs.body1Prefix}
                 {crossing != null
-                  ? `${crossing.toFixed(0)} puntos básicos`
-                  : "cierto nivel de coste"}{" "}
-                por operación completa, lo que parecía una ventaja ya no lo es — y ese peaje está
-                dentro del rango que cobra un exchange real.
+                  ? `${crossing.toFixed(0)} ${c.costs.bpsUnit}`
+                  : c.costs.body1Fallback}
+                {c.costs.body1Suffix}
               </p>
               <p className="mt-4 leading-relaxed text-muted">
-                La cuña de la derecha explica por qué la solución no es operar más. Cada punto azul
-                es lo que habrías ganado si operar fuese gratis; el rojo debajo es lo que queda al
-                pagar. Cuanto más a la derecha, más veces entras y sales, y más se separan.{" "}
+                {c.costs.body2}
                 <span className="font-medium" style={{ color: LANDING_CHART.accent }}>
-                  La actividad no es una fuente de rentabilidad: es una fuente de coste.
+                  {c.costs.body2Accent}
                 </span>
               </p>
             </div>

@@ -7,6 +7,7 @@ import { DistributionChart } from "@/components/landing/charts/DistributionChart
 import { ASSET_COLOR } from "@/components/landing/charts/palette";
 import { PriceChart } from "@/components/landing/charts/PriceChart";
 import { VolatilityChart } from "@/components/landing/charts/VolatilityChart";
+import { tpl, useLandingCopy } from "@/components/landing/copy";
 import { Reveal } from "@/components/landing/Reveal";
 import { Section, SectionHeading } from "@/components/landing/Section";
 import { ErrorState, Skeleton } from "@/components/ui/States";
@@ -50,11 +51,12 @@ function Panel({
 }
 
 function Metrics({ item }: { item: SummaryItem }) {
+  const c = useLandingCopy();
   const metrics = [
-    { label: "Volatilidad anualizada", value: fmtPercent(item.annualised_volatility, 1) },
-    { label: "Peor hora", value: fmtPercent(item.worst_bar, 1) },
-    { label: "Caída máxima", value: fmtPercent(item.max_drawdown, 1) },
-    { label: "Exceso de curtosis", value: fmtNumber(item.excess_kurtosis, 1) },
+    { label: c.market.metrics.vol, value: fmtPercent(item.annualised_volatility, 1) },
+    { label: c.market.metrics.worst, value: fmtPercent(item.worst_bar, 1) },
+    { label: c.market.metrics.drawdown, value: fmtPercent(item.max_drawdown, 1) },
+    { label: c.market.metrics.kurtosis, value: fmtNumber(item.excess_kurtosis, 1) },
   ];
 
   return (
@@ -76,21 +78,20 @@ function FatTails({
   events: { sigma: number; observed: number; expected_normal: number }[];
   n: number;
 }) {
+  const c = useLandingCopy();
   return (
     <table className="w-full text-sm">
-      <caption className="sr-only">
-        Movimientos extremos observados frente a los que predice una distribución normal
-      </caption>
+      <caption className="sr-only">{c.market.fatTailsCaption}</caption>
       <thead>
         <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
           <th scope="col" className="py-2 font-medium">
-            Movimiento
+            {c.market.fatTailsMove}
           </th>
           <th scope="col" className="py-2 text-right font-medium">
-            Predice la normal
+            {c.market.fatTailsExpected}
           </th>
           <th scope="col" className="py-2 text-right font-medium">
-            Ocurrió
+            {c.market.fatTailsObserved}
           </th>
         </tr>
       </thead>
@@ -98,8 +99,8 @@ function FatTails({
         {events.map((event) => (
           <tr key={event.sigma}>
             <th scope="row" className="py-2.5 text-left font-normal">
-              Más de {event.sigma}
-              {"\u03C3"}
+              {c.market.fatTailsOver} {event.sigma}
+              {"σ"}
             </th>
             <td className="tabular py-2.5 text-right text-muted">
               {event.expected_normal < 0.01
@@ -115,7 +116,7 @@ function FatTails({
       <tfoot>
         <tr>
           <td colSpan={3} className="pt-3 text-xs text-muted">
-            Sobre {fmtInt(n)} horas de la partición de desarrollo.
+            {c.market.fatTailsFooterPrefix} {fmtInt(n)} {c.market.fatTailsFooterSuffix}
           </td>
         </tr>
       </tfoot>
@@ -125,6 +126,7 @@ function FatTails({
 
 export function MarketDashboard() {
   const [symbol, setSymbol] = useState("BTCUSDT");
+  const c = useLandingCopy();
 
   const { data: seriesFile, error: seriesError, isLoading } = useMarketSeries();
   const { data: distributionsFile } = useDistributions();
@@ -142,23 +144,13 @@ export function MarketDashboard() {
 
   return (
     <Section id="datos">
-      <SectionHeading
-        eyebrow="Datos reales"
-        title="Esto no es un ejemplo ilustrativo"
-        lead={
-          <>
-            Todo lo que hay debajo sale de los ficheros que usa la investigación, exportados por el
-            propio pipeline. El área sombreada es el holdout: se dibuja para que se vea dónde
-            empieza, y ningún número de esta página se ha elegido mirándolo.
-          </>
-        }
-      />
+      <SectionHeading eyebrow={c.market.eyebrow} title={c.market.title} lead={c.market.lead} />
 
       <Reveal delay={0.05}>
         <div className="mt-10 flex flex-wrap items-center gap-3">
           <div
             role="tablist"
-            aria-label="Activo"
+            aria-label={c.market.assetAria}
             className="inline-flex rounded-md border border-border bg-surface p-1"
           >
             {symbols.map((entry) => (
@@ -178,14 +170,14 @@ export function MarketDashboard() {
             ))}
           </div>
           <span className="font-mono text-xs text-muted">
-            {symbol} · perpetuo USDT-M · velas de {seriesFile?.timeframe ?? "1h"}
+            {symbol} · {c.market.seriesSuffix} {seriesFile?.timeframe ?? "1h"}
           </span>
         </div>
       </Reveal>
 
       {seriesError && (
         <div className="mt-8">
-          <ErrorState title="No se pudieron cargar los datos" detail={seriesError.message} />
+          <ErrorState title={c.market.loadError} detail={seriesError.message} />
         </div>
       )}
 
@@ -206,58 +198,43 @@ export function MarketDashboard() {
 
           <Reveal delay={0.05}>
             <Panel
-              title={`Precio de ${baseAsset(symbol)}`}
-              subtitle="Cierre diario, escala logarítmica"
+              title={`${c.market.pricePanelTitle} ${baseAsset(symbol)}`}
+              subtitle={c.market.pricePanelSubtitle}
             >
               <PriceChart points={series.price} color={color} />
-              <ChartCaption>
-                Escala logarítmica porque en seis años el precio se multiplica: en lineal, los
-                primeros años quedarían aplastados contra el eje.
-              </ChartCaption>
+              <ChartCaption>{c.market.priceCaption}</ChartCaption>
             </Panel>
           </Reveal>
 
           <Reveal delay={0.05}>
             <Panel
-              title="Volatilidad"
-              subtitle={`Desviación típica móvil de ${seriesFile?.volatility_window_days ?? 30} días, anualizada`}
+              title={c.market.volPanelTitle}
+              subtitle={`${c.market.volPanelSubtitlePrefix} ${seriesFile?.volatility_window_days ?? 30} ${c.market.volPanelSubtitleSuffix}`}
             >
               <VolatilityChart
                 points={series.volatility}
                 color={color}
                 median={median(series.volatility.map((point) => point.v))}
               />
-              <ChartCaption>
-                La ventana solo mira hacia atrás: el valor de un día se calcula con las horas
-                anteriores y nunca con las posteriores. La volatilidad no es constante, y por eso
-                una estrategia con parámetros fijos se comporta distinto según la época.
-              </ChartCaption>
+              <ChartCaption>{c.market.volCaption}</ChartCaption>
             </Panel>
           </Reveal>
 
           {distribution && (
             <Reveal delay={0.05}>
-              <Panel
-                title="Distribución de retornos"
-                subtitle="Observado frente a una normal con la misma media y desviación típica"
-              >
+              <Panel title={c.market.distPanelTitle} subtitle={c.market.distPanelSubtitle}>
                 <div className="lg:grid lg:grid-cols-[1.6fr_1fr] lg:gap-8">
                   <div className="min-w-0">
                     <DistributionChart distribution={distribution} color={color} />
-                    <ChartCaption>
-                      Eje vertical logarítmico. La curva discontinua es lo que predeciría una
-                      campana de Gauss; la zona sombreada marca lo que queda más allá de tres
-                      desviaciones típicas. La diferencia entre ambas curvas en los extremos es
-                      exactamente lo que significa &ldquo;colas gordas&rdquo;.
-                    </ChartCaption>
+                    <ChartCaption>{c.market.distCaption}</ChartCaption>
                   </div>
                   <div className="mt-8 lg:mt-0">
                     <FatTails events={distribution.sigma_events} n={distribution.stats.n} />
                     <p className="mt-5 text-sm leading-relaxed text-muted">
-                      Con exceso de curtosis de {fmtNumber(distribution.stats.excess_kurtosis, 1)} y
-                      asimetría de {fmtNumber(distribution.stats.skew, 2)}, la normal no es una
-                      aproximación imperfecta: es la distribución equivocada. Cualquier medida de
-                      riesgo que la asuma subestima lo que puede pasar en un día malo.
+                      {tpl(c.market.kurtosisText, {
+                        kurtosis: fmtNumber(distribution.stats.excess_kurtosis, 1),
+                        skew: fmtNumber(distribution.stats.skew, 2),
+                      })}
                     </p>
                   </div>
                 </div>

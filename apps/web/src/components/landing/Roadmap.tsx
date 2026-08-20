@@ -1,19 +1,20 @@
-import { ROADMAP } from "@/components/landing/content";
+"use client";
+
+import type { PhaseStatus } from "@/components/landing/content";
+import { useLandingCopy } from "@/components/landing/copy";
 import { Reveal } from "@/components/landing/Reveal";
 import { Section, SectionHeading } from "@/components/landing/Section";
 import { StatusPill } from "@/components/landing/StatusPill";
 
 export function Roadmap() {
+  const c = useLandingCopy();
+
   return (
-    <Section id="roadmap">
-      <SectionHeading
-        eyebrow="Roadmap"
-        title="Dónde está el proyecto, sin adornos"
-        lead="Dos de las puertas ya se han cerrado en negativo y están contadas como tales. En investigación eso no es un contratiempo: es el resultado."
-      />
+    <Section id="estado">
+      <SectionHeading eyebrow={c.roadmap.eyebrow} title={c.roadmap.title} lead={c.roadmap.lead} />
 
       <ol className="mt-14 space-y-px">
-        {ROADMAP.map((phase, index) => (
+        {c.roadmap.phases.map((phase, index) => (
           <Reveal key={phase.id} delay={Math.min(index * 0.04, 0.2)}>
             <li className="relative grid gap-3 border-l border-border py-7 pl-8 md:grid-cols-[13rem_1fr] md:gap-8 md:pl-10">
               <span className="absolute left-0 top-9 h-px w-5 bg-border md:w-7" aria-hidden />
@@ -25,7 +26,7 @@ export function Roadmap() {
               <div>
                 <p className="rule-label text-accent">{phase.period}</p>
                 <div className="mt-2">
-                  <StatusPill status={phase.status} />
+                  <StatusPill status={phase.status as PhaseStatus} />
                 </div>
               </div>
 

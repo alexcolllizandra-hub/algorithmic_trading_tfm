@@ -1,15 +1,19 @@
 "use client";
 
 // Funded-account evaluations, priced honestly: the study's best (rejected)
-// strategy against a literal coin flip with the same trade timing and costs,
-// under the published rules of two real crypto prop firms. Numbers from
-// notebook 07's table; rule sources and retrieval date live in the export.
+// strategy against a fair coin with the same trade timing and costs, under
+// the published rules of two real crypto prop firms. Numbers from notebook
+// 07's table; rule sources and retrieval date live in the export.
+//
+// Two small-multiple panels (phase 1 / both phases) instead of one crowded
+// grouped chart: each panel compares only the two arms that answer its
+// question.
 
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
+  LabelList,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -18,12 +22,14 @@ import {
 
 import { LANDING_CHART } from "@/components/landing/charts/palette";
 import { useLandingExtra } from "@/components/landing/charts/extra";
+import { tpl, useLandingCopy, type LandingCopy } from "@/components/landing/copy";
 import { Reveal } from "@/components/landing/Reveal";
 import { Section, SectionHeading } from "@/components/landing/Section";
+import { useIntlLocale } from "@/lib/i18n";
 
 const FIRM_LABEL: Record<string, string> = {
-  breakout_1step_classic: "Breakout (1-step Classic)",
-  hyrotrader_2step: "HyroTrader (2-step)",
+  breakout_1step_classic: "Breakout · 1-step",
+  hyrotrader_2step: "HyroTrader · 2-step",
 };
 
 function OddsTooltip({
@@ -48,106 +54,142 @@ function OddsTooltip({
   );
 }
 
+function OddsPanel({
+  title,
+  rows,
+  max,
+  copy,
+}: {
+  title: string;
+  rows: { firm: string; strategy: number; coin: number }[];
+  max: number;
+  copy: LandingCopy["funded"];
+}) {
+  return (
+    <div className="rounded-md border border-border bg-surface-2/50 p-4">
+      <p className="rule-label mb-3 text-muted">{title}</p>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={rows} margin={{ top: 18, right: 8, bottom: 0, left: 0 }} barGap={6}>
+          <CartesianGrid stroke={LANDING_CHART.grid} strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="firm" stroke={LANDING_CHART.axis} tick={{ fontSize: 11 }} />
+          <YAxis
+            stroke={LANDING_CHART.axis}
+            tick={{ fontSize: 11 }}
+            width={40}
+            tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`}
+            domain={[0, max]}
+          />
+          <Tooltip content={<OddsTooltip />} cursor={{ fill: "rgb(255 255 255 / 0.03)" }} />
+          <Bar
+            dataKey="strategy"
+            name={copy.armStrategy}
+            fill={LANDING_CHART.accent}
+            isAnimationActive={false}
+            radius={[3, 3, 0, 0]}
+          >
+            <LabelList
+              dataKey="strategy"
+              position="top"
+              formatter={(v: number) => `${(v * 100).toFixed(1)}%`}
+              style={{ fill: LANDING_CHART.accent, fontSize: 11 }}
+            />
+          </Bar>
+          <Bar
+            dataKey="coin"
+            name={copy.armCoin}
+            fill={LANDING_CHART.reference}
+            fillOpacity={0.6}
+            isAnimationActive={false}
+            radius={[3, 3, 0, 0]}
+          >
+            <LabelList
+              dataKey="coin"
+              position="top"
+              formatter={(v: number) => `${(v * 100).toFixed(1)}%`}
+              style={{ fill: LANDING_CHART.axis, fontSize: 11 }}
+            />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export function FundedOdds() {
   const { data, error } = useLandingExtra();
+  const c = useLandingCopy();
+  const intl = useIntlLocale();
   if (error) return null;
   const funded = data?.funded;
 
-  const rows =
+  const phase1 =
     funded?.firms.map((firm) => ({
       firm: FIRM_LABEL[firm.id] ?? firm.id,
-      estrategia: firm.strategy_phase1,
-      moneda: firm.coin_flip_phase1,
-      estrategiaAmbas: firm.strategy_both,
-      monedaAmbas: firm.coin_flip_both,
+      strategy: firm.strategy_phase1,
+      coin: firm.coin_flip_phase1,
+    })) ?? [];
+  const both =
+    funded?.firms.map((firm) => ({
+      firm: FIRM_LABEL[firm.id] ?? firm.id,
+      strategy: firm.strategy_both,
+      coin: firm.coin_flip_both,
     })) ?? [];
 
   return (
     <Section id="fondeadas">
-      <SectionHeading
-        eyebrow="Cuentas fondeadas, medidas"
-        title="El examen que también aprueba una moneda"
-        lead="Aplicamos las reglas publicadas de dos empresas reales de cuentas fondeadas de cripto a mil trayectorias de la mejor estrategia del estudio — que es ruido certificado — y a una moneda al aire con sus mismos tiempos y costes. Ninguna de las dos sabe nada. Las dos aprueban una parte del tiempo."
-      />
+      <SectionHeading eyebrow={c.funded.eyebrow} title={c.funded.title} lead={c.funded.lead} />
 
-      <div className="mt-14 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+      <div className="mt-14 grid gap-6 lg:grid-cols-[1.25fr_1fr]">
         <Reveal>
           <div className="rounded-card border border-border bg-surface p-6 md:p-7">
             {funded ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={rows} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
-                  <CartesianGrid
-                    stroke={LANDING_CHART.grid}
-                    strokeDasharray="3 3"
-                    vertical={false}
+              <>
+                <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted">
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-sm"
+                      style={{ background: LANDING_CHART.accent }}
+                      aria-hidden
+                    />
+                    {c.funded.armStrategy}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-sm opacity-60"
+                      style={{ background: LANDING_CHART.reference }}
+                      aria-hidden
+                    />
+                    {c.funded.armCoin}
+                  </span>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <OddsPanel
+                    title={c.funded.phase1Title}
+                    rows={phase1}
+                    max={0.22}
+                    copy={c.funded}
                   />
-                  <XAxis dataKey="firm" stroke={LANDING_CHART.axis} tick={{ fontSize: 11 }} />
-                  <YAxis
-                    stroke={LANDING_CHART.axis}
-                    tick={{ fontSize: 11 }}
-                    width={44}
-                    tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`}
-                    domain={[0, 0.25]}
-                  />
-                  <Tooltip content={<OddsTooltip />} cursor={{ fill: "rgb(255 255 255 / 0.03)" }} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar
-                    dataKey="estrategia"
-                    name="estrategia · pasa fase 1"
-                    fill={LANDING_CHART.accent}
-                    isAnimationActive={false}
-                  />
-                  <Bar
-                    dataKey="moneda"
-                    name="moneda al aire · pasa fase 1"
-                    fill={LANDING_CHART.secondary}
-                    fillOpacity={0.55}
-                    isAnimationActive={false}
-                  />
-                  <Bar
-                    dataKey="estrategiaAmbas"
-                    name="estrategia · ambas fases"
-                    fill={LANDING_CHART.holdout}
-                    isAnimationActive={false}
-                  />
-                  <Bar
-                    dataKey="monedaAmbas"
-                    name="moneda · ambas fases"
-                    fill={LANDING_CHART.reference}
-                    fillOpacity={0.55}
-                    isAnimationActive={false}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+                  <OddsPanel title={c.funded.bothTitle} rows={both} max={0.22} copy={c.funded} />
+                </div>
+              </>
             ) : (
-              <div className="h-[300px] animate-pulse rounded-md bg-surface-2" aria-hidden />
+              <div className="h-[280px] animate-pulse rounded-md bg-surface-2" aria-hidden />
             )}
             <p className="mt-4 text-xs leading-relaxed text-muted">
-              {funded
-                ? `${funded.n_paths.toLocaleString("es-ES")} trayectorias por brazo. Reglas mapeadas de las páginas públicas de cada firma (fuentes y fecha en el artefacto); las reglas cualitativas no modeladas — consistencia, stop obligatorio, días mínimos — solo harían más difícil aprobar, así que estas cifras son techos optimistas.`
-                : ""}
+              {funded ? tpl(c.funded.caption, { paths: funded.n_paths.toLocaleString(intl) }) : ""}
             </p>
           </div>
         </Reveal>
 
         <Reveal delay={0.06}>
           <div className="flex h-full flex-col justify-center rounded-card border border-border bg-surface p-6 md:p-8">
-            <p className="rule-label text-accent">En simple</p>
+            <p className="rule-label text-accent">{c.funded.simpleLabel}</p>
             <p className="mt-3 text-lg leading-relaxed">
-              Aprobar una evaluación de fondeo{" "}
-              <strong className="font-semibold">no demuestra que sepas operar.</strong>
+              {c.funded.simpleLede}
+              <strong className="font-semibold">{c.funded.simpleStrong}</strong>
             </p>
-            <p className="mt-4 leading-relaxed text-muted">
-              Una estrategia sin ventaja demostrable supera la fase 1 entre el 14% y el 18% de las
-              veces; una moneda con sus mismos costes, entre el 9% y el 13%. La diferencia es del
-              tamaño de su propio error de muestreo. Con miles de aspirantes pagando la inscripción,
-              el azar fabrica «traders verificados» todas las semanas — y ese es el mecanismo,
-              medido, por el que la industria de señales y evaluaciones produce convencidos.
-            </p>
-            <p className="mt-4 text-sm leading-relaxed text-muted">
-              Cambiar las reglas cambia los porcentajes; no cambia de qué lado del azar vive la
-              estrategia.
-            </p>
+            <p className="mt-4 leading-relaxed text-muted">{c.funded.body}</p>
+            <p className="mt-4 text-sm leading-relaxed text-muted">{c.funded.footnote}</p>
           </div>
         </Reveal>
       </div>

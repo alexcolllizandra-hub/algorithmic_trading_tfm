@@ -18,20 +18,24 @@ import {
 
 import { LANDING_CHART } from "@/components/landing/charts/palette";
 import { useLandingExtra } from "@/components/landing/charts/extra";
+import { tpl, useLandingCopy } from "@/components/landing/copy";
 import { Reveal } from "@/components/landing/Reveal";
 import { Section, SectionHeading } from "@/components/landing/Section";
+import { useIntlLocale } from "@/lib/i18n";
 
 export function NullDistribution() {
   const { data, error } = useLandingExtra();
+  const c = useLandingCopy();
+  const intl = useIntlLocale();
   if (error) return null;
   const nd = data?.null_distribution;
 
   return (
     <Section id="azar">
       <SectionHeading
-        eyebrow="La imagen que resume la tesis"
-        title="La mejor estrategia, dentro del azar"
-        lead="Tomamos la mejor familia del estudio y le quitamos lo único que la hacía «estrategia»: giramos sus posiciones a un punto aleatorio del tiempo, mil veces por semilla, cobrando exactamente los mismos costes. La zona gris es lo que produce ese azar puro. Las líneas verdes son las diez ejecuciones reales."
+        eyebrow={c.nullDist.eyebrow}
+        title={c.nullDist.title}
+        lead={c.nullDist.lead}
       />
 
       <Reveal>
@@ -48,7 +52,7 @@ export function NullDistribution() {
                   tick={{ fontSize: 11 }}
                   tickFormatter={(v) => `${(Number(v) * 100).toFixed(0)}%`}
                   label={{
-                    value: "retorno total del periodo fuera de muestra",
+                    value: c.nullDist.xAxisLabel,
                     position: "insideBottom",
                     offset: -14,
                     fill: LANDING_CHART.axis,
@@ -86,9 +90,11 @@ export function NullDistribution() {
           )}
           <p className="mt-4 text-xs leading-relaxed text-muted">
             {nd
-              ? `${nd.family} · ${nd.symbol.replace("USDT", "")} · ${nd.n_rotations.toLocaleString(
-                  "es-ES"
-                )} rotaciones (10 semillas × 1.000) · banda gris: 95% central del azar · misma semilla y parámetros que la figura del estudio. Por legibilidad, el histograma recorta el 1% más extremo de la cola (declarado: la banda y los percentiles se calculan sobre el total).`
+              ? tpl(c.nullDist.caption, {
+                  family: nd.family,
+                  symbol: nd.symbol.replace("USDT", ""),
+                  rotations: nd.n_rotations.toLocaleString(intl),
+                })
               : ""}
           </p>
         </div>
@@ -99,31 +105,24 @@ export function NullDistribution() {
           <div className="grid grid-cols-2 gap-3 self-start">
             <div className="rounded-md border border-border bg-surface-2 p-4">
               <p className="tabular text-2xl font-semibold tracking-tight">10 / 10</p>
-              <p className="mt-1 text-xs leading-relaxed text-muted">
-                ejecuciones reales dentro de la banda del azar
-              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted">{c.nullDist.statInside}</p>
             </div>
             <div className="rounded-md border border-border bg-surface-2 p-4">
-              <p className="tabular text-2xl font-semibold tracking-tight">0,22 – 0,97</p>
+              <p className="tabular text-2xl font-semibold tracking-tight">
+                {intl.startsWith("es") ? "0,22 – 0,97" : "0.22 – 0.97"}
+              </p>
               <p className="mt-1 text-xs leading-relaxed text-muted">
-                percentiles de las diez, repartidos como diez sorteos
+                {c.nullDist.statPercentiles}
               </p>
             </div>
           </div>
           <div className="flex flex-col justify-center">
-            <p className="rule-label text-accent">En simple</p>
+            <p className="rule-label text-accent">{c.nullDist.simpleLabel}</p>
             <p className="mt-3 text-lg leading-relaxed">
-              Si no puedes distinguir tu estrategia de sus propias posiciones barajadas,{" "}
-              <strong className="font-semibold">
-                lo que mide tu backtest es el mercado, no tu regla.
-              </strong>
+              {c.nullDist.simpleLede}
+              <strong className="font-semibold">{c.nullDist.simpleStrong}</strong>
             </p>
-            <p className="mt-4 leading-relaxed text-muted">
-              Esto no requiere estadística avanzada para leerse — y toda la estadística avanzada del
-              estudio (p-valores, Sharpe deflactado, PBO) dice lo mismo que se ve a simple vista. Es
-              la prueba visual del veredicto de arriba, con los mismos costes, la misma exposición y
-              cero información.
-            </p>
+            <p className="mt-4 leading-relaxed text-muted">{c.nullDist.body}</p>
           </div>
         </div>
       </Reveal>

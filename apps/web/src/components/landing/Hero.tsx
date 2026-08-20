@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
 
 import { LANDING_CHART } from "@/components/landing/charts/palette";
+import { useLandingCopy } from "@/components/landing/copy";
 import { Reveal } from "@/components/landing/Reveal";
 import { fmtInt } from "@/lib/format";
 import { useMarketSeries, useProvenance, useSummary } from "@/lib/site-data";
@@ -46,6 +47,7 @@ function Backdrop() {
 function HeroStats() {
   const { data: summary } = useSummary();
   const { data: provenance } = useProvenance();
+  const c = useLandingCopy();
 
   const bars = summary?.items.reduce((total, item) => total + item.bars, 0) ?? null;
   const development = summary?.items.filter((item) => item.partition === "development") ?? [];
@@ -55,15 +57,15 @@ function HeroStats() {
   const start = development[0]?.start?.slice(0, 4) ?? null;
 
   const stats = [
-    { value: bars == null ? "—" : fmtInt(bars), label: "velas de 1 h analizadas" },
-    { value: start ? `${start}–2026` : "—", label: "años de historia real" },
+    { value: bars == null ? "—" : fmtInt(bars), label: c.hero.stats.bars },
+    { value: start ? `${start}–2026` : "—", label: c.hero.stats.years },
     {
       value: coverage == null ? "—" : `${coverage.toFixed(1)}%`,
-      label: "cobertura, sin huecos",
+      label: c.hero.stats.coverage,
     },
     {
       value: provenance?.holdout_start?.slice(0, 7) ?? "—",
-      label: "holdout congelado desde",
+      label: c.hero.stats.holdout,
     },
   ];
 
@@ -83,6 +85,8 @@ function HeroStats() {
 }
 
 export function Hero() {
+  const c = useLandingCopy();
+
   return (
     <section className="relative isolate overflow-hidden">
       <div className="grid-backdrop pointer-events-none absolute inset-0" aria-hidden />
@@ -97,21 +101,20 @@ export function Hero() {
 
       <div className="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-20 md:pb-32 md:pt-28">
         <Reveal>
-          <p className="rule-label text-accent">Trabajo de Fin de Máster · Investigación abierta</p>
+          <p className="rule-label text-accent">{c.hero.kicker}</p>
         </Reveal>
 
         <Reveal delay={0.05}>
           <h1 className="mt-6 max-w-4xl text-balance text-4xl font-semibold leading-[1.08] tracking-tight md:text-6xl">
-            Un laboratorio para buscar estrategias de trading{" "}
-            <span className="text-gradient">y para no engañarse con ellas</span>.
+            {c.hero.titleA}
+            <span className="text-gradient">{c.hero.titleGradient}</span>
+            {c.hero.titleB}
           </h1>
         </Reveal>
 
         <Reveal delay={0.1}>
           <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted md:text-xl">
-            Seis años de datos reales de futuros perpetuos de Bitcoin y Ethereum, validación
-            cronológica y seis meses de mercado guardados bajo llave. Todo lo que se publica aquí se
-            puede reproducir desde el código, incluidos los resultados negativos.
+            {c.hero.sub}
           </p>
         </Reveal>
 
@@ -121,20 +124,20 @@ export function Hero() {
               href="#datos"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 text-sm font-semibold text-accent-fg transition-transform hover:-translate-y-0.5"
             >
-              Ver los datos reales
-              <span aria-hidden>{"\u2193"}</span>
+              {c.hero.ctaData}
+              <span aria-hidden>{"↓"}</span>
             </a>
             <a
-              href="#en-simple"
+              href="#marco"
               className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface/70 px-5 py-3 text-sm font-medium backdrop-blur transition-colors hover:border-accent/50 hover:text-accent"
             >
-              Explícamelo en simple
+              {c.hero.ctaPlain}
             </a>
             <Link
               href="/panel"
               className="inline-flex items-center justify-center px-1 py-3 text-sm text-muted transition-colors hover:text-fg sm:px-4"
             >
-              Panel de investigación {"\u2192"}
+              {c.hero.ctaPanel} {"→"}
             </Link>
           </div>
         </Reveal>

@@ -1,10 +1,15 @@
+"use client";
+
 import Link from "next/link";
 
 import { REPO_URL } from "@/components/landing/content";
+import { useLandingCopy } from "@/components/landing/copy";
 import { Reveal } from "@/components/landing/Reveal";
 import { LANDING_CHART } from "@/components/landing/charts/palette";
 
 export function FinalCta() {
+  const c = useLandingCopy();
+
   return (
     <section id="seguir" className="relative isolate overflow-hidden border-t border-border/70">
       <div
@@ -18,15 +23,13 @@ export function FinalCta() {
       <div className="relative mx-auto w-full max-w-6xl px-6 py-24 text-center md:py-32">
         <Reveal>
           <h2 className="mx-auto max-w-3xl text-balance text-3xl font-semibold tracking-tight md:text-4xl">
-            El código, los datos y los resultados negativos están abiertos
+            {c.cta.title}
           </h2>
         </Reveal>
 
         <Reveal delay={0.05}>
           <p className="mx-auto mt-5 max-w-2xl text-pretty text-lg leading-relaxed text-muted">
-            Puedes clonar el repositorio, regenerar cada cifra de esta página y auditar el rastro de
-            la única apertura del holdout. Si encuentras un error metodológico, abrir una issue es
-            la forma más útil de contribuir.
+            {c.cta.body}
           </p>
         </Reveal>
 
@@ -38,22 +41,21 @@ export function FinalCta() {
               rel="noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-5 py-3 text-sm font-semibold text-accent-fg transition-transform hover:-translate-y-0.5"
             >
-              Ver el repositorio
-              <span aria-hidden>{"\u2197"}</span>
+              {c.cta.repo}
+              <span aria-hidden>{"↗"}</span>
             </a>
             <Link
               href="/panel"
               className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface px-5 py-3 text-sm font-medium transition-colors hover:border-accent/50 hover:text-accent"
             >
-              Entrar al panel de investigación
+              {c.cta.panel}
             </Link>
           </div>
         </Reveal>
 
         <Reveal delay={0.15}>
           <p className="mx-auto mt-12 max-w-2xl text-sm leading-relaxed text-muted/80">
-            Proyecto académico. No es asesoramiento financiero, no gestiona dinero real y no está
-            conectado a ningún exchange.
+            {c.cta.disclaimer}
           </p>
         </Reveal>
       </div>

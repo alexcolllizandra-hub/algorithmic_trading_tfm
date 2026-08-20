@@ -1,4 +1,7 @@
-import { STATUS_LABEL, type PhaseStatus } from "@/components/landing/content";
+"use client";
+
+import type { PhaseStatus } from "@/components/landing/content";
+import { useLandingCopy } from "@/components/landing/copy";
 import { cn } from "@/lib/cn";
 
 const TONE: Record<PhaseStatus, string> = {
@@ -9,6 +12,7 @@ const TONE: Record<PhaseStatus, string> = {
 };
 
 export function StatusPill({ status, className }: { status: PhaseStatus; className?: string }) {
+  const c = useLandingCopy();
   return (
     <span
       className={cn(
@@ -18,7 +22,7 @@ export function StatusPill({ status, className }: { status: PhaseStatus; classNa
       )}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-      {STATUS_LABEL[status]}
+      {c.pipeline.statusLabel[status]}
     </span>
   );
 }

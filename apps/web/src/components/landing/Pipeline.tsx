@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 
-import { PIPELINE, STATUS_LABEL, type PhaseStatus } from "@/components/landing/content";
+import type { PhaseStatus } from "@/components/landing/content";
+import { useLandingCopy } from "@/components/landing/copy";
 import { Reveal } from "@/components/landing/Reveal";
 import { Section, SectionHeading } from "@/components/landing/Section";
 import { StatusPill } from "@/components/landing/StatusPill";
@@ -18,15 +19,17 @@ const NODE_TONE: Record<PhaseStatus, string> = {
 };
 
 export function Pipeline() {
-  const [active, setActive] = useState<string>(PIPELINE[0].id);
-  const step = PIPELINE.find((entry) => entry.id === active) ?? PIPELINE[0];
+  const c = useLandingCopy();
+  const steps = c.pipeline.steps;
+  const [active, setActive] = useState<string>(steps[0].id);
+  const step = steps.find((entry) => entry.id === active) ?? steps[0];
 
   return (
-    <Section id="como-funciona">
+    <Section id="metodo">
       <SectionHeading
-        eyebrow="Cómo funciona"
-        title="Del dato en bruto a la decisión, paso a paso"
-        lead="Cada etapa alimenta a la siguiente y ninguna puede saltarse. Están marcadas las que existen hoy y las que todavía son roadmap."
+        eyebrow={c.pipeline.eyebrow}
+        title={c.pipeline.title}
+        lead={c.pipeline.lead}
       />
 
       <Reveal delay={0.05}>
@@ -37,7 +40,7 @@ export function Pipeline() {
                 className={cn("h-2.5 w-2.5 rounded-full border", NODE_TONE[status])}
                 aria-hidden
               />
-              {STATUS_LABEL[status]}
+              {c.pipeline.statusLabel[status]}
             </li>
           ))}
         </ul>
@@ -45,7 +48,7 @@ export function Pipeline() {
 
       <Reveal delay={0.1}>
         <ol className="mt-8 flex snap-x gap-2 overflow-x-auto pb-3 lg:grid lg:grid-cols-5 lg:overflow-visible">
-          {PIPELINE.map((entry, index) => {
+          {steps.map((entry, index) => {
             const selected = entry.id === step.id;
             return (
               <li key={entry.id} className="snap-start">
@@ -64,7 +67,7 @@ export function Pipeline() {
                     <span
                       className={cn(
                         "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border font-mono text-[11px]",
-                        NODE_TONE[entry.status]
+                        NODE_TONE[entry.status as PhaseStatus]
                       )}
                     >
                       {index + 1}
@@ -90,7 +93,7 @@ export function Pipeline() {
         <div className="mt-4 rounded-card border border-border bg-surface p-6 md:p-8">
           <div className="flex flex-wrap items-center gap-3">
             <h3 className="text-lg font-semibold tracking-tight">{step.title}</h3>
-            <StatusPill status={step.status} />
+            <StatusPill status={step.status as PhaseStatus} />
           </div>
           <p className="mt-3 max-w-3xl text-pretty leading-relaxed text-muted">{step.detail}</p>
         </div>
