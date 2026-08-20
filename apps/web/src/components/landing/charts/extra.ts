@@ -54,14 +54,108 @@ export interface LandingExtra {
   };
 }
 
-const loadJson = async (path: string): Promise<LandingExtra> => {
+export interface MountainBlock {
+  family: string;
+  symbol: string;
+  n_evaluations: number;
+  n_total: number;
+  share_failed: number;
+  share_positive: number;
+  best: number;
+  median: number;
+  bins: NullBin[];
+}
+
+export interface FoldsBlock {
+  family: string;
+  symbol: string;
+  n_seeds: number;
+  folds: { fold: number; test_start: string; mean: number; min: number; max: number }[];
+  n_positive: number;
+  top2_share_of_gains: number | null;
+}
+
+export interface RsGaBlock {
+  metric: string;
+  families: { family: string; n_seeds: number; rs: number; ga: number }[];
+}
+
+export interface MetaBlock {
+  family: string;
+  symbol: string;
+  n_events: number;
+  primary_total_return: number;
+  meta_total_return: number;
+  median_roc_auc: number;
+  abstention_rate: number;
+  folds_improved: number;
+  folds_profitable: number;
+  n_folds: number;
+  selected_models: string[];
+}
+
+export interface MarketStructureBlock {
+  symbol: string;
+  underwater: { t: number; dd: number }[];
+  underwater_stats: {
+    share_below_peak: number;
+    max_drawdown: number;
+    longest_underwater_days: number;
+  };
+  seasonality: { w: number; h: number; v: number }[];
+  funding: { t: number; r: number }[];
+  funding_stats: {
+    n_events: number;
+    mean_rate: number;
+    annualised_mean: number;
+    share_positive: number;
+  };
+}
+
+export interface LandingExtraFull extends LandingExtra {
+  mountain: MountainBlock;
+  folds: FoldsBlock;
+  rs_ga: RsGaBlock;
+  meta: MetaBlock;
+  market_structure: MarketStructureBlock;
+}
+
+const loadJson = async (path: string): Promise<LandingExtraFull> => {
   const response = await fetch(path);
   if (!response.ok) throw new Error(`${response.status} ${path}`);
   return response.json();
 };
 
 export function useLandingExtra() {
-  return useSWR<LandingExtra>("/data/landing_extra.json", loadJson, {
+  return useSWR<LandingExtraFull>("/data/landing_extra.json", loadJson, {
+    revalidateOnFocus: false,
+  });
+}
+
+/** The strategy-explorer export of the best family, reused for the seed fan. */
+export interface SeedFanFile {
+  family: string;
+  per_asset: Record<
+    string,
+    {
+      oos_start: string;
+      oos_end: string;
+      n_bars: number;
+      buy_and_hold: { total_return: number | null };
+      seeds: { seed: number; curve: number[] }[];
+      average_curve: number[];
+    }
+  >;
+}
+
+const loadFan = async (path: string): Promise<SeedFanFile> => {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(`${response.status} ${path}`);
+  return response.json();
+};
+
+export function useSeedFan() {
+  return useSWR<SeedFanFile>("/data/strategies/volatility_breakout.json", loadFan, {
     revalidateOnFocus: false,
   });
 }

@@ -148,8 +148,7 @@ export const en: LandingCopy = {
     title: "Selection bias, measured within this study",
     lead:
       "Evaluating many configurations and retaining the best produces favourable metrics " +
-      "even when no signal exists. This section does not argue the point: it measures it, " +
-      "using the study's own searches.",
+      "even when no signal exists. Here it is measured with the study's own searches.",
     loadErrorPrefix: "The study evidence could not be loaded. Generate the file with",
     simpleLabel: "Non-technical reading",
     simpleStrong: "The selected candidates do not keep their advantage.",
@@ -186,7 +185,7 @@ export const en: LandingCopy = {
         buyAndHold: "Buy and hold",
       },
       caption:
-        "Figure 5 · Annualised Sharpe net of costs, in absolute value. “Buy and hold” " +
+        "Figure 8 · Annualised Sharpe net of costs, in absolute value. “Buy and hold” " +
         "is the passive benchmark over the same period.",
     },
   },
@@ -195,19 +194,18 @@ export const en: LandingCopy = {
     eyebrow: "Efficiency and costs",
     title: "The apparent edge against transaction costs",
     lead:
-      "The classical statement of efficiency predicts that no rule based on public " +
-      "information survives net of costs. This section tests it empirically: the same " +
-      "strategy, the same period, varying only the cost per trade.",
+      "Efficiency predicts that no rule on public information survives net of costs. The " +
+      "test: same strategy, same period, varying only the cost per trade.",
     panels: {
       erosionLabel: "Cost erosion",
       erosionTitle: "Where the edge crosses zero",
       erosionCaption:
-        "Figure 6 · Annualised Sharpe on the development partition, varying only the " +
+        "Figure 9 · Annualised Sharpe on the development partition, varying only the " +
         "round-trip cost. All other conditions held fixed.",
       wedgeLabel: "Gross versus net",
       wedgeTitle: "The gap widens with turnover",
       wedgeCaption:
-        "Figure 7 · Each pair of points is a moving-average configuration: above, the " +
+        "Figure 10 · Each pair of points is a moving-average configuration: above, the " +
         "result before costs; below, the same after fees, slippage, and funding.",
     },
     statCrossing: "round-trip cost at which the edge reaches zero",
@@ -541,13 +539,40 @@ export const en: LandingCopy = {
       "it underestimates the extreme event.",
   },
 
+  structure: {
+    eyebrow: "Market structure",
+    title: "Three properties that constrain any strategy",
+    lead:
+      "When the market moves, how much holding punishes, and the cost almost nobody models. " +
+      "All three measured on the study's own data.",
+    seasonTitle: "Volatility by hour and day",
+    seasonCaption:
+      "Figure 4 · Mean absolute move per 1h bar (basis points), UTC hour × weekday, BTC " +
+      "2020–2025. The US session open (14–16 UTC) and the relative weekend calm stand out.",
+    seasonUnit: "bps",
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    underwaterTitle: "Distance from the prior peak (buy and hold)",
+    underwaterCaption:
+      "Figure 5 · Depth of the BTC series relative to its prior maximum, 2020–2025. Even the " +
+      "asset in its best decade spends nearly all its time below an earlier peak.",
+    uwShare: "of the time below a prior peak",
+    uwMaxDd: "maximum drawdown of the period",
+    uwLongest: "consecutive days under water (worst stretch)",
+    fundingTitle: "Funding: the third cost",
+    fundingCaption:
+      "Figure 6 · Weekly mean funding rate of the BTC perpetual ({n} 8h events, 2020–2025). " +
+      "When the rate is positive, longs pay; the study's engine charges it on every exposed " +
+      "bar.",
+    fundingMean: "mean annualised cost of holding a long",
+    fundingPositive: "of events with a positive rate (longs pay)",
+  },
+
   zoo: {
     eyebrow: "The study's denominator",
     title: "All fifteen families evaluated, together",
     lead:
-      "Each line is the seed-averaged equity (ten seeds) of one strategy family on BTC out " +
-      "of sample. Industry practice publishes the best curve and omits the rest; this study " +
-      "publishes the full set, because the number of attempts is part of the result.",
+      "Each line is the seed-averaged equity (ten seeds) of one family on BTC out of " +
+      "sample. The full set is published: the number of attempts is part of the result.",
     bestLabel: "best average",
     worstLabel: "worst average",
     othersLabel: "remaining families",
@@ -556,7 +581,7 @@ export const en: LandingCopy = {
     tooltipBest: "best",
     tooltipWorst: "worst",
     caption:
-      "Figure 8 · Concatenated walk-forward test window (2022–2025), random-search engine, " +
+      "Figure 11 · Concatenated walk-forward test window (2022–2025), random-search engine, " +
       "average of ten seeds per family. In colour, the best and worst final averages; the " +
       "rest in grey. Curves decimated for drawing while preserving exact values.",
     stats: {
@@ -566,11 +591,50 @@ export const en: LandingCopy = {
       worst: "worst average curve",
     },
     closing:
-      "That some curves finish positive does not contradict the verdict: with fifteen " +
-      "attempts, chance alone guarantees apparent winners. The relevant question is not " +
-      "which went up, but whether any rises more than chance would produce — and that is " +
-      "tested in the next section.",
+      "With fifteen attempts, chance alone guarantees apparent winners. The relevant " +
+      "question is not which went up, but whether any rises more than chance would produce.",
     exploreLink: "Explore all fifteen families, seed by seed →",
+  },
+
+  anatomy: {
+    eyebrow: "Anatomy of the search",
+    title: "The best family, from the inside",
+    lead:
+      "Four cuts through volatility_breakout, the study's best-ranked family — and still " +
+      "rejected: what the search produces, how much depends on the seed, where the gains " +
+      "concentrate, and whether the optimizer matters.",
+    fanTitle: "Ten seeds, ten outcomes",
+    fanCaption:
+      "Figure 12 · Out-of-sample equity of each seed (thin lines) and their average (thick), " +
+      "against buy and hold. The dispersion across seeds is part of the result, not a " +
+      "technical detail.",
+    fanAvg: "seed average",
+    fanBh: "buy and hold",
+    mountainTitle: "The mountain of attempts",
+    mountainCaption:
+      "Figure 13 · Validation Sharpe of the {n} evaluations (candidate × fold) of the random " +
+      "search across ten seeds. The configuration any strategy vendor publishes is the right " +
+      "tail of a mountain like this one.",
+    mountainStats: {
+      n: "evaluations recorded",
+      positive: "with positive validation Sharpe",
+      median: "median Sharpe of the search",
+      failed: "infeasible combinations discarded",
+    },
+    foldsTitle: "Return per walk-forward fold",
+    foldsCaption:
+      "Figure 14 · Test return per temporal fold, average of ten seeds; whiskers mark the " +
+      "minimum and maximum across seeds. Gains do not spread out: they concentrate in " +
+      "specific calendar windows.",
+    foldsStat1: "folds out of fifteen finish positive",
+    foldsStat2: "of the mean gains concentrated in the two best folds",
+    rsgaTitle: "Random search versus genetic algorithm",
+    rsgaCaption:
+      "Figure 15 · Mean test Sharpe of per-fold winners, identical budget (2,000 " +
+      "evaluations) and ten seeds per family, BTC. A more sophisticated optimizer finds no " +
+      "more edge when there is none: both end negative across all five families.",
+    rs: "random search",
+    ga: "genetic algorithm",
   },
 
   verdict: {
@@ -651,13 +715,12 @@ export const en: LandingCopy = {
     eyebrow: "Randomisation test",
     title: "The best family against its own null",
     lead:
-      "The study's best family is stripped of the one thing that makes it a strategy: its " +
-      "positions are rotated to a random point in time, a thousand times per seed, " +
-      "preserving exposure, turnover, and costs. The grey distribution is what that " +
-      "structured chance produces; the green lines are the ten real runs.",
+      "The best family's positions are rotated to a random point in time, a thousand times " +
+      "per seed, preserving exposure and costs. The grey is that structured chance; the " +
+      "green lines, the ten real runs.",
     xAxisLabel: "total return over the out-of-sample period",
     caption:
-      "Figure 9 · {family} · {symbol} · {rotations} rotations (10 seeds × 1,000) · shaded " +
+      "Figure 16 · {family} · {symbol} · {rotations} rotations (10 seeds × 1,000) · shaded " +
       "band: central 95% of the null · same seed and parameters as the study's homologous " +
       "figure. For readability the histogram omits the most extreme 1% of the tail; the " +
       "band and percentiles are computed on the full sample.",
@@ -673,20 +736,43 @@ export const en: LandingCopy = {
       "costs, identical exposure, and zero information.",
   },
 
+  mlfilter: {
+    eyebrow: "Machine learning",
+    title: "The filter that learns not to trade",
+    lead:
+      "Meta-labeling on real data: a classifier (logistic regression, random forest, " +
+      "LightGBM) decides which of the base strategy's signals to execute and when to " +
+      "abstain.",
+    barPrimary: "base strategy",
+    barMeta: "with ML filter",
+    caption:
+      "Figure 17 · Out-of-sample total return of the base strategy and of the same strategy " +
+      "filtered. {family} · {symbol} · {n} events labelled by triple barrier with embedded " +
+      "costs · validation on purged chronological folds.",
+    roc: "median classifier ROC — consistent with chance",
+    abst: "filter abstention rate",
+    folds: "profitable folds after filtering",
+    body:
+      "The filter improves the outcome in all four folds, but through abstention: it cuts " +
+      "losses rather than generating profit. With a ROC of 0.55 on ~45 events per fold, the " +
+      "predictive power is indistinguishable from chance; the improvement is cost economics, " +
+      "not prediction. That is the honest reading of the ML layer, and why it is classified " +
+      "as infrastructure rather than an operational candidate.",
+  },
+
   funded: {
     eyebrow: "Application: funded-account evaluations",
     title: "The pass rate under the null hypothesis",
     lead:
-      "The published rules of two real crypto prop firms are applied to a thousand paths of " +
-      "the study's best strategy — statistically indistinguishable from chance — and to a " +
-      "fair coin with the same trade timing and costs. Neither process contains " +
-      "information; both pass at a measurable rate.",
+      "The published rules of two real prop firms, applied to a thousand paths of the " +
+      "study's best strategy and to a fair coin with the same trade timing and costs. " +
+      "Neither process contains information; both pass.",
     phase1Title: "Phase 1",
     bothTitle: "Both phases",
     armStrategy: "strategy",
     armCoin: "fair coin",
     caption:
-      "Figure 10 · {paths} paths per arm. Rules transcribed from each firm's public pages " +
+      "Figure 18 · {paths} paths per arm. Rules transcribed from each firm's public pages " +
       "(sources and retrieval date in the artifact). Unmodelled qualitative rules — " +
       "consistency, mandatory stop, minimum trading days — would only lower the rates, so " +
       "these figures are upper bounds.",

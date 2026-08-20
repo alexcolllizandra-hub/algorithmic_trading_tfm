@@ -9,7 +9,10 @@ import { FundedOdds } from "@/components/landing/FundedOdds";
 import { Hero } from "@/components/landing/Hero";
 import { Integrity } from "@/components/landing/Integrity";
 import { MarketDashboard } from "@/components/landing/MarketDashboard";
+import { MarketStructure } from "@/components/landing/MarketStructure";
+import { MetaFilter } from "@/components/landing/MetaFilter";
 import { NullDistribution } from "@/components/landing/NullDistribution";
+import { SearchAnatomy } from "@/components/landing/SearchAnatomy";
 import { Overfitting } from "@/components/landing/Overfitting";
 import { Pipeline } from "@/components/landing/Pipeline";
 import { PlainExplanation } from "@/components/landing/PlainExplanation";
@@ -37,9 +40,12 @@ export default function LandingPage() {
       <Architecture />
       <Integrity />
       <MarketDashboard />
+      <MarketStructure />
       <FamilyZoo />
+      <SearchAnatomy />
       <Verdict />
       <NullDistribution />
+      <MetaFilter />
       <FundedOdds />
       <Roadmap />
       <FinalCta />

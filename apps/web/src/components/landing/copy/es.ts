@@ -151,9 +151,8 @@ export const es = {
     eyebrow: "El problema central",
     title: "El sesgo de selección, medido en este estudio",
     lead:
-      "Evaluar muchas configuraciones y retener la mejor produce métricas favorables incluso " +
-      "cuando no existe señal alguna. Esta sección no lo argumenta: lo mide, con las propias " +
-      "búsquedas del estudio.",
+      "Evaluar muchas configuraciones y retener la mejor produce métricas favorables aunque " +
+      "no exista señal. Aquí está medido con las búsquedas del propio estudio.",
     loadErrorPrefix: "No se pudo cargar la evidencia del estudio. Genere el fichero con",
     simpleLabel: "Lectura no técnica",
     simpleStrong: "Los seleccionados no mantienen su ventaja.",
@@ -191,7 +190,7 @@ export const es = {
         buyAndHold: "Comprar y mantener",
       },
       caption:
-        "Figura 5 · Sharpe anualizado neto de costes, en valor absoluto. «Comprar y mantener» " +
+        "Figura 8 · Sharpe anualizado neto de costes, en valor absoluto. «Comprar y mantener» " +
         "es la referencia pasiva del mismo periodo.",
     },
   },
@@ -200,19 +199,19 @@ export const es = {
     eyebrow: "Eficiencia y costes",
     title: "La ventaja aparente frente al coste de transacción",
     lead:
-      "La formulación clásica de la eficiencia predice que ninguna regla basada en información " +
-      "pública sobrevive neta de costes. Esta sección la contrasta empíricamente: la misma " +
-      "estrategia, el mismo periodo, variando únicamente el coste por operación.",
+      "La eficiencia predice que ninguna regla sobre información pública sobrevive neta de " +
+      "costes. Contraste: misma estrategia, mismo periodo, variando solo el coste por " +
+      "operación.",
     panels: {
       erosionLabel: "Erosión por costes",
       erosionTitle: "El punto de cruce de la ventaja",
       erosionCaption:
-        "Figura 6 · Sharpe anualizado sobre la partición de desarrollo, variando únicamente el " +
+        "Figura 9 · Sharpe anualizado sobre la partición de desarrollo, variando únicamente el " +
         "coste de ida y vuelta. El resto de condiciones permanece fijo.",
       wedgeLabel: "Bruto frente a neto",
       wedgeTitle: "La brecha crece con la rotación",
       wedgeCaption:
-        "Figura 7 · Cada par de puntos es una configuración de medias móviles: arriba, el " +
+        "Figura 10 · Cada par de puntos es una configuración de medias móviles: arriba, el " +
         "resultado antes de costes; debajo, el mismo tras comisiones, deslizamiento y funding.",
     },
     statCrossing: "coste por operación completa al que la ventaja se anula",
@@ -548,14 +547,43 @@ export const es = {
       "asuma subestima el suceso extremo.",
   },
 
+  structure: {
+    eyebrow: "Estructura del mercado",
+    title: "Tres propiedades que condicionan cualquier estrategia",
+    lead:
+      "Cuándo se mueve el mercado, cuánto castiga mantener y el coste que casi nunca se " +
+      "modela. Las tres, medidas sobre los mismos datos del estudio.",
+    seasonTitle: "Volatilidad por hora y día",
+    seasonCaption:
+      "Figura 4 · Movimiento medio absoluto por barra de 1h (puntos básicos), hora UTC × día " +
+      "de la semana, BTC 2020–2025. Destacan la apertura de la sesión estadounidense " +
+      "(14–16 UTC) y la calma relativa del fin de semana.",
+    seasonUnit: "pb",
+    days: ["L", "M", "X", "J", "V", "S", "D"],
+    underwaterTitle: "Distancia al máximo previo (comprar y mantener)",
+    underwaterCaption:
+      "Figura 5 · Profundidad de la serie de BTC respecto a su máximo previo, 2020–2025. " +
+      "Incluso el activo en su mejor década pasa casi todo el tiempo por debajo de un máximo " +
+      "anterior.",
+    uwShare: "del tiempo por debajo de un máximo previo",
+    uwMaxDd: "caída máxima del periodo",
+    uwLongest: "días consecutivos bajo el agua (el peor tramo)",
+    fundingTitle: "Funding: el tercer coste",
+    fundingCaption:
+      "Figura 6 · Media semanal del funding rate del perpetuo de BTC ({n} eventos de 8h, " +
+      "2020–2025). Con tasa positiva, quien está largo paga; el motor del estudio lo cobra " +
+      "en cada barra expuesta.",
+    fundingMean: "coste medio anualizado de mantener un largo",
+    fundingPositive: "de los eventos con tasa positiva (paga el largo)",
+  },
+
   zoo: {
     eyebrow: "El denominador del estudio",
     title: "Las quince familias evaluadas, en conjunto",
     lead:
-      "Cada línea es la equity media (diez semillas) de una familia de estrategias sobre BTC " +
-      "fuera de muestra. La práctica habitual del sector publica la mejor curva y omite las " +
-      "demás; este estudio publica el conjunto completo, porque el número de intentos forma " +
-      "parte del resultado.",
+      "Cada línea es la equity media (diez semillas) de una familia sobre BTC fuera de " +
+      "muestra. Se publica el conjunto completo: el número de intentos forma parte del " +
+      "resultado.",
     bestLabel: "mejor media",
     worstLabel: "peor media",
     othersLabel: "familias restantes",
@@ -564,7 +592,7 @@ export const es = {
     tooltipBest: "mejor",
     tooltipWorst: "peor",
     caption:
-      "Figura 8 · Ventana de prueba walk-forward concatenada (2022–2025), motor de búsqueda " +
+      "Figura 11 · Ventana de prueba walk-forward concatenada (2022–2025), motor de búsqueda " +
       "aleatoria, media de diez semillas por familia. En color, la mejor y la peor media " +
       "finales; el resto en gris. Curvas decimadas para el trazado conservando valores exactos.",
     stats: {
@@ -574,11 +602,51 @@ export const es = {
       worst: "peor curva media",
     },
     closing:
-      "Que algunas curvas terminen en positivo no contradice el veredicto: con quince " +
-      "intentos, el azar por sí solo garantiza ganadores aparentes. La pregunta relevante no " +
-      "es cuál subió, sino si alguna sube más de lo esperable por azar — y esa se contrasta " +
-      "en la sección siguiente.",
+      "Con quince intentos, el azar por sí solo garantiza ganadores aparentes. La pregunta " +
+      "relevante no es cuál subió, sino si alguna sube más de lo esperable por azar.",
     exploreLink: "Explorar las quince familias, semilla a semilla →",
+  },
+
+  anatomy: {
+    eyebrow: "Anatomía de la búsqueda",
+    title: "La mejor familia, por dentro",
+    lead:
+      "Cuatro cortes sobre volatility_breakout, la familia mejor clasificada del estudio — y " +
+      "aun así rechazada: qué produce la búsqueda, cuánto depende de la semilla, dónde se " +
+      "concentra la ganancia y si el optimizador importa.",
+    fanTitle: "Diez semillas, diez resultados",
+    fanCaption:
+      "Figura 12 · Equity out-of-sample de cada semilla (líneas finas) y su media (gruesa), " +
+      "frente a comprar y mantener. La dispersión entre semillas es parte del resultado, no " +
+      "un detalle técnico.",
+    fanAvg: "media de semillas",
+    fanBh: "comprar y mantener",
+    mountainTitle: "La montaña de intentos",
+    mountainCaption:
+      "Figura 13 · Sharpe de validación de las {n} evaluaciones (candidato × pliegue) de la " +
+      "búsqueda aleatoria en diez semillas. La configuración publicada por cualquier vendedor " +
+      "de estrategias es la cola derecha de una montaña como esta.",
+    mountainStats: {
+      n: "evaluaciones registradas",
+      positive: "con Sharpe de validación positivo",
+      median: "Sharpe mediano de la búsqueda",
+      failed: "combinaciones inviables descartadas",
+    },
+    foldsTitle: "Retorno por pliegue walk-forward",
+    foldsCaption:
+      "Figura 14 · Retorno de test por pliegue temporal, media de diez semillas; los bigotes " +
+      "marcan mínimo y máximo entre semillas. La ganancia no se reparte: se concentra en " +
+      "ventanas concretas del calendario.",
+    foldsStat1: "pliegues de quince terminan en positivo",
+    foldsStat2: "de la ganancia media concentrada en los dos mejores pliegues",
+    rsgaTitle: "Búsqueda aleatoria frente a algoritmo genético",
+    rsgaCaption:
+      "Figura 15 · Sharpe medio de test de los ganadores por pliegue, con presupuesto " +
+      "idéntico (2.000 evaluaciones) y diez semillas por familia, BTC. Un optimizador más " +
+      "sofisticado no encuentra más ventaja cuando no la hay: ambos terminan en negativo en " +
+      "las cinco familias.",
+    rs: "búsqueda aleatoria",
+    ga: "algoritmo genético",
   },
 
   verdict: {
@@ -658,13 +726,12 @@ export const es = {
     eyebrow: "Contraste por aleatorización",
     title: "La mejor familia frente a su propio nulo",
     lead:
-      "A la mejor familia del estudio se le retira lo único que la constituye como " +
-      "estrategia: sus posiciones se rotan a un punto aleatorio del tiempo, mil veces por " +
-      "semilla, conservando exposición, rotación y costes. La distribución gris es lo que " +
-      "produce ese azar estructurado; las líneas verdes son las diez ejecuciones reales.",
+      "Las posiciones de la mejor familia se rotan a un punto aleatorio del tiempo, mil " +
+      "veces por semilla, conservando exposición y costes. El gris es ese azar estructurado; " +
+      "las líneas verdes, las diez ejecuciones reales.",
     xAxisLabel: "retorno total del periodo fuera de muestra",
     caption:
-      "Figura 9 · {family} · {symbol} · {rotations} rotaciones (10 semillas × 1.000) · banda " +
+      "Figura 16 · {family} · {symbol} · {rotations} rotaciones (10 semillas × 1.000) · banda " +
       "sombreada: 95% central del nulo · misma semilla y parámetros que la figura homóloga " +
       "del estudio. Para la legibilidad, el histograma omite el 1% más extremo de la cola; la " +
       "banda y los percentiles se calculan sobre la muestra completa.",
@@ -680,20 +747,43 @@ export const es = {
       "idéntica exposición y ninguna información.",
   },
 
+  mlfilter: {
+    eyebrow: "Aprendizaje automático",
+    title: "El filtro que aprende a no operar",
+    lead:
+      "Meta-labeling sobre datos reales: un clasificador (regresión logística, random " +
+      "forest, LightGBM) decide qué señales de la estrategia base ejecutar y cuándo " +
+      "abstenerse.",
+    barPrimary: "estrategia base",
+    barMeta: "con filtro ML",
+    caption:
+      "Figura 17 · Retorno total out-of-sample de la estrategia base y de la misma " +
+      "estrategia filtrada. {family} · {symbol} · {n} eventos etiquetados por triple " +
+      "barrera con costes · validación por pliegues cronológicos purgados.",
+    roc: "ROC mediana del clasificador — compatible con el azar",
+    abst: "tasa de abstención del filtro",
+    folds: "pliegues rentables tras filtrar",
+    body:
+      "El filtro mejora el resultado en los cuatro pliegues, pero por la vía de la " +
+      "abstención: reduce pérdidas, no genera beneficio. Con un ROC de 0,55 sobre ~45 " +
+      "eventos por pliegue, la capacidad predictiva es indistinguible del azar; la mejora " +
+      "es economía de costes, no predicción. Es la lectura honesta de la capa de ML, y por " +
+      "eso se clasifica como infraestructura y no como candidato operativo.",
+  },
+
   funded: {
     eyebrow: "Aplicación: evaluaciones de fondeo",
     title: "La tasa de aprobación bajo la hipótesis nula",
     lead:
-      "Las reglas publicadas de dos empresas reales de cuentas fondeadas se aplican a mil " +
-      "trayectorias de la mejor estrategia del estudio — estadísticamente indistinguible del " +
-      "azar — y a una moneda equilibrada con sus mismos tiempos y costes. Ninguno de los dos " +
-      "procesos contiene información; ambos aprueban con frecuencia medible.",
+      "Las reglas publicadas de dos empresas reales de fondeo, aplicadas a mil trayectorias " +
+      "de la mejor estrategia del estudio y a una moneda equilibrada con sus mismos tiempos " +
+      "y costes. Ninguno de los dos procesos contiene información; ambos aprueban.",
     phase1Title: "Fase 1",
     bothTitle: "Ambas fases",
     armStrategy: "estrategia",
     armCoin: "moneda equilibrada",
     caption:
-      "Figura 10 · {paths} trayectorias por brazo. Reglas transcritas de las páginas públicas " +
+      "Figura 18 · {paths} trayectorias por brazo. Reglas transcritas de las páginas públicas " +
       "de cada firma (fuentes y fecha de consulta en el artefacto). Las reglas cualitativas " +
       "no modeladas — consistencia, stop obligatorio, mínimo de días — solo reducirían las " +
       "tasas, por lo que estas cifras son cotas superiores.",

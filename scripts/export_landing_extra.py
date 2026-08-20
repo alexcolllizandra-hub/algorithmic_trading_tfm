@@ -134,6 +134,234 @@ def funded_block() -> dict:
     return {"n_paths": 1000, "firms": firms}
 
 
+ROB_PATH = Path(
+    "artifacts/runs/r3_full_budget100_ga21/volatility_breakout/study_robustness.json"
+)
+R3_ROOT = Path("artifacts/runs/r3_full_budget100_ga21")
+R3_FAMILIES = (
+    "breakout",
+    "BTC_ETH_confirmation",
+    "funding",
+    "mean_reversion",
+    "volatility_breakout",
+)
+
+
+def _vb_btc_run_dirs() -> list[str]:
+    """The ten BTCUSDT random-search run dirs of the study's best family."""
+    rob = json.loads(ROB_PATH.read_text(encoding="utf-8"))
+    units = {
+        k: v
+        for k, v in rob["per_run"].items()
+        if "BTCUSDT" in k and "random_search" in k
+    }
+    return [entry["run_dir"] for _key, entry in sorted(units.items())]
+
+
+def mountain_block() -> dict:
+    """Pooled validation Sharpe of every random-search evaluation (10 seeds)."""
+    import polars as pl
+
+    values = []
+    n_failed = 0
+    n_total = 0
+    for run_dir in _vb_btc_run_dirs():
+        cand = pl.read_parquet(Path(run_dir) / "random_search_candidates.parquet")
+        n_total += cand.height
+        n_failed += cand.filter(pl.col("status") != "evaluated").height
+        ok = cand.filter(pl.col("status") == "evaluated")["mean_val_sharpe"]
+        values.extend(ok.to_list())
+    arr = np.asarray(values, dtype=float)
+    arr = arr[np.isfinite(arr)]
+    counts, edges = np.histogram(arr, bins=60)
+    density = counts / counts.max()
+    return {
+        "family": "volatility_breakout",
+        "symbol": "BTCUSDT",
+        "n_evaluations": int(arr.size),
+        "n_total": int(n_total),
+        "share_failed": round(n_failed / n_total, 4),
+        "share_positive": round(float((arr > 0).mean()), 4),
+        "best": round(float(arr.max()), 4),
+        "median": round(float(np.median(arr)), 4),
+        "bins": [
+            {"x": round(float((edges[i] + edges[i + 1]) / 2), 4), "d": round(float(density[i]), 4)}
+            for i in range(len(counts))
+        ],
+    }
+
+
+def folds_block() -> dict:
+    """Per-fold out-of-sample test return of the best family, across 10 seeds."""
+    import polars as pl
+
+    run_dirs = _vb_btc_run_dirs()
+    fold_meta = json.loads((Path(run_dirs[0]) / "folds.json").read_text(encoding="utf-8"))
+    n_folds = len(fold_meta["folds"])
+    rows = []
+    for k in range(n_folds):
+        returns = []
+        for run_dir in run_dirs:
+            eq = pl.read_parquet(Path(run_dir) / f"random_search_fold{k}_test_equity.parquet")
+            returns.append(float(eq["equity"][-1]) - 1.0)
+        arr = np.asarray(returns)
+        rows.append(
+            {
+                "fold": k,
+                "test_start": fold_meta["folds"][k]["test_start"][:10],
+                "mean": round(float(arr.mean()), 4),
+                "min": round(float(arr.min()), 4),
+                "max": round(float(arr.max()), 4),
+            }
+        )
+    positive = [r for r in rows if r["mean"] > 0]
+    total_positive_mean = sum(r["mean"] for r in positive)
+    total_mean = sum(abs(r["mean"]) for r in rows) or 1.0
+    top2 = sorted((r["mean"] for r in rows), reverse=True)[:2]
+    return {
+        "family": "volatility_breakout",
+        "symbol": "BTCUSDT",
+        "n_seeds": len(run_dirs),
+        "folds": rows,
+        "n_positive": len(positive),
+        "top2_share_of_gains": round(
+            sum(top2) / total_positive_mean, 4
+        ) if total_positive_mean > 0 else None,
+    }
+
+
+def rs_ga_block() -> dict:
+    """Random search vs genetic algorithm, same budget, per R3 family (BTC)."""
+    rows = []
+    for family in R3_FAMILIES:
+        rob = json.loads(
+            (R3_ROOT / family / "study_robustness.json").read_text(encoding="utf-8")
+        )
+        rs_vals = []
+        ga_vals = []
+        for key, entry in sorted(rob["per_run"].items()):
+            if "BTCUSDT" not in key or "random_search" not in key:
+                continue
+            comp = json.loads(
+                (Path(entry["run_dir"]) / "comparison_summary.json").read_text(encoding="utf-8")
+            )
+            methods = comp["methods"]
+            rs_vals.append(methods["random_search"]["aggregate_test"]["mean_test_sharpe"])
+            ga_vals.append(methods["genetic_algorithm"]["aggregate_test"]["mean_test_sharpe"])
+        if not rs_vals:
+            continue
+        rows.append(
+            {
+                "family": family,
+                "n_seeds": len(rs_vals),
+                "rs": round(float(np.mean(rs_vals)), 3),
+                "ga": round(float(np.mean(ga_vals)), 3),
+            }
+        )
+    return {"metric": "mean test Sharpe of per-fold winners", "families": rows}
+
+
+def meta_block() -> dict:
+    """Headline numbers of the real-data meta-labeling study (RQ3)."""
+    m = json.loads(
+        Path("reports/meta_labeling_real/meta_labeling_real.json").read_text(encoding="utf-8")
+    )
+    s = m["study"]["summary"]
+    return {
+        "family": m["family"],
+        "symbol": m["symbol"],
+        "n_events": m["n_events"],
+        "primary_total_return": round(s["primary_only_total_return"], 4),
+        "meta_total_return": round(s["primary_plus_meta_total_return"], 4),
+        "median_roc_auc": round(s["median_roc_auc"], 4),
+        "abstention_rate": round(s["abstention_rate"], 4),
+        "folds_improved": s["folds_improved"],
+        "folds_profitable": s["folds_profitable"],
+        "n_folds": s["n_folds"],
+        "selected_models": s["selected_models"],
+    }
+
+
+def market_structure_block() -> dict:
+    """Funding series, buy-and-hold underwater curve and hour×weekday
+    volatility seasonality — all from the validated/processed BTC datasets."""
+    import polars as pl
+
+    bars = pl.read_parquet("data/processed/BTCUSDT/1h_development.parquet").sort("open_time")
+    close = bars["close"].to_numpy()
+    times = (bars["open_time"].dt.epoch("ms") // 1000).to_numpy()
+
+    # Underwater curve of buy and hold (close vs running maximum).
+    peak = np.maximum.accumulate(close)
+    dd = close / peak - 1.0
+    step = max(1, dd.size // 700)
+    underwater = [
+        {"t": int(times[i]), "dd": round(float(dd[i]), 4)} for i in range(0, dd.size, step)
+    ]
+    under = dd < 0
+    longest = current = 0
+    for flag in under:
+        current = current + 1 if flag else 0
+        longest = max(longest, current)
+
+    # Hour-of-day × weekday mean absolute 1h return, in basis points.
+    rets = np.diff(close) / close[:-1]
+    frame = pl.DataFrame(
+        {
+            "hour": bars["open_time"].dt.hour().to_numpy()[1:],
+            "weekday": bars["open_time"].dt.weekday().to_numpy()[1:],  # 1=Mon..7=Sun
+            "absret": np.abs(rets),
+        }
+    )
+    cells = (
+        frame.group_by(["weekday", "hour"], maintain_order=False)
+        .agg(pl.col("absret").mean())
+        .sort(["weekday", "hour"])
+    )
+    seasonality = [
+        {
+            "w": int(row["weekday"]),
+            "h": int(row["hour"]),
+            "v": round(float(row["absret"]) * 1e4, 1),
+        }
+        for row in cells.to_dicts()
+    ]
+
+    # Weekly mean funding rate (8h events -> weekly average, annualised note).
+    funding = pl.read_parquet("data/validated/BTCUSDT/fundingRate.parquet").sort("funding_time")
+    funding = funding.filter(pl.col("funding_time") < pl.datetime(2026, 1, 1, time_zone="UTC"))
+    weekly = (
+        funding.group_by_dynamic("funding_time", every="1w")
+        .agg(pl.col("funding_rate").mean())
+        .sort("funding_time")
+    )
+    rate = funding["funding_rate"].to_numpy()
+    funding_series = [
+        {
+            "t": int(row["funding_time"].timestamp()),
+            "r": round(float(row["funding_rate"]), 6),
+        }
+        for row in weekly.to_dicts()
+    ]
+    return {
+        "symbol": "BTCUSDT",
+        "underwater": underwater,
+        "underwater_stats": {
+            "share_below_peak": round(float(under.mean()), 4),
+            "max_drawdown": round(float(dd.min()), 4),
+            "longest_underwater_days": int(longest / 24),
+        },
+        "seasonality": seasonality,
+        "funding": funding_series,
+        "funding_stats": {
+            "n_events": int(rate.size),
+            "mean_rate": round(float(rate.mean()), 6),
+            "annualised_mean": round(float(rate.mean()) * 3 * 365, 4),
+            "share_positive": round(float((rate > 0).mean()), 4),
+        },
+    }
+
+
 def main() -> int:
     payload = {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -144,12 +372,20 @@ def main() -> int:
         "families": families_block(),
         "null_distribution": null_block(),
         "funded": funded_block(),
+        "mountain": mountain_block(),
+        "folds": folds_block(),
+        "rs_ga": rs_ga_block(),
+        "meta": meta_block(),
+        "market_structure": market_structure_block(),
     }
     OUT.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
     print(
         f"{OUT} -> {OUT.stat().st_size // 1024} KB | families={len(payload['families'])} "
         f"| null rotations={payload['null_distribution']['n_rotations']} "
-        f"| firms={len(payload['funded']['firms'])}"
+        f"| firms={len(payload['funded']['firms'])} "
+        f"| mountain n={payload['mountain']['n_evaluations']} "
+        f"| folds={len(payload['folds']['folds'])} "
+        f"| rs_ga families={len(payload['rs_ga']['families'])}"
     )
     return 0
 

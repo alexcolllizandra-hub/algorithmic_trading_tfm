@@ -110,31 +110,45 @@ export function Verdict() {
                 <p className="mt-4 text-sm leading-relaxed text-muted">
                   {c.verdict.sensitivity.body}
                 </p>
-                <ul className="mt-6 space-y-2.5">
-                  {data.study.sensitivity.map((row) => (
-                    <li
-                      key={row.definition}
-                      className="flex items-baseline justify-between gap-3 border-b border-border/60 pb-2.5 text-sm last:border-0"
-                    >
-                      <span className="text-muted">
-                        {TEST_COUNT_LABEL[row.definition] ?? row.definition}
-                      </span>
-                      <span className="tabular shrink-0 font-mono text-xs">
-                        {row.n_tests.toLocaleString(intl)} {c.verdict.sensitivity.testsUnit}
-                      </span>
-                      <span
-                        className={
-                          row.any_survive
-                            ? "shrink-0 text-xs text-warn"
-                            : "shrink-0 text-xs text-muted"
-                        }
-                      >
-                        {row.any_survive
-                          ? c.verdict.sensitivity.someSurvive
-                          : c.verdict.sensitivity.noneSurvive}
-                      </span>
-                    </li>
-                  ))}
+                <ul className="mt-6 space-y-3.5">
+                  {(() => {
+                    const maxLog = Math.max(
+                      ...data.study.sensitivity.map((row) => Math.log10(Math.max(10, row.n_tests)))
+                    );
+                    return data.study.sensitivity.map((row) => {
+                      const width = (Math.log10(Math.max(10, row.n_tests)) / maxLog) * 100;
+                      return (
+                        <li key={row.definition} className="text-sm">
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span className="text-muted">
+                              {TEST_COUNT_LABEL[row.definition] ?? row.definition}
+                            </span>
+                            <span className="tabular shrink-0 font-mono text-xs">
+                              {row.n_tests.toLocaleString(intl)} {c.verdict.sensitivity.testsUnit}
+                            </span>
+                            <span
+                              className={
+                                row.any_survive
+                                  ? "shrink-0 text-xs text-warn"
+                                  : "shrink-0 text-xs text-muted"
+                              }
+                            >
+                              {row.any_survive
+                                ? c.verdict.sensitivity.someSurvive
+                                : c.verdict.sensitivity.noneSurvive}
+                            </span>
+                          </div>
+                          {/* Log-scaled bar: the denominator spans 13 to ~5·10^5. */}
+                          <div className="mt-1.5 h-1.5 rounded-full bg-surface-2">
+                            <div
+                              className="h-1.5 rounded-full bg-negative/70"
+                              style={{ width: `${width}%` }}
+                            />
+                          </div>
+                        </li>
+                      );
+                    });
+                  })()}
                 </ul>
               </article>
             </Reveal>
