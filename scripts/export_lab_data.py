@@ -80,9 +80,47 @@ def export_symbol(symbol: str) -> str:
     return f"{out} -> {out.stat().st_size // 1024} KB | bars={bars.height} funding={funding.height}"
 
 
+FOLDS_SOURCE_RUN = "artifacts/runs/search_volatility_breakout_20260810T165249Z_2b3547"
+
+
+def export_folds() -> str:
+    """Export the study's walk-forward fold geometry for the browser lab.
+
+    The dates come from a committed run's ``folds.json`` (all study runs share
+    the same expanding 15-fold geometry over the development partition), so
+    the lab's walk-forward uses the exact windows, purge and embargo the study
+    used — not a re-derivation.
+    """
+    meta = json.loads((Path(FOLDS_SOURCE_RUN) / "folds.json").read_text(encoding="utf-8"))
+    folds = [
+        {
+            "index": f["index"],
+            "train_start": f["train_start"],
+            "train_end": f["train_end"],
+            "val_start": f["val_start"],
+            "val_end": f["val_end"],
+            "test_start": f["test_start"],
+            "test_end": f["test_end"],
+            "purge_bars": f["purge_bars"],
+            "embargo_bars": f["embargo_bars"],
+        }
+        for f in meta["folds"]
+    ]
+    payload = {
+        "source_run": FOLDS_SOURCE_RUN,
+        "n_folds": len(folds),
+        "folds": folds,
+        "generated_at": datetime.now(UTC).isoformat(),
+    }
+    out = OUT_DIR / "folds.json"
+    out.write_text(json.dumps(payload, separators=(",", ":")), encoding="utf-8")
+    return f"{out} -> {out.stat().st_size} B | folds={len(folds)}"
+
+
 def main() -> int:
     for symbol in SYMBOLS:
         print(export_symbol(symbol))
+    print(export_folds())
     return 0
 
 

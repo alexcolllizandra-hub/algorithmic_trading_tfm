@@ -40,6 +40,8 @@ import {
   type Trade,
 } from "@/lib/lab/engine";
 import { STRATEGIES, type StrategyDef, type StrategyId } from "@/lib/lab/strategies";
+import { useAttempts } from "@/lib/lab/attempts";
+import { WalkForwardSection } from "./WalkForwardSection";
 
 const ACCENT = "var(--accent)";
 const CHART = {
@@ -692,6 +694,7 @@ export default function LaboratorioPage() {
   const [slipBps, setSlipBps] = useState(1);
   const [splitPct, setSplitPct] = useState(70);
   const [running, setRunning] = useState(false);
+  const { add: addAttempts } = useAttempts();
   const [result, setResult] = useState<RunResult | null>(null);
 
   const pickStrategy = (id: StrategyId) => {
@@ -715,6 +718,7 @@ export default function LaboratorioPage() {
         const splitIdx = Math.max(1, Math.min(n - 2, Math.floor((splitPct / 100) * n)));
         const bhTrades = extractTrades(bh, data.bars);
         const nullTest = circularShiftTest(ledger, costs, splitIdx, n, N_SHIFTS, 42);
+        addAttempts(1);
         setResult({
           ledger,
           trades,
@@ -935,6 +939,12 @@ export default function LaboratorioPage() {
       </Card>
 
       {running && <Skeleton className="h-72 w-full" />}
+
+      <WalkForwardSection
+        data={data}
+        strategyId={strategyId}
+        costs={{ feeBpsPerSide: feeBps, slippageBpsPerSide: slipBps }}
+      />
 
       {result && data && !running && (
         <>

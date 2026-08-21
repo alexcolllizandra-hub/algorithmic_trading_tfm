@@ -1355,6 +1355,42 @@ export const en = {
     ulcer: "Ulcer index",
     winStreak: "Longest winning streak",
     lossStreak: "Longest losing streak",
+    wf: {
+      title: "Multi-seed walk-forward — the study's protocol",
+      subtitle:
+        "The thesis's validation, miniaturised and runnable: in every fold, parameters are " +
+        "chosen on the validation window and scored exactly once on the 90 test days they " +
+        "never saw. Runs on a separate browser thread.",
+      budget: "Candidates per fold",
+      seeds: "Seeds",
+      run: "Run walk-forward",
+      running: "Running…",
+      seedProgress: "Seed {i} of {n}",
+      foldsNote:
+        "The study's real geometry: {n} folds with purge and embargo, taken verbatim from " +
+        "{run}. Selection by validation Sharpe (a declared simplification of the study's " +
+        "penalised fitness).",
+      fanTitle: "Concatenated out-of-sample equity, per seed",
+      foldsTitle: "Test return per fold (seed average)",
+      explainer:
+        "Set the budget and seeds and run. The honest result is not a curve: it is a fan — " +
+        "the same search with different starting chance produces different outcomes, and " +
+        "that dispersion is part of the answer.",
+      disclaimer:
+        "This walk-forward selects on validation and scores on test, but it remains an " +
+        "exploratory tool: the study additionally corrected for multiple comparisons across " +
+        "every family tried — and under that correction none survived.",
+    },
+    attempts: {
+      title: "Session attempts counter",
+      body:
+        "Backtests run in this browser. With this many tries and no skill at all, the best " +
+        "Sharpe expected from pure chance is already ≈ {sharpe}.",
+      compare:
+        "Your best OOS Sharpe: {best}. The chance threshold at your attempt count: {chance}. " +
+        "If it does not clear that bar comfortably, selection — not the strategy — explains " +
+        "the result.",
+    },
     pretrainedTitle: "The families already studied",
     pretrainedBody:
       "The fifteen families of the formal study — with their ten seeds, full walk-forward, and " +

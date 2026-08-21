@@ -1356,6 +1356,42 @@ export const es = {
     ulcer: "Índice de úlcera",
     winStreak: "Racha ganadora más larga",
     lossStreak: "Racha perdedora más larga",
+    wf: {
+      title: "Walk-forward multi-semilla — el protocolo del estudio",
+      subtitle:
+        "La misma validación de la tesis, en miniatura y ejecutable: en cada pliegue se " +
+        "eligen parámetros en la ventana de validación y se puntúan una sola vez en los 90 " +
+        "días de test que nunca vieron. Corre en un hilo aparte del navegador.",
+      budget: "Candidatos por pliegue",
+      seeds: "Semillas",
+      run: "Ejecutar walk-forward",
+      running: "Ejecutando…",
+      seedProgress: "Semilla {i} de {n}",
+      foldsNote:
+        "Geometría real del estudio: {n} pliegues con purga y embargo, tomados literalmente " +
+        "de {run}. Selección por Sharpe de validación (simplificación declarada del fitness " +
+        "penalizado del estudio).",
+      fanTitle: "Equity out-of-sample concatenada, por semilla",
+      foldsTitle: "Retorno de test por pliegue (media de semillas)",
+      explainer:
+        "Configure presupuesto y semillas y ejecute. El resultado honesto no es una curva: " +
+        "es un abanico — la misma búsqueda con distinto azar de arranque produce resultados " +
+        "distintos, y esa dispersión es parte de la respuesta.",
+      disclaimer:
+        "Este walk-forward selecciona en validación y evalúa en test, pero sigue siendo una " +
+        "herramienta exploratoria: el estudio añadió además corrección por comparaciones " +
+        "múltiples entre todas las familias probadas — y bajo esa corrección ninguna " +
+        "sobrevivió.",
+    },
+    attempts: {
+      title: "Contador de intentos de la sesión",
+      body:
+        "Backtests ejecutados en este navegador. Con este número de intentos sin habilidad " +
+        "alguna, el mejor Sharpe esperable por puro azar ya es ≈ {sharpe}.",
+      compare:
+        "Su mejor Sharpe OOS: {best}. Umbral del azar con sus intentos: {chance}. Si no lo " +
+        "supera con holgura, la selección — no la estrategia — explica el resultado.",
+    },
     pretrainedTitle: "Las familias ya estudiadas",
     pretrainedBody:
       "Las quince familias del estudio formal — con sus diez semillas, su walk-forward completo y " +
