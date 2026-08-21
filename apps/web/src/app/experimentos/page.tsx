@@ -25,6 +25,7 @@ import type {
   RunSummary,
 } from "@/lib/api-types";
 import { useI18n } from "@/lib/i18n";
+import { useRb } from "@/lib/i18n/runBrowser";
 import { fmtInt, fmtRatio, fmtSignedPercent, signClass } from "@/lib/format";
 import { metricHelp } from "@/lib/metrics";
 import { useAnalytics, useCandidates, useComparison, useFolds, useRun, useRuns } from "@/lib/hooks";
@@ -57,6 +58,7 @@ function ApiRequiredBanner({ onRetry }: { onRetry: () => void }) {
 }
 
 function ExperimentosInner() {
+  const rb = useRb();
   const t = useI18n();
   const params = useSearchParams();
   const router = useRouter();
@@ -79,11 +81,11 @@ function ExperimentosInner() {
       <div className="flex flex-wrap gap-1 border-b border-border">
         {(
           [
-            ["lista", "Lista"],
-            ["detalle", "Detalle"],
-            ["rendimiento", "Rendimiento"],
-            ["analytics", "Analytics"],
-            ["fairness", "Validez"],
+            ["lista", rb.tabList],
+            ["detalle", rb.tabDetail],
+            ["rendimiento", rb.tabPerformance],
+            ["analytics", rb.tabAnalytics],
+            ["fairness", rb.tabValidity],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -114,6 +116,7 @@ function ExperimentosInner() {
 }
 
 function RunsList() {
+  const rb = useRb();
   const { data, error, isLoading, mutate } = useRuns();
   const [family, setFamily] = useState("");
   const [kind, setKind] = useState("");
@@ -146,12 +149,12 @@ function RunsList() {
     },
     { key: "kind", header: "Tipo", render: (r) => <RunKindBadge kind={r.kind} /> },
     { key: "family", header: "Familia", render: (r) => r.family },
-    { key: "symbol", header: "Símbolo", render: (r) => `${r.symbol} ${r.timeframe}` },
+    { key: "symbol", header: rb.symbol, render: (r) => `${r.symbol} ${r.timeframe}` },
     { key: "folds", header: "Folds", align: "right", render: (r) => fmtInt(r.n_folds) },
     { key: "budget", header: "Budget", align: "right", render: (r) => fmtInt(r.budget) },
     {
       key: "best",
-      header: "Mejor OOS",
+      header: rb.bestOos,
       render: (r) => (r.best_method ? <Badge tone="accent">{r.best_method}</Badge> : "—"),
     },
   ];
@@ -162,23 +165,23 @@ function RunsList() {
         <div className="flex flex-wrap items-end gap-4">
           <FilterSelect
             id="f-family"
-            label="Familia"
+            label={rb.family}
             value={family}
             options={families}
             onChange={setFamily}
-            allLabel="Todas"
+            allLabel={rb.allF}
           />
           <FilterSelect
             id="f-kind"
-            label="Tipo"
+            label={rb.type}
             value={kind}
             options={KINDS}
             onChange={setKind}
-            allLabel="Todos"
+            allLabel={rb.allM}
           />
           <div className="flex flex-1 flex-col gap-1">
             <label htmlFor="f-query" className="text-xs text-muted">
-              Buscar run
+              {rb.searchRun}
             </label>
             <input
               id="f-query"
@@ -193,7 +196,7 @@ function RunsList() {
       {isLoading ? (
         <Skeleton className="h-64" />
       ) : rows.length === 0 ? (
-        <EmptyState title="Sin runs" />
+        <EmptyState title={rb.noRuns} />
       ) : (
         <DataTable columns={columns} rows={rows} rowKey={(r) => r.run_id} />
       )}
@@ -238,13 +241,14 @@ function FilterSelect({
 }
 
 function RunDetail({ runId }: { runId: string | null }) {
+  const rb = useRb();
   const t = useI18n();
   const [tab, setTab] = useState<DetailTab>("comparison");
   const { data: run, error, isLoading } = useRun(runId);
 
   if (!runId) return <EmptyState title={t.common.selectRun} />;
   if (isLoading) return <Skeleton className="h-40" />;
-  if (error) return <ErrorState title="Run no encontrado" detail={error.message} />;
+  if (error) return <ErrorState title={rb.runNotFound} detail={error.message} />;
 
   return (
     <>
@@ -263,7 +267,7 @@ function RunDetail({ runId }: { runId: string | null }) {
               tab === t ? "border-b-2 border-accent text-fg" : "text-muted hover:text-fg"
             }`}
           >
-            {t === "comparison" ? "Comparación" : t === "candidates" ? "Candidatos" : "Folds"}
+            {t === "comparison" ? rb.comparison : t === "candidates" ? rb.candidates : rb.foldsWord}
           </button>
         ))}
       </div>
@@ -277,24 +281,25 @@ function RunDetail({ runId }: { runId: string | null }) {
 }
 
 function ComparisonTab({ runId }: { runId: string }) {
+  const rb = useRb();
   const { data, error, isLoading } = useComparison(runId);
   if (isLoading) return <Skeleton className="h-64" />;
-  if (error) return <ErrorState title="Sin comparación" detail={error.message} />;
-  if (!data) return <EmptyState title="Sin artefacto de comparación" />;
+  if (error) return <ErrorState title={rb.noComparison} detail={error.message} />;
+  if (!data) return <EmptyState title={rb.noComparisonArtifact} />;
 
   const columns: Column<MethodComparison>[] = [
     { key: "method", header: "Método", render: (m) => m.method },
-    { key: "evaluated", header: "Evaluados", align: "right", render: (m) => fmtInt(m.evaluated) },
-    { key: "feasible", header: "Factibles", align: "right", render: (m) => fmtInt(m.feasible) },
+    { key: "evaluated", header: rb.evaluated, align: "right", render: (m) => fmtInt(m.evaluated) },
+    { key: "feasible", header: rb.feasible, align: "right", render: (m) => fmtInt(m.feasible) },
     {
       key: "val",
-      header: "Mejor val fitness",
+      header: rb.bestValFitness,
       align: "right",
       render: (m) => fmtRatio(m.best_val_fitness),
     },
     {
       key: "oos",
-      header: "Sharpe OOS medio",
+      header: rb.meanOosSharpe,
       align: "right",
       render: (m) => (
         <span className={signClass(m.mean_test_sharpe)}>{fmtRatio(m.mean_test_sharpe)}</span>
@@ -302,7 +307,7 @@ function ComparisonTab({ runId }: { runId: string }) {
     },
     {
       key: "ret",
-      header: "Retorno OOS medio",
+      header: rb.meanOosReturn,
       align: "right",
       render: (m) => (
         <span className={signClass(m.mean_test_total_return)}>
@@ -312,7 +317,7 @@ function ComparisonTab({ runId }: { runId: string }) {
     },
     {
       key: "winners",
-      header: "Ganadores fold",
+      header: rb.foldWinners,
       align: "right",
       render: (m) => fmtInt(m.n_fold_winners),
     },
@@ -323,7 +328,7 @@ function ComparisonTab({ runId }: { runId: string }) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader
-            title="Comparación de métodos"
+            title={rb.methodComparison}
             subtitle={data.comparison_metric ?? undefined}
             right={
               data.best_out_of_sample_method ? (
@@ -334,7 +339,7 @@ function ComparisonTab({ runId }: { runId: string }) {
           <DataTable columns={columns} rows={data.methods} rowKey={(m) => m.method} />
         </Card>
         <Card>
-          <CardHeader title="Sharpe OOS agregado" />
+          <CardHeader title={rb.aggOosSharpe} />
           <ComparisonBars methods={data.methods} />
         </Card>
       </div>
@@ -349,17 +354,17 @@ function ComparisonTab({ runId }: { runId: string }) {
           subtitle={data.fair_budget.definition ?? undefined}
           right={
             <Badge tone={data.fair_budget.ok ? "positive" : "negative"}>
-              {data.fair_budget.ok ? "COINCIDE" : "DISCREPANCIA"}
+              {data.fair_budget.ok ? rb.budgetMatch : rb.budgetMismatch}
             </Badge>
           }
         />
         <DataTable
           columns={[
             { key: "m", header: "Método", render: (r) => r.method },
-            { key: "e", header: "Evaluados", align: "right", render: (r) => fmtInt(r.evaluated) },
+            { key: "e", header: rb.evaluated, align: "right", render: (r) => fmtInt(r.evaluated) },
             {
               key: "ok",
-              header: "En budget",
+              header: rb.inBudget,
               align: "center",
               render: (r) => (
                 <Badge tone={r.within_budget ? "positive" : "negative"}>
@@ -378,6 +383,7 @@ function ComparisonTab({ runId }: { runId: string }) {
 }
 
 function CandidatesTab({ runId, methods }: { runId: string; methods: string[] }) {
+  const rb = useRb();
   const available = methods.filter(
     (m) => m === "random_search" || m === "genetic_algorithm"
   ) as Method[];
@@ -387,12 +393,12 @@ function CandidatesTab({ runId, methods }: { runId: string; methods: string[] })
   const columns: Column<CandidateModel>[] = [
     {
       key: "id",
-      header: "Candidato",
+      header: rb.candidate,
       render: (c) => <span className="font-mono text-xs">{c.candidate_id}</span>,
     },
     {
       key: "status",
-      header: "Estado",
+      header: rb.state,
       render: (c) => (
         <Badge tone={c.status === "evaluated" ? "positive" : "warn"}>{c.status}</Badge>
       ),
@@ -405,7 +411,7 @@ function CandidatesTab({ runId, methods }: { runId: string; methods: string[] })
     },
     {
       key: "val",
-      header: "Sharpe val medio",
+      header: rb.meanValSharpe,
       align: "right",
       render: (c) => fmtRatio(c.mean_val_sharpe),
     },
@@ -414,8 +420,8 @@ function CandidatesTab({ runId, methods }: { runId: string; methods: string[] })
   return (
     <Card>
       <CardHeader
-        title="Ranking de candidatos"
-        subtitle="Ordenados por fitness de validación"
+        title={rb.candidateRanking}
+        subtitle={rb.rankedByFitness}
         right={
           <div className="flex gap-1">
             {available.map((mth) => (
@@ -438,9 +444,9 @@ function CandidatesTab({ runId, methods }: { runId: string; methods: string[] })
       {isLoading ? (
         <Skeleton className="h-48" />
       ) : error ? (
-        <ErrorState title="Sin candidatos" detail={error.message} />
+        <ErrorState title={rb.noCandidates} detail={error.message} />
       ) : !data || data.items.length === 0 ? (
-        <EmptyState title="Sin candidatos" />
+        <EmptyState title={rb.noCandidates} />
       ) : (
         <DataTable columns={columns} rows={data.items} rowKey={(c) => c.candidate_id} dense />
       )}
@@ -449,27 +455,28 @@ function CandidatesTab({ runId, methods }: { runId: string; methods: string[] })
 }
 
 function FoldsTab({ runId }: { runId: string }) {
+  const rb = useRb();
   const { data, error, isLoading } = useFolds(runId);
   if (isLoading) return <Skeleton className="h-64" />;
-  if (error) return <ErrorState title="Sin folds" detail={error.message} />;
-  if (!data) return <EmptyState title="Sin artefacto de folds" />;
+  if (error) return <ErrorState title={rb.noFolds} detail={error.message} />;
+  if (!data) return <EmptyState title={rb.noFoldsArtifact} />;
 
   const winnerColumns: Column<FoldWinnerModel>[] = [
     { key: "f", header: "Fold", render: (w) => fmtInt(w.fold) },
     {
       key: "w",
-      header: "Ganador",
+      header: rb.winner,
       render: (w) => <span className="font-mono text-xs">{w.winner ?? "—"}</span>,
     },
     {
       key: "ts",
-      header: "Sharpe test",
+      header: rb.testSharpe,
       align: "right",
       render: (w) => <span className={signClass(w.test_sharpe)}>{fmtRatio(w.test_sharpe)}</span>,
     },
     {
       key: "tr",
-      header: "Retorno test",
+      header: rb.testReturn,
       align: "right",
       render: (w) => (
         <span className={signClass(w.test_total_return)}>
@@ -483,7 +490,7 @@ function FoldsTab({ runId }: { runId: string }) {
     <div className="space-y-6">
       <Card>
         <CardHeader
-          title="Particiones walk-forward"
+          title={rb.wfPartitions}
           subtitle={`Regímenes: ${data.regime_inputs.join(", ") || "—"}`}
         />
         <DataTable
@@ -526,43 +533,44 @@ function FoldsTab({ runId }: { runId: string }) {
 }
 
 function AnalyticsTab({ runId }: { runId: string | null }) {
+  const rb = useRb();
   const t = useI18n();
   const { data, error, isLoading } = useAnalytics(runId);
   if (!runId) return <EmptyState title={t.common.selectRun} />;
   if (isLoading) return <Skeleton className="h-72" />;
-  if (error) return <ErrorState title="Sin analytics" detail={error.message} />;
-  if (!data) return <EmptyState title="Sin artefacto analytics" />;
+  if (error) return <ErrorState title={rb.noAnalytics} detail={error.message} />;
+  if (!data) return <EmptyState title={rb.noAnalyticsArtifact} />;
 
   return (
     <>
       <ConvergencePanel
         series={data.convergence}
         folds={data.convergence_folds}
-        title="Convergencia"
-        subtitle="Mejor fitness tras cada evaluación única dentro de un fold. Cada fold se busca de forma independiente, así que las trazas no son comparables entre folds."
-        emptyTitle="Sin historial de convergencia"
-        foldLabel="Fold externo"
+        title={rb.convergence}
+        subtitle={rb.convergenceSubtitle}
+        emptyTitle={rb.noConvergence}
+        foldLabel={rb.outerFold}
       />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Diversidad GA" />
+          <CardHeader title={rb.gaDiversity} />
           {data.ga_diversity.length === 0 ? (
-            <EmptyState title="Sin diversidad GA" />
+            <EmptyState title={rb.noGaDiversity} />
           ) : (
             <DiversityChart data={data.ga_diversity} />
           )}
         </Card>
         <Card>
-          <CardHeader title="Linaje GA" />
+          <CardHeader title={rb.gaLineage} />
           {data.ga_lineage.length === 0 ? (
-            <EmptyState title="Sin linaje" />
+            <EmptyState title={rb.noLineage} />
           ) : (
             <DataTable
               columns={[
                 { key: "g", header: "Gen", render: (r) => String(r.generation ?? "—") },
                 {
                   key: "c",
-                  header: "Hijo",
+                  header: rb.child,
                   render: (r) => (
                     <span className="font-mono text-xs">{String(r.child ?? "—")}</span>
                   ),

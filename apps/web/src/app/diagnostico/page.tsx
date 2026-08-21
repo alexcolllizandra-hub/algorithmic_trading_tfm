@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState, ErrorState, PartialNotice, Skeleton } from "@/components/ui/States";
 import { useI18n } from "@/lib/i18n";
+import { useRb } from "@/lib/i18n/runBrowser";
 import { API_BASE } from "@/lib/api";
 import { useArtifacts, useHealth } from "@/lib/hooks";
 
@@ -25,6 +26,7 @@ function JsonBlock({ value }: { value: unknown }) {
 }
 
 function ArtifactsTab() {
+  const rb = useRb();
   const t = useI18n();
   const runId = useSelectedRun();
   const { data, error, isLoading } = useArtifacts(runId);
@@ -41,14 +43,14 @@ function ArtifactsTab() {
       ) : isLoading ? (
         <Skeleton className="h-72" />
       ) : error ? (
-        <ErrorState title="Sin artefactos" detail={error.message} />
+        <ErrorState title={rb.diagNoArtifacts} detail={error.message} />
       ) : !data ? (
-        <EmptyState title="Sin bundle de artefactos" />
+        <EmptyState title={rb.diagNoBundle} />
       ) : (
         <>
           {data.warnings.length > 0 && (
             <Card>
-              <CardHeader title="Advertencias" />
+              <CardHeader title={rb.diagWarnings} />
               <ul className="list-inside list-disc space-y-1 text-sm text-warn">
                 {data.warnings.map((w, i) => (
                   <li key={i}>{w}</li>
@@ -58,44 +60,44 @@ function ArtifactsTab() {
           )}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
-              <CardHeader title="Manifiestos de datasets" />
+              <CardHeader title={rb.diagDatasetManifests} />
               <JsonBlock value={data.dataset_manifests} />
             </Card>
             <Card>
-              <CardHeader title="Manifiesto de features" />
+              <CardHeader title={rb.diagFeatureManifest} />
               <JsonBlock value={data.feature_manifest} />
             </Card>
             <Card>
-              <CardHeader title="Espacio de búsqueda" />
+              <CardHeader title={rb.diagSearchSpace} />
               <JsonBlock value={data.search_space} />
             </Card>
             <Card>
-              <CardHeader title="Objetivo" />
+              <CardHeader title={rb.diagObjective} />
               <JsonBlock value={data.objective} />
             </Card>
             <Card>
-              <CardHeader title="Entorno" />
+              <CardHeader title={rb.diagEnvironment} />
               <JsonBlock value={data.environment} />
             </Card>
             <Card>
-              <CardHeader title="Estado git" />
+              <CardHeader title={rb.diagGitState} />
               <JsonBlock value={data.git_state} />
             </Card>
           </div>
           <Card>
             <CardHeader
-              title="Candidatos fallidos"
+              title={rb.diagFailedCandidates}
               right={<Badge tone={failedTotal ? "warn" : "positive"}>{failedTotal}</Badge>}
             />
             {failedTotal === 0 ? (
-              <EmptyState title="Sin candidatos fallidos" />
+              <EmptyState title={rb.diagNoFailedCandidates} />
             ) : (
               <JsonBlock value={data.failed_candidates} />
             )}
           </Card>
           <Card>
             <CardHeader
-              title="Archivos"
+              title={rb.diagFiles}
               subtitle={`${data.files.length} en el directorio del run`}
             />
             <div className="flex flex-wrap gap-2">

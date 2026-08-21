@@ -19,6 +19,7 @@ import { DataTable, type Column } from "@/components/ui/Table";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/States";
 import { StatCard } from "@/components/ui/StatCard";
 import { useI18n, type Dictionary } from "@/lib/i18n";
+import { useRb } from "@/lib/i18n/runBrowser";
 import type { FoldSelection, PerformanceFold, TradeModel } from "@/lib/api-types";
 import { fmtInt, fmtNumber, fmtSignedPercent, fmtTimestamp, signClass } from "@/lib/format";
 import { useEquity, usePerformance, useTrades } from "@/lib/hooks";
@@ -53,6 +54,7 @@ function downloadTradesCsv(rows: TradeModel[], name: string) {
 }
 
 export function RunPerformanceSection() {
+  const rb = useRb();
   const t = useI18n();
   const params = useSearchParams();
   const router = useRouter();
@@ -104,11 +106,11 @@ export function RunPerformanceSection() {
   };
 
   const foldColumns: Column<PerformanceFold>[] = [
-    { key: "m", header: "Método", render: (f) => f.method },
+    { key: "m", header: rb.method, render: (f) => f.method },
     { key: "f", header: "Fold", align: "right", render: (f) => fmtInt(f.fold) },
     {
       key: "eq",
-      header: "Equity final",
+      header: rb.finalEquity,
       align: "right",
       render: (f) => fmtNumber(f.final_equity, 4),
     },
@@ -121,12 +123,12 @@ export function RunPerformanceSection() {
     { key: "nt", header: "Ops", align: "right", render: (f) => fmtInt(f.n_trades) },
     {
       key: "cand",
-      header: "Candidato",
+      header: rb.candidate,
       render: (f) => <span className="font-mono text-xs">{f.candidate_id ?? "—"}</span>,
     },
     {
       key: "per",
-      header: "Periodo",
+      header: rb.period,
       render: (f) =>
         f.period_start && f.period_end
           ? `${f.period_start.slice(0, 10)} → ${f.period_end.slice(0, 10)}`
@@ -142,7 +144,7 @@ export function RunPerformanceSection() {
           onClick={() => setSelection(f)}
           className="rounded border border-border px-2 py-0.5 text-xs text-accent hover:bg-accent/10"
         >
-          ver
+          {rb.view}
         </button>
       ),
     },
@@ -161,9 +163,9 @@ export function RunPerformanceSection() {
 
   if (!runId) return <EmptyState title={t.common.selectRun} />;
   if (isLoading) return <Skeleton className="h-72" />;
-  if (error) return <ErrorState title="Sin rendimiento" detail={error.message} />;
+  if (error) return <ErrorState title={rb.noPerformance} detail={error.message} />;
   if (!perf || perf.folds.length === 0) {
-    return <EmptyState title="Sin artefactos de equity test" />;
+    return <EmptyState title={rb.noEquityArtifacts} />;
   }
 
   return (
@@ -173,17 +175,14 @@ export function RunPerformanceSection() {
 
       {aggregateRows.length > 0 && (
         <Card>
-          <CardHeader
-            title="Resultados agregados OOS"
-            subtitle={`Mejor método: ${perf.best_method ?? "—"}`}
-          />
+          <CardHeader title={rb.aggOos} subtitle={`${rb.bestMethod}: ${perf.best_method ?? "—"}`} />
           <DataTable
             columns={[
-              { key: "m", header: "Método", render: (r) => r.method },
-              { key: "metric", header: "Métrica", render: (r) => r.metric },
+              { key: "m", header: rb.method, render: (r) => r.method },
+              { key: "metric", header: rb.metric, render: (r) => r.metric },
               {
                 key: "v",
-                header: "Valor",
+                header: rb.value,
                 align: "right",
                 render: (r) => fmtNumber(r.value, 4),
               },
@@ -196,7 +195,7 @@ export function RunPerformanceSection() {
       )}
 
       <Card>
-        <CardHeader title="Rendimiento por fold (ventana test)" />
+        <CardHeader title={rb.perFold} />
         <DataTable
           columns={foldColumns}
           rows={perf.folds}
@@ -219,6 +218,7 @@ function FoldDetail({
   selection: FoldSelection;
   tableFold: PerformanceFold | null;
 }) {
+  const rb = useRb();
   const t = useI18n();
   const { runId, method, fold } = selection;
 
@@ -242,7 +242,9 @@ function FoldDetail({
   const integrityIssues: string[] = [];
   if (summary && computedFinal != null && summary.final_equity != null) {
     if (Math.abs(computedFinal - summary.final_equity) > 1e-6) {
-      integrityIssues.push(`final_equity: summary=${summary.final_equity}, puntos=${computedFinal}`);
+      integrityIssues.push(
+        `final_equity: summary=${summary.final_equity}, puntos=${computedFinal}`
+      );
     }
   }
   if (summary && computedDd != null && summary.max_drawdown != null) {
@@ -274,11 +276,11 @@ function FoldDetail({
 
   const tradeColumns: Column<TradeModel>[] = [
     { key: "id", header: "#", align: "right", render: (row) => fmtInt(row.trade_id) },
-    { key: "entry", header: "Entrada", render: (row) => fmtTimestamp(row.entry_time) },
-    { key: "exit", header: "Salida", render: (row) => fmtTimestamp(row.exit_time) },
+    { key: "entry", header: rb.entry, render: (row) => fmtTimestamp(row.entry_time) },
+    { key: "exit", header: rb.exit, render: (row) => fmtTimestamp(row.exit_time) },
     {
       key: "pos",
-      header: "Posición",
+      header: rb.position,
       render: (row) => (
         <Badge
           tone={
@@ -295,13 +297,13 @@ function FoldDetail({
     },
     {
       key: "ret",
-      header: "Retorno neto",
+      header: rb.netReturn,
       align: "right",
       render: (row) => (
         <span className={signClass(row.net_return)}>{fmtSignedPercent(row.net_return)}</span>
       ),
     },
-    { key: "reason", header: "Salida", render: (row) => <Badge>{row.exit_reason ?? "—"}</Badge> },
+    { key: "reason", header: rb.exit, render: (row) => <Badge>{row.exit_reason ?? "—"}</Badge> },
   ];
 
   return (
@@ -318,7 +320,7 @@ function FoldDetail({
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
-          label="Equity final"
+          label={rb.finalEquity}
           value={fmtNumber(summary?.final_equity, 4)}
           metricKey="total_return"
         />
@@ -328,26 +330,26 @@ function FoldDetail({
           metricKey="max_drawdown"
           valueClassName="text-negative"
         />
-        <StatCard label="Barras (serie)" value={fmtInt(summary?.n_points_total)} />
+        <StatCard label={rb.barsSeries} value={fmtInt(summary?.n_points_total)} />
         <StatCard
-          label="Operaciones"
+          label={rb.trades}
           value={fmtInt(tr?.meta.total ?? tr?.items.length)}
           metricKey="n_trades"
         />
       </div>
 
       <Card>
-        <CardHeader title={`Equity y drawdown — ${method} · fold ${fold}`} />
+        <CardHeader title={`${rb.equityDd} — ${method} · fold ${fold}`} />
         {eq && eq.points.length > 0 ? (
           <EquityChart points={eq.points} />
         ) : (
-          <EmptyState title="Sin curva de equity" />
+          <EmptyState title={rb.noEquityCurve} />
         )}
       </Card>
 
       <Card>
         <CardHeader
-          title="Operaciones"
+          title={rb.trades}
           right={
             tr && tr.items.length > 0 ? (
               <button
@@ -370,7 +372,7 @@ function FoldDetail({
             dense
           />
         ) : (
-          <EmptyState title="Sin operaciones en este fold" />
+          <EmptyState title={rb.noTradesFold} />
         )}
       </Card>
     </div>

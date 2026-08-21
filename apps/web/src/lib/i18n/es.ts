@@ -1054,6 +1054,13 @@ export const es = {
     collapse: "Contraer",
   },
 
+  provenance: {
+    generated: "datos generados",
+    contract: "contrato",
+    holdout: "holdout desde",
+    regen: "regenerable con",
+  },
+
   experimentosApi: {
     title: "Esta sección necesita la API local",
     body:
