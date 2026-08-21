@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
+  Bar,
   CartesianGrid,
   ComposedChart,
   Line,
@@ -41,6 +42,7 @@ import {
 } from "@/lib/lab/engine";
 import { STRATEGIES, type StrategyDef, type StrategyId } from "@/lib/lab/strategies";
 import { useAttempts } from "@/lib/lab/attempts";
+import { paramSummary, useHistory, type HistoryEntry } from "@/lib/lab/history";
 import {
   applyExitOverlay,
   applyRegimeGate,
@@ -327,13 +329,53 @@ interface MarkerPoint {
   kind: "long" | "short" | "exit";
 }
 
+interface CandleRow {
+  time: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  hl: [number, number];
+}
+
+/** Real candlestick: the Bar's [low, high] box gives the wick's pixel span;
+ * open/close map linearly inside it. Green when the bar closed up. */
+function CandleShape(props: {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  payload?: CandleRow;
+}) {
+  const { x, y, width, height, payload } = props;
+  // On a numeric X axis recharts gives bars no band width; derive one.
+  const w = width && width > 0 ? width : 3;
+  if (x == null || y == null || !height || !payload) return <g />;
+  const { o, h, l, c } = payload;
+  const range = h - l;
+  if (range <= 0) return <g />;
+  const yOf = (v: number) => y + ((h - v) / range) * height;
+  const up = c >= o;
+  const color = up ? "rgb(45 212 191)" : "rgb(248 113 113)";
+  const cx = x + w / 2;
+  const bodyTop = yOf(Math.max(o, c));
+  const bodyH = Math.max(1, Math.abs(yOf(o) - yOf(c)));
+  const bodyW = Math.max(1.5, w * 0.7);
+  return (
+    <g>
+      <line x1={cx} y1={y} x2={cx} y2={y + height} stroke={color} strokeWidth={1} />
+      <rect x={cx - bodyW / 2} y={bodyTop} width={bodyW} height={bodyH} fill={color} />
+    </g>
+  );
+}
+
 function SignalsPanel({
   result,
   bars,
   t,
 }: {
   result: RunResult;
-  bars: { t: Float64Array; c: Float64Array };
+  bars: { t: Float64Array; o: Float64Array; h: Float64Array; l: Float64Array; c: Float64Array };
   t: Dictionary;
 }) {
   const intl = useIntlLocale();
@@ -344,8 +386,24 @@ function SignalsPanel({
     const half = Math.floor(SIGNAL_WINDOW / 2);
     const from = Math.max(0, Math.min(center - half, n - SIGNAL_WINDOW));
     const to = Math.min(n, from + SIGNAL_WINDOW);
-    const rows = [] as { time: number; close: number }[];
-    for (let i = from; i < to; i++) rows.push({ time: bars.t[i], close: bars.c[i] });
+    const rows = [] as {
+      time: number;
+      o: number;
+      h: number;
+      l: number;
+      c: number;
+      hl: [number, number];
+    }[];
+    for (let i = from; i < to; i++) {
+      rows.push({
+        time: bars.t[i],
+        o: bars.o[i],
+        h: bars.h[i],
+        l: bars.l[i],
+        c: bars.c[i],
+        hl: [bars.l[i], bars.h[i]],
+      });
+    }
     const markers: MarkerPoint[] = [];
     for (const trade of result.trades) {
       if (trade.entryIndex >= from && trade.entryIndex < to) {
@@ -424,16 +482,14 @@ function SignalsPanel({
           />
           <Tooltip
             labelFormatter={(v) => new Date(Number(v) * 1000).toISOString().slice(0, 13) + "h"}
+            formatter={(value: unknown, name: string, item: { payload?: CandleRow }) => {
+              if (name !== "OHLC" || !item?.payload) return [String(value), name];
+              const r = item.payload;
+              return [`O ${r.o} · H ${r.h} · L ${r.l} · C ${r.c}`, "OHLC"];
+            }}
             contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
           />
-          <Line
-            dataKey="close"
-            dot={false}
-            stroke={CHART.axis}
-            strokeWidth={1.2}
-            isAnimationActive={false}
-            name="close"
-          />
+          <Bar dataKey="hl" isAnimationActive={false} shape={CandleShape} name="OHLC" />
           <Scatter
             data={markers
               .filter((m) => m.kind === "long")
@@ -848,6 +904,81 @@ function TestsPanel({ result, t }: { result: RunResult; t: Dictionary }) {
   );
 }
 
+function HistoryPanel({ t }: { t: Dictionary }) {
+  const { entries, clear } = useHistory();
+  if (!entries.length) return null;
+  const bestSharpe = Math.max(...entries.map((e) => e.oosSharpe));
+
+  return (
+    <Card>
+      <CardHeader
+        title={t.lab.history.title}
+        subtitle={t.lab.history.subtitle}
+        right={
+          <button
+            type="button"
+            onClick={clear}
+            className="rounded-md border border-border px-3 py-1 text-xs text-muted hover:text-fg"
+          >
+            {t.lab.history.clear}
+          </button>
+        }
+      />
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted">
+              <th className="py-2 pr-4 font-medium">{t.lab.history.colFamily}</th>
+              <th className="py-2 pr-4 font-medium">{t.lab.history.colParams}</th>
+              <th className="py-2 pr-4 text-right font-medium">{t.lab.history.colReturn}</th>
+              <th className="py-2 pr-4 text-right font-medium">Sharpe</th>
+              <th className="py-2 pr-4 text-right font-medium">Max DD</th>
+              <th className="py-2 pr-4 text-right font-medium">p</th>
+              <th className="py-2 pr-0 text-right font-medium">{t.lab.history.colTests}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/60">
+            {entries.map((entry) => {
+              const isBest = entry.oosSharpe === bestSharpe && entries.length > 1;
+              return (
+                <tr key={entry.ts} className={isBest ? "bg-accent/5" : undefined}>
+                  <td className="py-2 pr-4">
+                    <span className="font-medium">{entry.strategyId}</span>{" "}
+                    <span className="text-xs text-muted">{entry.symbol.replace("USDT", "")}</span>
+                    {isBest && (
+                      <span className="ml-2 rounded border border-accent/40 bg-accent/10 px-1.5 py-0.5 text-[10px] text-accent">
+                        {t.lab.history.best}
+                      </span>
+                    )}
+                  </td>
+                  <td className="max-w-[260px] truncate py-2 pr-4 font-mono text-[11px] text-muted">
+                    {paramSummary(entry.params)}
+                  </td>
+                  <td className={`tabular py-2 pr-4 text-right ${signClass(entry.oosReturn)}`}>
+                    {fmtSignedPercent(entry.oosReturn, 1)}
+                  </td>
+                  <td className="tabular py-2 pr-4 text-right">{fmtNumber(entry.oosSharpe, 2)}</td>
+                  <td className="tabular py-2 pr-4 text-right text-negative">
+                    {fmtSignedPercent(entry.maxDd, 1)}
+                  </td>
+                  <td className="tabular py-2 pr-4 text-right">{fmtNumber(entry.pValue, 3)}</td>
+                  <td className="tabular py-2 pr-0 text-right">
+                    {entry.passed}/{entry.totalTests}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-4 text-xs leading-relaxed text-muted">{t.lab.history.note}</p>
+    </Card>
+  );
+}
+
+const _historyEntryType: HistoryEntry | null = null;
+void _historyEntryType;
+
 /* ------------------------------------------------------------------------ */
 /* Page                                                                      */
 /* ------------------------------------------------------------------------ */
@@ -877,6 +1008,7 @@ export default function LaboratorioPage() {
   const [allowedRegimes, setAllowedRegimes] = useState<Regime[]>(["low", "mid", "high"]);
   const [running, setRunning] = useState(false);
   const { add: addAttempts } = useAttempts();
+  const { add: addHistory } = useHistory();
   const [result, setResult] = useState<RunResult | null>(null);
 
   const pickStrategy = (id: StrategyId) => {
@@ -948,6 +1080,30 @@ export default function LaboratorioPage() {
           oosReturn
         );
         const regimes = regimeSplit(data.bars, ledger, splitIdx, n);
+
+        const outMetrics = computeMetrics(ledger, trades, splitIdx, n);
+        const bhOutMetrics = computeMetrics(bh, bhTrades, splitIdx, n);
+        const passedCount = [
+          outMetrics.total_return > 0,
+          outMetrics.sharpe > 0,
+          outMetrics.total_return > bhOutMetrics.total_return,
+          nullTest.pValue < 0.05,
+          bootstrap.lo > 0,
+          stressMetrics.total_return > 0,
+          twin != null && twin.totalReturn > 0,
+        ].filter(Boolean).length;
+        addHistory({
+          ts: Date.now(),
+          strategyId,
+          symbol,
+          params: { ...values },
+          oosReturn: outMetrics.total_return,
+          oosSharpe: outMetrics.sharpe,
+          maxDd: outMetrics.max_drawdown,
+          pValue: nullTest.pValue,
+          passed: passedCount,
+          totalTests: 7,
+        });
         setResult({
           ledger,
           trades,
@@ -1236,6 +1392,8 @@ export default function LaboratorioPage() {
       </Card>
 
       {running && <Skeleton className="h-72 w-full" />}
+
+      <HistoryPanel t={t} />
 
       <WalkForwardSection
         data={data}

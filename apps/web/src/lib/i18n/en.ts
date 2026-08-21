@@ -1403,6 +1403,22 @@ export const en = {
     ulcer: "Ulcer index",
     winStreak: "Longest winning streak",
     lossStreak: "Longest losing streak",
+    history: {
+      title: "Your attempts this session",
+      subtitle:
+        "Every backtest run in this browser, with its out-of-sample metrics. The highlighted " +
+        "row is your best Sharpe — that is, the right tail of your own attempts.",
+      clear: "Clear history",
+      colFamily: "Family",
+      colParams: "Parameters",
+      colReturn: "OOS return",
+      colTests: "Tests",
+      best: "best",
+      note:
+        "This table is selection bias made visible: publish only the highlighted row and " +
+        "delete the rest, and you would have any strategy vendor's brochure. The attempts " +
+        "counter above deflates that best result.",
+    },
     overlay: {
       title: "Exits and filters",
       stop: "Stop (× ATR)",

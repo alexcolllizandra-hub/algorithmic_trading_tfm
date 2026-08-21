@@ -1405,6 +1405,22 @@ export const es = {
     ulcer: "Índice de úlcera",
     winStreak: "Racha ganadora más larga",
     lossStreak: "Racha perdedora más larga",
+    history: {
+      title: "Sus intentos de esta sesión",
+      subtitle:
+        "Cada backtest ejecutado en este navegador, con sus métricas out-of-sample. La fila " +
+        "destacada es su mejor Sharpe — es decir, la cola derecha de sus propios intentos.",
+      clear: "Limpiar historial",
+      colFamily: "Familia",
+      colParams: "Parámetros",
+      colReturn: "Retorno OOS",
+      colTests: "Tests",
+      best: "mejor",
+      note:
+        "Esta tabla es el sesgo de selección hecho visible: si publicara solo la fila " +
+        "destacada y borrara las demás, tendría el folleto de cualquier vendedor de " +
+        "estrategias. El contador de intentos de arriba deflacta ese mejor resultado.",
+    },
     overlay: {
       title: "Salidas y filtros",
       stop: "Stop (× ATR)",

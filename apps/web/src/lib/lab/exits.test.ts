@@ -116,7 +116,7 @@ describe("exit overlays and gates", () => {
     const gated = applyTrendGate(side, bars, 100);
     expect(gated[250]).toBe(0);
 
-    const labels = Array.from({ length: n }, (_, i) => (i < 150 ? "low" : "high") as const);
+    const labels = Array.from({ length: n }, (_, i): "low" | "high" => (i < 150 ? "low" : "high"));
     const regimed = applyRegimeGate(side, labels, ["low"]);
     expect(regimed[100]).toBe(1);
     expect(regimed[200]).toBe(0);
