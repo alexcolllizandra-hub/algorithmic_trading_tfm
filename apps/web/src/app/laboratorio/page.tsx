@@ -41,6 +41,13 @@ import {
 } from "@/lib/lab/engine";
 import { STRATEGIES, type StrategyDef, type StrategyId } from "@/lib/lab/strategies";
 import { useAttempts } from "@/lib/lab/attempts";
+import {
+  bootstrapSharpeCI,
+  perturbationTornado,
+  regimeSplit,
+  type RegimeRow,
+  type TornadoRow,
+} from "@/lib/lab/tests";
 import { WalkForwardSection } from "./WalkForwardSection";
 
 const ACCENT = "var(--accent)";
@@ -144,6 +151,11 @@ interface RunResult {
   splitIdx: number;
   metrics: { inSample: Metrics; outSample: Metrics; full: Metrics; bhOut: Metrics };
   nullTest: { pValue: number; realReturn: number };
+  bootstrap: { lo: number; hi: number; median: number };
+  stress2xReturn: number;
+  twin: { symbol: string; totalReturn: number } | null;
+  tornado: TornadoRow[];
+  regimes: RegimeRow[];
   params: Record<string, number | string>;
   symbol: string;
   strategyId: StrategyId;
@@ -610,6 +622,87 @@ function MetricsTable({ result, t }: { result: RunResult; t: Dictionary }) {
   );
 }
 
+function TornadoPanel({ result, t }: { result: RunResult; t: Dictionary }) {
+  const rows = result.tornado
+    .flatMap((row) => [
+      row.down != null ? { label: `${row.key} −1`, delta: row.down } : null,
+      row.up != null ? { label: `${row.key} +1`, delta: row.up } : null,
+    ])
+    .filter((r): r is { label: string; delta: number } => r != null)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  if (!rows.length) return null;
+  const max = Math.max(...rows.map((r) => Math.abs(r.delta)), 1e-9);
+
+  return (
+    <Card>
+      <CardHeader title={t.lab.tornadoTitle} subtitle={t.lab.tornadoSubtitle} />
+      <ul className="space-y-2.5">
+        {rows.map((row) => (
+          <li key={row.label} className="flex items-center gap-3 text-sm">
+            <span className="w-40 shrink-0 truncate font-mono text-xs text-muted">{row.label}</span>
+            <div className="relative h-3 flex-1 rounded bg-surface-2">
+              <div className="absolute inset-y-0 left-1/2 w-px bg-border" aria-hidden />
+              <div
+                className="absolute inset-y-0 rounded"
+                style={{
+                  left: row.delta < 0 ? `${50 - (Math.abs(row.delta) / max) * 48}%` : "50%",
+                  width: `${(Math.abs(row.delta) / max) * 48}%`,
+                  background: row.delta >= 0 ? "rgb(45 212 191 / 0.8)" : "rgb(248 113 113 / 0.8)",
+                }}
+              />
+            </div>
+            <span
+              className={`tabular w-20 shrink-0 text-right font-mono text-xs ${signClass(row.delta)}`}
+            >
+              {fmtSignedPercent(row.delta, 1)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-xs leading-relaxed text-muted">{t.lab.tornadoNote}</p>
+    </Card>
+  );
+}
+
+function RegimePanel2({ result, t }: { result: RunResult; t: Dictionary }) {
+  if (!result.regimes.length) return null;
+  const label: Record<string, string> = {
+    low: t.lab.regimeLow,
+    mid: t.lab.regimeMid,
+    high: t.lab.regimeHigh,
+  };
+  return (
+    <Card>
+      <CardHeader title={t.lab.regimeTitle} subtitle={t.lab.regimeSubtitle} />
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[440px] text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted">
+              <th className="py-2 pr-4 font-medium">{t.lab.regimeCol}</th>
+              <th className="py-2 pr-4 text-right font-medium">{t.explorer.metric.total_return}</th>
+              <th className="py-2 pr-4 text-right font-medium">{t.explorer.metric.sharpe}</th>
+              <th className="py-2 pr-4 text-right font-medium">{t.lab.regimeBars}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/60">
+            {result.regimes.map((row) => (
+              <tr key={row.regime}>
+                <td className="py-2 pr-4">{label[row.regime]}</td>
+                <td className={`tabular py-2 pr-4 text-right ${signClass(row.totalReturn)}`}>
+                  {fmtSignedPercent(row.totalReturn, 2)}
+                </td>
+                <td className="tabular py-2 pr-4 text-right">{fmtNumber(row.sharpe, 2)}</td>
+                <td className="tabular py-2 pr-4 text-right">{fmtInt(row.nBars)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-4 text-xs leading-relaxed text-muted">{t.lab.regimeNote}</p>
+    </Card>
+  );
+}
+
 function TestsPanel({ result, t }: { result: RunResult; t: Dictionary }) {
   const out = result.metrics.outSample;
   const bh = result.metrics.bhOut;
@@ -638,12 +731,35 @@ function TestsPanel({ result, t }: { result: RunResult; t: Dictionary }) {
       pass: result.nullTest.pValue < 0.05,
       value: `${t.lab.pValueLabel} = ${fmtNumber(result.nullTest.pValue, 3)}`,
     },
+    {
+      name: t.lab.testBootstrap,
+      desc: t.lab.testBootstrapDesc,
+      pass: result.bootstrap.lo > 0,
+      value: `IC95 [${fmtNumber(result.bootstrap.lo, 2)}, ${fmtNumber(result.bootstrap.hi, 2)}]`,
+    },
+    {
+      name: t.lab.testStress,
+      desc: t.lab.testStressDesc,
+      pass: result.stress2xReturn > 0,
+      value: fmtSignedPercent(result.stress2xReturn, 2),
+    },
+    {
+      name: t.lab.testTwin,
+      desc: t.lab.testTwinDesc,
+      pass: result.twin != null && result.twin.totalReturn > 0,
+      value: result.twin
+        ? `${result.twin.symbol.replace("USDT", "")}: ${fmtSignedPercent(result.twin.totalReturn, 2)}`
+        : "—",
+    },
   ];
   const passed = tests.filter((test) => test.pass).length;
 
   return (
     <Card>
-      <CardHeader title={`${t.lab.testsTitle} — ${passed}/4`} subtitle={t.lab.testsSubtitle} />
+      <CardHeader
+        title={`${t.lab.testsTitle} — ${passed}/${tests.length}`}
+        subtitle={t.lab.testsSubtitle}
+      />
       <ul className="space-y-3">
         {tests.map((test) => (
           <li
@@ -683,6 +799,8 @@ export default function LaboratorioPage() {
   const intl = useIntlLocale();
   const [symbol, setSymbol] = useState("BTCUSDT");
   const { data, error, isLoading } = useLabData(symbol);
+  const twinSymbol = symbol === "BTCUSDT" ? "ETHUSDT" : "BTCUSDT";
+  const { data: twinData } = useLabData(twinSymbol);
 
   const [strategyId, setStrategyId] = useState<StrategyId>("momentum");
   const def: StrategyDef = STRATEGIES.find((s) => s.id === strategyId) ?? STRATEGIES[0];
@@ -719,6 +837,40 @@ export default function LaboratorioPage() {
         const bhTrades = extractTrades(bh, data.bars);
         const nullTest = circularShiftTest(ledger, costs, splitIdx, n, N_SHIFTS, 42);
         addAttempts(1);
+
+        // Extended battery (phase 8c): bootstrap CI, 2x cost stress, twin
+        // asset, parameter tornado, and the causal volatility-regime split.
+        const bootstrap = bootstrapSharpeCI(ledger.net, splitIdx, n, 200, 42);
+        const stressLedger = runBacktest(
+          data.bars,
+          side,
+          { feeBpsPerSide: feeBps * 2, slippageBpsPerSide: slipBps * 2 },
+          data.funding
+        );
+        const stressMetrics = computeMetrics(stressLedger, [], splitIdx, n);
+        let twin: { symbol: string; totalReturn: number } | null = null;
+        if (twinData) {
+          const twinSide = def.run(twinData.bars, values);
+          const twinLedger = runBacktest(twinData.bars, twinSide, costs, twinData.funding);
+          const tn = twinLedger.net.length;
+          const tSplit = Math.max(1, Math.min(tn - 2, Math.floor((splitPct / 100) * tn)));
+          twin = {
+            symbol: twinSymbol,
+            totalReturn: computeMetrics(twinLedger, [], tSplit, tn).total_return,
+          };
+        }
+        const oosReturn = computeMetrics(ledger, [], splitIdx, n).total_return;
+        const tornado = perturbationTornado(
+          def,
+          values,
+          data.bars,
+          data.funding,
+          costs,
+          splitIdx,
+          n,
+          oosReturn
+        );
+        const regimes = regimeSplit(data.bars, ledger, splitIdx, n);
         setResult({
           ledger,
           trades,
@@ -731,6 +883,11 @@ export default function LaboratorioPage() {
             bhOut: computeMetrics(bh, bhTrades, splitIdx, n),
           },
           nullTest,
+          bootstrap,
+          stress2xReturn: stressMetrics.total_return,
+          twin,
+          tornado,
+          regimes,
           params: { ...values },
           symbol,
           strategyId,
@@ -953,6 +1110,8 @@ export default function LaboratorioPage() {
           <SignalsPanel result={result} bars={data.bars} t={t} />
           <MetricsTable result={result} t={t} />
           <MaeMfePanel result={result} t={t} />
+          <TornadoPanel result={result} t={t} />
+          <RegimePanel2 result={result} t={t} />
         </>
       )}
 

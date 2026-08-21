@@ -1321,6 +1321,38 @@ export const es = {
     pass: "SUPERADA",
     fail: "NO SUPERADA",
     pValueLabel: "p-valor",
+    testBootstrap: "Sharpe robusto al remuestreo",
+    testBootstrapDesc:
+      "Bootstrap estacionario (200 remuestreos por bloques, semilla fija) del Sharpe " +
+      "out-of-sample. Supera si el intervalo del 95% queda entero por encima de cero.",
+    testStress: "Sobrevive con costes ×2",
+    testStressDesc:
+      "El mismo backtest con comisión y deslizamiento duplicados. Sin holgura frente a los " +
+      "costes, cualquier ventaja aparente es frágil.",
+    testTwin: "Generaliza al activo gemelo",
+    testTwinDesc:
+      "La misma configuración, sin retocar nada, sobre el otro activo (BTC↔ETH). Una regla " +
+      "que solo funciona en un activo es sospechosa de estar ajustada a su historia.",
+    tornadoTitle: "Sensibilidad de parámetros (tornado)",
+    tornadoSubtitle:
+      "Cambio del retorno out-of-sample al mover cada parámetro un paso del espacio del " +
+      "estudio, hacia abajo (−1) y hacia arriba (+1).",
+    tornadoNote:
+      "Barras grandes = configuración frágil: el resultado depende del valor exacto del " +
+      "parámetro, la firma clásica del sobreajuste. Es la prueba de perturbación del " +
+      "estudio, interactiva.",
+    regimeTitle: "Métricas por régimen de volatilidad",
+    regimeSubtitle:
+      "La fase out-of-sample partida por terciles de volatilidad (rvol 168h causal; " +
+      "fronteras calculadas solo con la fase in-sample).",
+    regimeCol: "Régimen",
+    regimeBars: "Barras",
+    regimeLow: "Tranquilo (tercil bajo)",
+    regimeMid: "Medio",
+    regimeHigh: "Turbulento (tercil alto)",
+    regimeNote:
+      "Si toda la ganancia vive en un solo régimen, la regla no captura una ventaja: captura " +
+      "un tipo de época — y las épocas no se eligen de antemano.",
     testsDisclaimer:
       "Aunque las cuatro salgan verdes: el estudio exigió además diez semillas, quince pliegues " +
       "walk-forward y corrección de Holm por todas las familias probadas — y ninguna sobrevivió. " +

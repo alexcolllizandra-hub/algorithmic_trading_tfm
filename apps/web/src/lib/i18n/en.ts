@@ -1320,6 +1320,37 @@ export const en = {
     pass: "PASSED",
     fail: "NOT PASSED",
     pValueLabel: "p-value",
+    testBootstrap: "Sharpe robust to resampling",
+    testBootstrapDesc:
+      "Stationary bootstrap (200 block resamples, fixed seed) of the out-of-sample Sharpe. " +
+      "Passes if the entire 95% interval sits above zero.",
+    testStress: "Survives 2x costs",
+    testStressDesc:
+      "The same backtest with fee and slippage doubled. Without slack against costs, any " +
+      "apparent edge is fragile.",
+    testTwin: "Generalises to the twin asset",
+    testTwinDesc:
+      "The same configuration, untouched, on the other asset (BTC↔ETH). A rule that only " +
+      "works on one asset is suspect of being fitted to its history.",
+    tornadoTitle: "Parameter sensitivity (tornado)",
+    tornadoSubtitle:
+      "Change in out-of-sample return when each parameter moves one step of the study grid, " +
+      "down (−1) and up (+1).",
+    tornadoNote:
+      "Large bars = fragile configuration: the result depends on the exact parameter value, " +
+      "the classic signature of overfitting. The study's perturbation check, interactive.",
+    regimeTitle: "Metrics by volatility regime",
+    regimeSubtitle:
+      "The out-of-sample phase split by volatility terciles (causal 168h rvol; boundaries " +
+      "computed on the in-sample phase only).",
+    regimeCol: "Regime",
+    regimeBars: "Bars",
+    regimeLow: "Calm (low tercile)",
+    regimeMid: "Middle",
+    regimeHigh: "Turbulent (high tercile)",
+    regimeNote:
+      "If all the gains live in a single regime, the rule is not capturing an edge: it is " +
+      "capturing a kind of era — and eras cannot be chosen in advance.",
     testsDisclaimer:
       "Even with all four green: the study additionally required ten seeds, fifteen " +
       "walk-forward folds, and Holm correction across every family tried — and none survived. " +
