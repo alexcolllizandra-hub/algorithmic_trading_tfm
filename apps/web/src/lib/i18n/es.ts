@@ -1047,6 +1047,44 @@ export const es = {
     collapse: "Contraer",
   },
 
+  panelHome: {
+    verdictTitle: "El veredicto del estudio",
+    verdictSubtitle:
+      "Cierre estadístico sobre la partición de desarrollo. Estas cifras son estáticas y " +
+      "auditables; no dependen de ningún servicio.",
+    families: "familias evaluadas en el cierre",
+    survive: "sobreviven a la corrección múltiple",
+    pValue: "p-valor mínimo (umbral: {alpha})",
+    pbo: "probabilidad de sobreajuste (PBO)",
+    verdictLink: "Ver la evidencia completa →",
+    statsTitle: "El estudio en cifras",
+    statBars: "velas 1h de desarrollo",
+    statRuns: "ejecuciones registradas",
+    statFamilies: "familias implementadas",
+    statRotations: "rotaciones del test de aleatorización",
+    quickTitle: "Secciones",
+    quickSubtitle: "El hilo del estudio, en orden de lectura.",
+    liveTitle: "Estado en vivo",
+    liveSubtitle: "Datos servidos por la API local en este momento.",
+    apiHint:
+      "La API local no está en marcha; las secciones estáticas de arriba no la necesitan. " +
+      "Para el navegador de runs: uv run uvicorn perp_lab.api.main:app --port 8000",
+    liveRunsTotal: "Runs totales",
+    liveRunsDev: "Runs desarrollo",
+    liveRunsSynthetic: "Runs sintéticos",
+    liveRunsSyntheticSub: "no son resultados",
+    liveHoldout: "Holdout",
+    liveHoldoutSub: "partición bloqueada",
+    pilotTitle: "Run piloto de referencia",
+    pilotSymbol: "Símbolo",
+    pilotInterval: "Intervalo",
+    pilotBudget: "Budget",
+    pilotFolds: "Folds",
+    pilotFraction: "Fracción dev",
+    pilotSeed: "Seed",
+    pilotLink: "Ver experimento piloto →",
+  },
+
   eda: {
     statBars: "velas 1h de desarrollo",
     statCoverage: "cobertura media de la serie",

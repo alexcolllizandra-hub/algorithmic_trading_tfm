@@ -1050,6 +1050,44 @@ export const en = {
     collapse: "Collapse",
   },
 
+  panelHome: {
+    verdictTitle: "The study's verdict",
+    verdictSubtitle:
+      "Statistical closure on the development partition. These figures are static and " +
+      "auditable; they depend on no service.",
+    families: "families evaluated in the closure",
+    survive: "survive the multiple-comparison correction",
+    pValue: "smallest p-value (threshold: {alpha})",
+    pbo: "probability of backtest overfitting (PBO)",
+    verdictLink: "See the full evidence →",
+    statsTitle: "The study in numbers",
+    statBars: "development 1h candles",
+    statRuns: "recorded runs",
+    statFamilies: "families implemented",
+    statRotations: "randomisation-test rotations",
+    quickTitle: "Sections",
+    quickSubtitle: "The study's thread, in reading order.",
+    liveTitle: "Live status",
+    liveSubtitle: "Data served by the local API right now.",
+    apiHint:
+      "The local API is not running; the static sections above do not need it. For the run " +
+      "browser: uv run uvicorn perp_lab.api.main:app --port 8000",
+    liveRunsTotal: "Total runs",
+    liveRunsDev: "Development runs",
+    liveRunsSynthetic: "Synthetic runs",
+    liveRunsSyntheticSub: "not results",
+    liveHoldout: "Holdout",
+    liveHoldoutSub: "locked partition",
+    pilotTitle: "Reference pilot run",
+    pilotSymbol: "Symbol",
+    pilotInterval: "Interval",
+    pilotBudget: "Budget",
+    pilotFolds: "Folds",
+    pilotFraction: "Dev fraction",
+    pilotSeed: "Seed",
+    pilotLink: "View pilot experiment →",
+  },
+
   eda: {
     statBars: "development 1h candles",
     statCoverage: "mean series coverage",
