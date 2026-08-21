@@ -31,6 +31,10 @@ export const es = {
       label: "Laboratorio",
       description: "Construya y ejecute una estrategia sobre los datos reales",
     },
+    cuadernos: {
+      label: "Cuadernos",
+      description: "Los 8 notebooks: figuras congeladas y mapa a la memoria",
+    },
     diagnostico: { label: "Diagnóstico", description: "Artefactos y sistema" },
   },
 
@@ -1048,6 +1052,37 @@ export const es = {
     howToRead: "Cómo leer esta sección",
     expand: "Expandir",
     collapse: "Contraer",
+  },
+
+  cuadernos: {
+    title: "Cuadernos del estudio",
+    subtitle:
+      "Los ocho notebooks de análisis, reconstruibles de forma determinista por sus scripts " +
+      "constructores, con el inventario de figuras y tablas congeladas que cita la memoria.",
+    que: "¿Qué es esto?",
+    queAnswer:
+      "El índice de los ocho cuadernos: qué establece cada uno, cuántas celdas tiene, qué " +
+      "figuras y tablas congeladas produce, y a qué capítulo de la memoria alimenta.",
+    como: "¿Cómo se regeneran?",
+    comoAnswer:
+      "Cada cuaderno lo escribe un script constructor determinista (celdas, semilla y " +
+      "contrato declarados). Ejecutar el script reproduce el cuaderno; el doble-run con " +
+      "hash verifica que los artefactos salen byte a byte iguales.",
+    queNo: "¿Qué NO son?",
+    queNoAnswer:
+      "No son exploración libre: son el registro ejecutable del estudio. Ninguna figura se " +
+      "edita a mano; si una figura cambia, cambia su constructor y queda en el historial.",
+    cells: "celdas",
+    chapterLabel: "Destino en la memoria",
+    chapterSource: "según",
+    builderLabel: "Se regenera con",
+    figuresLabel: "Figuras congeladas",
+    tablesLabel: "Tablas congeladas",
+    chainLabel: "Encadena (no computa nada)",
+    none: "—",
+    loadError:
+      "No se pudo cargar el índice. Genérelo con: uv run python " +
+      "scripts/export_notebooks_index.py",
   },
 
   panelHome: {

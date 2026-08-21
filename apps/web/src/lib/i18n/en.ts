@@ -38,6 +38,10 @@ export const en = {
       label: "Laboratory",
       description: "Build and run a strategy on the real data",
     },
+    cuadernos: {
+      label: "Notebooks",
+      description: "The 8 notebooks: frozen figures and thesis map",
+    },
     diagnostico: { label: "Diagnostics", description: "Artifacts and system" },
   },
 
@@ -1051,6 +1055,37 @@ export const en = {
     howToRead: "How to read this section",
     expand: "Expand",
     collapse: "Collapse",
+  },
+
+  cuadernos: {
+    title: "Study notebooks",
+    subtitle:
+      "The eight analysis notebooks, deterministically rebuildable by their builder " +
+      "scripts, with the inventory of frozen figures and tables the thesis cites.",
+    que: "What is this?",
+    queAnswer:
+      "The index of the eight notebooks: what each one establishes, how many cells it has, " +
+      "which frozen figures and tables it produces, and which thesis chapter it feeds.",
+    como: "How are they regenerated?",
+    comoAnswer:
+      "Each notebook is written by a deterministic builder script (cells, seed, and " +
+      "contract declared). Running the script reproduces the notebook; the double-run hash " +
+      "check verifies the artifacts come out byte-identical.",
+    queNo: "What are they NOT?",
+    queNoAnswer:
+      "Not free-form exploration: they are the study's executable record. No figure is " +
+      "hand-edited; when a figure changes, its builder changes and the history shows it.",
+    cells: "cells",
+    chapterLabel: "Thesis destination",
+    chapterSource: "per",
+    builderLabel: "Regenerated with",
+    figuresLabel: "Frozen figures",
+    tablesLabel: "Frozen tables",
+    chainLabel: "Chains (computes nothing)",
+    none: "—",
+    loadError:
+      "The index could not be loaded. Generate it with: uv run python " +
+      "scripts/export_notebooks_index.py",
   },
 
   panelHome: {

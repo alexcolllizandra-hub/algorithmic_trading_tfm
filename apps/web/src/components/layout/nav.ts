@@ -72,6 +72,12 @@ export function navGroups(t: Dictionary): NavGroup[] {
           icon: "⚖",
           description: t.nav.resultados.description,
         },
+        {
+          href: "/cuadernos",
+          label: t.nav.cuadernos.label,
+          icon: "≡",
+          description: t.nav.cuadernos.description,
+        },
       ],
     },
     {
