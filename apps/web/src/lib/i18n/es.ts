@@ -1047,6 +1047,83 @@ export const es = {
     collapse: "Contraer",
   },
 
+  eda: {
+    statBars: "velas 1h de desarrollo",
+    statCoverage: "cobertura media de la serie",
+    statSpan: "periodo de desarrollo",
+    statDatasets: "datasets con manifiesto",
+    provenanceTitle: "Procedencia y particiones",
+    provenanceSubtitle:
+      "Cada dataset con su hash SHA-256: la re-descarga desde Binance Vision reproduce estos " +
+      "bytes exactamente. El holdout está separado físicamente en ficheros propios.",
+    colDataset: "Dataset",
+    colPartition: "Partición",
+    colRows: "Filas",
+    colSpan: "Periodo",
+    colSha: "SHA-256",
+    partitionDev: "desarrollo",
+    partitionHoldout: "holdout (congelado)",
+    priceTitle: "Precio",
+    priceSubtitle: "Cierre diario, escala logarítmica",
+    priceWhat:
+      "Qué mira: la serie completa de precio con la partición reservada sombreada al final.",
+    priceWhy:
+      "Qué implica: la escala log evita que los primeros años queden aplastados; la zona " +
+      "sombreada nunca alimentó ninguna decisión de diseño.",
+    holdoutLabel: "holdout",
+    volTitle: "Volatilidad rodante",
+    volSubtitlePrefix: "Desviación típica móvil de",
+    volSubtitleSuffix: "días, anualizada",
+    volWhat: "Qué mira: cuánto se mueve el mercado, con ventana estrictamente retrospectiva.",
+    volWhy:
+      "Qué implica: la volatilidad cambia de régimen en órdenes de magnitud; una estrategia " +
+      "de parámetros fijos no se comporta igual en 2021 que en 2024, y por eso el estudio " +
+      "valida por ventanas temporales.",
+    medianLabel: "mediana",
+    distTitle: "Distribución de retornos horarios",
+    distSubtitle: "Observada frente a una normal de igual media y desviación típica",
+    distWhat:
+      "Qué mira: el histograma real de retornos de 1h contra la campana gaussiana equivalente " +
+      "(eje vertical logarítmico).",
+    distWhy:
+      "Qué implica: las colas reales exceden a la normal por órdenes de magnitud; cualquier " +
+      "métrica de riesgo que asuma normalidad subestima el suceso extremo. Es la base " +
+      "empírica del capítulo de riesgo.",
+    distObserved: "observada",
+    distNormal: "normal equivalente",
+    tailsMove: "Movimiento",
+    tailsExpected: "Prevé la normal",
+    tailsObserved: "Ocurrió",
+    tailsOver: "Más de",
+    tailsFooterPrefix: "Sobre",
+    tailsFooterSuffix: "horas de desarrollo.",
+    seasonTitle: "Estacionalidad de la volatilidad",
+    seasonWhat:
+      "Qué mira: movimiento medio absoluto por barra de 1h (puntos básicos), hora UTC × día.",
+    seasonWhy:
+      "Qué implica: la sesión estadounidense concentra el movimiento y el fin de semana lo " +
+      "apaga; el 'intradía' del título no es decorativo, es donde vive la estructura.",
+    uwTitle: "Distancia al máximo previo (comprar y mantener)",
+    uwWhat: "Qué mira: la profundidad respecto al máximo histórico en cada instante.",
+    uwWhy:
+      "Qué implica: incluso el activo pasa casi todo el tiempo bajo un máximo anterior; el " +
+      "drawdown no es una anomalía del trading, es el estado normal de la serie.",
+    fundingTitle: "Funding del perpetuo",
+    fundingWhat: "Qué mira: media semanal del funding rate real (eventos de 8 horas).",
+    fundingWhy:
+      "Qué implica: mantener un largo cuesta de media un {pct} anual solo en funding; el " +
+      "motor del estudio lo cobra barra a barra y ninguna comparación es válida sin él.",
+    annexTitle: "Anexo: galería EDA congelada",
+    annexSubtitle:
+      "Las figuras matplotlib generadas por el pipeline de EDA, tal como se citan en la " +
+      "memoria. Son artefactos congelados; los gráficos vivos de arriba se calculan de los " +
+      "mismos datos.",
+    annexApiNote:
+      "La galería se sirve desde la API local. Arránquela con: uv run uvicorn " +
+      "perp_lab.api.main:app --port 8000",
+    annexOpen: "Mostrar galería ({n} figuras)",
+  },
+
   lab: {
     title: "Laboratorio de estrategias",
     subtitle:
