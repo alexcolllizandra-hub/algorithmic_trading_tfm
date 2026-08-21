@@ -15,7 +15,10 @@ export const es = {
     datosEda: { label: "Datos y EDA", description: "Cobertura, cronología y hallazgos" },
     metodologia: { label: "Metodología", description: "Features, estrategias y validación" },
     experimentos: { label: "Experimentos", description: "Búsqueda RS vs GA" },
-    resultados: { label: "Resultados", description: "Equity, drawdown y operaciones" },
+    resultados: {
+      label: "Resultados y cierre",
+      description: "13 familias, corrección múltiple y holdout",
+    },
     estudio: {
       label: "Cierre del estudio",
       description: "13 familias, corrección múltiple y holdout",
@@ -151,7 +154,7 @@ export const es = {
         "Resultados exploratorios en desarrollo; no reportar como rendimiento final de tesis hasta abrir el holdout una sola vez.",
     },
     estudio: {
-      title: "Cierre del estudio",
+      title: "Resultados y cierre del estudio",
       subtitle:
         "Las 13 familias juzgadas juntas: todos los backtests, la corrección por comparaciones múltiples y el estado del holdout congelado.",
       que: "¿Qué muestra esta sección?",

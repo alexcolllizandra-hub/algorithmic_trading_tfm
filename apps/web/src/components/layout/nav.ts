@@ -69,14 +69,8 @@ export function navGroups(t: Dictionary): NavGroup[] {
         {
           href: "/resultados",
           label: t.nav.resultados.label,
-          icon: "↗",
-          description: t.nav.resultados.description,
-        },
-        {
-          href: "/estudio",
-          label: t.nav.estudio.label,
           icon: "⚖",
-          description: t.nav.estudio.description,
+          description: t.nav.resultados.description,
         },
       ],
     },

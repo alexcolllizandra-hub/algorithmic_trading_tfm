@@ -22,7 +22,10 @@ export const en = {
     datosEda: { label: "Data & EDA", description: "Coverage, timeline and findings" },
     metodologia: { label: "Methodology", description: "Features, strategies and validation" },
     experimentos: { label: "Experiments", description: "RS vs GA search" },
-    resultados: { label: "Results", description: "Equity, drawdown and trades" },
+    resultados: {
+      label: "Results & closure",
+      description: "13 families, multiple testing and holdout",
+    },
     estudio: {
       label: "Study closure",
       description: "13 families, multiple testing and holdout",
@@ -157,7 +160,7 @@ export const en = {
         "Exploratory development results; not to be reported as the thesis's final performance until the holdout is opened exactly once.",
     },
     estudio: {
-      title: "Study closure",
+      title: "Results and study closure",
       subtitle:
         "All 13 families judged together: every backtest, the multiple-comparison correction and the state of the frozen holdout.",
       que: "What does this section show?",

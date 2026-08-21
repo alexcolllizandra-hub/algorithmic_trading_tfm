@@ -11,6 +11,7 @@ import { SectionIntro } from "@/components/education/SectionIntro";
 import { PageShell } from "@/components/layout/PageShell";
 import { RunPicker, useSelectedRun } from "@/components/RunPicker";
 import { FairnessPanel } from "@/components/research/FairnessPanel";
+import { RunPerformanceSection } from "@/components/research/RunPerformance";
 import { Badge, RunKindBadge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { ExploratoryBanner } from "@/components/ui/ExploratoryBanner";
@@ -28,7 +29,7 @@ import { fmtInt, fmtRatio, fmtSignedPercent, signClass } from "@/lib/format";
 import { metricHelp } from "@/lib/metrics";
 import { useAnalytics, useCandidates, useComparison, useFolds, useRun, useRuns } from "@/lib/hooks";
 
-type MainTab = "lista" | "detalle" | "analytics" | "fairness";
+type MainTab = "lista" | "detalle" | "rendimiento" | "analytics" | "fairness";
 type DetailTab = "comparison" | "candidates" | "folds";
 type Method = "random_search" | "genetic_algorithm";
 
@@ -60,6 +61,7 @@ function ExperimentosInner() {
           [
             ["lista", "Lista"],
             ["detalle", "Detalle"],
+            ["rendimiento", "Rendimiento"],
             ["analytics", "Analytics"],
             ["fairness", "Validez"],
           ] as const
@@ -79,6 +81,7 @@ function ExperimentosInner() {
 
       {tab === "lista" && <RunsList />}
       {tab === "detalle" && <RunDetail runId={runId} />}
+      {tab === "rendimiento" && <RunPerformanceSection />}
       {tab === "analytics" && <AnalyticsTab runId={runId} />}
       {tab === "fairness" && <FairnessPanel runId={runId} />}
 
