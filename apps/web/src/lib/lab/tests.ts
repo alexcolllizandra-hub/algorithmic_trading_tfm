@@ -98,7 +98,7 @@ export function perturbationTornado(
     const evalAt = (idx: number): number | null => {
       if (idx < 0 || idx >= grid.length) return null;
       const perturbed = { ...values, [spec.key]: grid[idx] };
-      const side = def.run(bars, perturbed);
+      const side = def.run(bars, perturbed, { funding });
       const ledger = runBacktest(bars, side, costs, funding);
       return sliceReturn(ledger.net, from, Math.min(to, ledger.net.length)) - baseReturn;
     };

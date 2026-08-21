@@ -7,6 +7,7 @@
 // the UI are the study's own search-space values plus free numeric entry.
 
 import { atr, rollingMax, rollingMin, rollingQuantile, shift1, sma, zscore } from "./indicators";
+import type { FundingSeries } from "./engine";
 
 export type Direction = "both" | "long" | "short";
 
@@ -229,11 +230,125 @@ export function volatilityBreakoutSignals(bars: Bars, p: VolatilityBreakoutParam
   return evolvePositions(longEntry, shortEntry, exitFlat);
 }
 
+/** Port of strategies/timed_exit.py evolve_timed_positions: open on an event,
+ * hold exactly `holdingBars` bars, ignore events while open, cancel when a
+ * long and a short event fire on the same bar. */
+export function evolveTimedPositions(
+  longEvent: Uint8Array,
+  shortEvent: Uint8Array,
+  holdingBars: number
+): Int8Array {
+  const n = longEvent.length;
+  const side = new Int8Array(n);
+  let remaining = 0;
+  let current = 0;
+  for (let t = 0; t < n; t++) {
+    if (remaining > 0) {
+      side[t] = current;
+      remaining--;
+      continue;
+    }
+    const le = longEvent[t] === 1;
+    const se = shortEvent[t] === 1;
+    if (le === se) continue;
+    current = le ? 1 : -1;
+    side[t] = current;
+    remaining = holdingBars - 1;
+  }
+  return side;
+}
+
+/** Backward as-of join: the last funding rate published at or before each
+ * bar's open (mirrors the Python pipeline's causal attach). */
+export function fundingAsOf(barT: Float64Array, funding: FundingSeries): Float64Array {
+  const n = barT.length;
+  const out = new Float64Array(n).fill(NaN);
+  let j = -1;
+  for (let i = 0; i < n; i++) {
+    while (j + 1 < funding.t.length && funding.t[j + 1] <= barT[i]) j++;
+    if (j >= 0) out[i] = funding.rate[j];
+  }
+  return out;
+}
+
+export interface FundingReversalParams {
+  rankWindow: number;
+  extremePct: number;
+  holdingBars: number;
+  minAbsRate: number;
+  direction: Direction;
+}
+
+export function fundingReversalSignals(
+  bars: Bars,
+  funding: FundingSeries,
+  p: FundingReversalParams
+): Int8Array {
+  const rate = fundingAsOf(bars.t, funding);
+  const upper = rollingQuantile(rate, p.rankWindow, p.extremePct);
+  const lower = rollingQuantile(rate, p.rankWindow, 1 - p.extremePct);
+  const n = rate.length;
+  let longEvent = new Uint8Array(n);
+  let shortEvent = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    const valid =
+      Number.isFinite(rate[i]) &&
+      Number.isFinite(upper[i]) &&
+      Number.isFinite(lower[i]) &&
+      Math.abs(rate[i]) >= p.minAbsRate;
+    if (!valid) continue;
+    // Funding at the top of its trailing distribution: longs are paying, so
+    // the reversal trade is short; symmetric for the lower tail.
+    if (rate[i] >= upper[i]) shortEvent[i] = 1;
+    if (rate[i] <= lower[i]) longEvent[i] = 1;
+  }
+  if (p.direction === "long") shortEvent = new Uint8Array(n);
+  if (p.direction === "short") longEvent = new Uint8Array(n);
+  return evolveTimedPositions(longEvent, shortEvent, p.holdingBars);
+}
+
+export interface IntradaySeasonalityParams {
+  entryHour: number;
+  holdingBars: number;
+  sideMode: "long" | "short";
+  trendFilterMa: number; // 0 disables the gate
+}
+
+export function intradaySeasonalitySignals(bars: Bars, p: IntradaySeasonalityParams): Int8Array {
+  const n = bars.t.length;
+  const fires = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    const hour = Math.floor(bars.t[i] / 3600) % 24;
+    if (hour === p.entryHour) fires[i] = 1;
+  }
+  let longEvent = p.sideMode === "long" ? fires : new Uint8Array(n);
+  let shortEvent = p.sideMode === "short" ? fires : new Uint8Array(n);
+  if (p.trendFilterMa > 0) {
+    const trend = sma(bars.c, p.trendFilterMa);
+    const gatedLong = new Uint8Array(n);
+    const gatedShort = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      if (!Number.isFinite(trend[i])) continue;
+      if (longEvent[i] === 1 && bars.c[i] > trend[i]) gatedLong[i] = 1;
+      if (shortEvent[i] === 1 && bars.c[i] < trend[i]) gatedShort[i] = 1;
+    }
+    longEvent = gatedLong;
+    shortEvent = gatedShort;
+  }
+  return evolveTimedPositions(longEvent, shortEvent, p.holdingBars);
+}
+
 // ---------------------------------------------------------------------------
 // Registry for the UI
 // ---------------------------------------------------------------------------
 
-export type StrategyId = "momentum" | "mean_reversion" | "breakout" | "volatility_breakout";
+export type StrategyId =
+  | "momentum"
+  | "mean_reversion"
+  | "breakout"
+  | "volatility_breakout"
+  | "funding_reversal"
+  | "intraday_seasonality";
 
 export interface ParamSpec {
   key: string;
@@ -246,10 +361,14 @@ export interface ParamSpec {
   step?: number;
 }
 
+export interface StrategyExtras {
+  funding: FundingSeries | null;
+}
+
 export interface StrategyDef {
   id: StrategyId;
   params: ParamSpec[];
-  run: (bars: Bars, values: Record<string, number | string>) => Int8Array;
+  run: (bars: Bars, values: Record<string, number | string>, extras?: StrategyExtras) => Int8Array;
 }
 
 const DIRECTION_SPEC: ParamSpec = {
@@ -395,6 +514,93 @@ export const STRATEGIES: StrategyDef[] = [
         exitMode: v.exitMode as VbExitMode,
         minAtrPct: null,
         direction: v.direction as Direction,
+      }),
+  },
+  {
+    id: "funding_reversal",
+    params: [
+      {
+        key: "rankWindow",
+        studyValues: [168, 336, 720],
+        default: 336,
+        kind: "int",
+        min: 24,
+        max: 2000,
+      },
+      {
+        key: "extremePct",
+        studyValues: [0.9, 0.95, 0.99],
+        default: 0.95,
+        kind: "float",
+        min: 0.51,
+        max: 0.99,
+        step: 0.01,
+      },
+      {
+        key: "holdingBars",
+        studyValues: [4, 8, 24, 48],
+        default: 24,
+        kind: "int",
+        min: 1,
+        max: 200,
+      },
+      {
+        key: "minAbsRate",
+        studyValues: [0, 0.00005],
+        default: 0,
+        kind: "float",
+        min: 0,
+        max: 0.001,
+        step: 0.00005,
+      },
+      DIRECTION_SPEC,
+    ],
+    run: (bars, v, extras) => {
+      if (!extras?.funding) return new Int8Array(bars.t.length);
+      return fundingReversalSignals(bars, extras.funding, {
+        rankWindow: Number(v.rankWindow),
+        extremePct: Number(v.extremePct),
+        holdingBars: Number(v.holdingBars),
+        minAbsRate: Number(v.minAbsRate),
+        direction: v.direction as Direction,
+      });
+    },
+  },
+  {
+    id: "intraday_seasonality",
+    params: [
+      {
+        key: "entryHour",
+        studyValues: Array.from({ length: 24 }, (_, h) => h),
+        default: 14,
+        kind: "int",
+        min: 0,
+        max: 23,
+      },
+      {
+        key: "holdingBars",
+        studyValues: [1, 2, 4, 8],
+        default: 4,
+        kind: "int",
+        min: 1,
+        max: 48,
+      },
+      { key: "sideMode", studyValues: ["long", "short"], default: "long", kind: "choice" },
+      {
+        key: "trendFilterMa",
+        studyValues: [0, 168, 336],
+        default: 0,
+        kind: "int",
+        min: 0,
+        max: 1000,
+      },
+    ],
+    run: (bars, v) =>
+      intradaySeasonalitySignals(bars, {
+        entryHour: Number(v.entryHour),
+        holdingBars: Number(v.holdingBars),
+        sideMode: v.sideMode as "long" | "short",
+        trendFilterMa: Number(v.trendFilterMa),
       }),
   },
 ];

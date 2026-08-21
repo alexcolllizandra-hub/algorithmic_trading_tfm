@@ -1295,6 +1295,23 @@ export const en = {
           "calm market is not the same as 2% in a storm. The study's best family — and still " +
           "rejected.",
       },
+      funding_reversal: {
+        name: "Post-extreme funding reversal",
+        tagline: "When one side pays too much to stay, bet that it folds.",
+        how:
+          "Funding at the extreme of its trailing distribution marks a crowded side of the " +
+          "book. The signal opens the opposite position and holds it a fixed number of bars, " +
+          "no matter what. Uses the real Binance funding series (8h events, joined causally " +
+          "bar by bar).",
+      },
+      intraday_seasonality: {
+        name: "Intraday seasonality",
+        tagline: "The entry is a clock hour, not a price pattern.",
+        how:
+          "Enters at a fixed UTC hour and holds a fixed number of bars; optionally only with " +
+          "the moving-average trend. It contains no price predictor at all: if it worked, the " +
+          "explanation would be flow periodicity, not a pattern.",
+      },
     },
     exampleCaption: "Schematic illustration of the rule; not real data.",
     phasesTitle: "Metrics by phase",
@@ -1386,6 +1403,22 @@ export const en = {
     ulcer: "Ulcer index",
     winStreak: "Longest winning streak",
     lossStreak: "Longest losing streak",
+    overlay: {
+      title: "Exits and filters",
+      stop: "Stop (× ATR)",
+      takeProfit: "Take-profit (× ATR)",
+      trailing: "Trailing (× ATR)",
+      maxBars: "Time exit (bars)",
+      trendGate: "Only with the SMA(200) trend",
+      regimes: "Allowed regimes",
+      low: "low",
+      mid: "mid",
+      high: "high",
+      note:
+        "Overlays only remove exposure (re-entry requires a fresh family signal). Causal " +
+        "24-bar ATR; regime from causal trailing rvol-168h terciles. Applied to the single " +
+        "backtest, not to the walk-forward.",
+    },
     wf: {
       title: "Multi-seed walk-forward — the study's protocol",
       subtitle:

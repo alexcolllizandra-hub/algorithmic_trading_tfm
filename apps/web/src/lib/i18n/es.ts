@@ -1295,6 +1295,23 @@ export const es = {
           "mercado tranquilo no es lo mismo que un 2% en plena tormenta. Fue la mejor familia del " +
           "estudio — y aun así, rechazada.",
       },
+      funding_reversal: {
+        name: "Reversión tras funding extremo",
+        tagline: "Cuando un lado paga demasiado por mantenerse, apostar a que cede.",
+        how:
+          "Un funding en el extremo de su distribución rodante indica un lado saturado del " +
+          "libro. La señal abre la posición contraria y la mantiene un número fijo de barras, " +
+          "pase lo que pase. Usa la serie real de funding de Binance (evento cada 8h, unido " +
+          "causalmente barra a barra).",
+      },
+      intraday_seasonality: {
+        name: "Estacionalidad intradía",
+        tagline: "La entrada es una hora del reloj, no un patrón de precio.",
+        how:
+          "Entra a una hora UTC fija y mantiene un número fijo de barras; opcionalmente solo a " +
+          "favor de la media móvil. No contiene ningún predictor de precio: si funcionara, la " +
+          "explicación sería la periodicidad del flujo, no un patrón.",
+      },
     },
     exampleCaption: "Ilustración esquemática de la regla; no son datos reales.",
     phasesTitle: "Métricas por fase",
@@ -1388,6 +1405,22 @@ export const es = {
     ulcer: "Índice de úlcera",
     winStreak: "Racha ganadora más larga",
     lossStreak: "Racha perdedora más larga",
+    overlay: {
+      title: "Salidas y filtros",
+      stop: "Stop (× ATR)",
+      takeProfit: "Take-profit (× ATR)",
+      trailing: "Trailing (× ATR)",
+      maxBars: "Salida por tiempo (barras)",
+      trendGate: "Solo a favor de la SMA(200)",
+      regimes: "Regímenes permitidos",
+      low: "bajo",
+      mid: "medio",
+      high: "alto",
+      note:
+        "Los overlays solo recortan exposición (la reentrada exige señal nueva de la " +
+        "familia). ATR causal de 24 barras; régimen por terciles rodantes causales de rvol " +
+        "168h. Se aplican al backtest simple, no al walk-forward.",
+    },
     wf: {
       title: "Walk-forward multi-semilla — el protocolo del estudio",
       subtitle:

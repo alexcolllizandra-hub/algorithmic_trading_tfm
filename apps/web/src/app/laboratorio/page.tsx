@@ -42,6 +42,13 @@ import {
 import { STRATEGIES, type StrategyDef, type StrategyId } from "@/lib/lab/strategies";
 import { useAttempts } from "@/lib/lab/attempts";
 import {
+  applyExitOverlay,
+  applyRegimeGate,
+  applyTrendGate,
+  regimeLabels,
+  type Regime,
+} from "@/lib/lab/exits";
+import {
   bootstrapSharpeCI,
   perturbationTornado,
   regimeSplit,
@@ -122,6 +129,57 @@ function StrategySketch({ id }: { id: StrategyId }) {
           strokeWidth="1.4"
         />
         <circle cx="152" cy="24" r="3.4" fill={CHART.strategy} />
+      </svg>
+    );
+  }
+  if (id === "funding_reversal") {
+    return (
+      <svg {...common} aria-label="funding reversal sketch">
+        <line x1="0" y1="36" x2={w} y2="36" stroke={CHART.axis} strokeDasharray="4 3" />
+        {[14, 34, 54, 74, 94, 114, 134, 154, 174, 194].map((x, i) => {
+          const heights = [6, 9, 5, 8, 30, 10, 7, 9, 6, 8];
+          const hgt = heights[i];
+          return (
+            <rect
+              key={x}
+              x={x}
+              y={36 - hgt}
+              width="7"
+              height={hgt}
+              fill={hgt > 20 ? CHART.negative : CHART.axis}
+              opacity={hgt > 20 ? 0.9 : 0.5}
+            />
+          );
+        })}
+        <path d="M98,10 L112,10 L105,20 Z" fill={CHART.strategy} />
+        <text x="118" y="16" fontSize="8" fill={CHART.axis}>
+          fade
+        </text>
+      </svg>
+    );
+  }
+  if (id === "intraday_seasonality") {
+    return (
+      <svg {...common} aria-label="intraday seasonality sketch">
+        {Array.from({ length: 24 }, (_, hr) => {
+          const x = 4 + hr * 9;
+          const active = hr === 14;
+          return (
+            <rect
+              key={hr}
+              x={x}
+              y={active ? 14 : 30}
+              width="7"
+              height={active ? 44 : 28}
+              rx="1"
+              fill={active ? CHART.strategy : CHART.axis}
+              opacity={active ? 0.85 : 0.25}
+            />
+          );
+        })}
+        <text x="130" y="10" fontSize="8" fill={CHART.axis}>
+          14:00 UTC
+        </text>
       </svg>
     );
   }
@@ -811,6 +869,12 @@ export default function LaboratorioPage() {
   const [feeBps, setFeeBps] = useState(4);
   const [slipBps, setSlipBps] = useState(1);
   const [splitPct, setSplitPct] = useState(70);
+  const [stopAtr, setStopAtr] = useState<number | null>(null);
+  const [tpAtr, setTpAtr] = useState<number | null>(null);
+  const [trailAtr, setTrailAtr] = useState<number | null>(null);
+  const [maxBars, setMaxBars] = useState<number | null>(null);
+  const [trendGate, setTrendGate] = useState(false);
+  const [allowedRegimes, setAllowedRegimes] = useState<Regime[]>(["low", "mid", "high"]);
   const [running, setRunning] = useState(false);
   const { add: addAttempts } = useAttempts();
   const [result, setResult] = useState<RunResult | null>(null);
@@ -828,7 +892,20 @@ export default function LaboratorioPage() {
     setTimeout(() => {
       try {
         const costs = { feeBpsPerSide: feeBps, slippageBpsPerSide: slipBps };
-        const side = def.run(data.bars, values);
+        let side = def.run(data.bars, values, { funding: data.funding });
+        // Composable gates and exit overlays (blocks B1/B2): gates first,
+        // exits after, so an exit episode is defined on the gated stream.
+        if (trendGate) side = applyTrendGate(side, data.bars, 200);
+        if (allowedRegimes.length < 3) {
+          side = applyRegimeGate(side, regimeLabels(data.bars), allowedRegimes);
+        }
+        side = applyExitOverlay(side, data.bars, {
+          stopAtr,
+          takeProfitAtr: tpAtr,
+          trailingAtr: trailAtr,
+          maxBars,
+          atrWindow: 24,
+        });
         const ledger = runBacktest(data.bars, side, costs, data.funding);
         const trades = extractTrades(ledger, data.bars);
         const bh = buyAndHold(data.bars, costs, data.funding);
@@ -850,7 +927,7 @@ export default function LaboratorioPage() {
         const stressMetrics = computeMetrics(stressLedger, [], splitIdx, n);
         let twin: { symbol: string; totalReturn: number } | null = null;
         if (twinData) {
-          const twinSide = def.run(twinData.bars, values);
+          const twinSide = def.run(twinData.bars, values, { funding: twinData.funding });
           const twinLedger = runBacktest(twinData.bars, twinSide, costs, twinData.funding);
           const tn = twinLedger.net.length;
           const tSplit = Math.max(1, Math.min(tn - 2, Math.floor((splitPct / 100) * tn)));
@@ -1056,6 +1133,69 @@ export default function LaboratorioPage() {
                 </label>
               </div>
               <p className="mt-1.5 text-[11px] text-muted/80">{t.lab.costsNote}</p>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                {t.lab.overlay.title}
+              </p>
+              <div className="mt-1.5 space-y-2">
+                {(
+                  [
+                    [t.lab.overlay.stop, stopAtr, setStopAtr, 2, 0.25],
+                    [t.lab.overlay.takeProfit, tpAtr, setTpAtr, 4, 0.25],
+                    [t.lab.overlay.trailing, trailAtr, setTrailAtr, 3, 0.25],
+                    [t.lab.overlay.maxBars, maxBars, setMaxBars, 48, 1],
+                  ] as const
+                ).map(([label, value, setter, def0, step]) => (
+                  <label key={label} className="flex items-center gap-2 text-xs text-muted">
+                    <input
+                      type="checkbox"
+                      checked={value != null}
+                      onChange={(e) => setter(e.target.checked ? def0 : null)}
+                      className="accent-[var(--accent)]"
+                    />
+                    <span className="w-36 shrink-0">{label}</span>
+                    <input
+                      type="number"
+                      value={value ?? def0}
+                      step={step}
+                      min={step}
+                      disabled={value == null}
+                      onChange={(e) => setter(Number(e.target.value))}
+                      className="w-20 rounded-md border border-border bg-surface-2 px-2 py-1 text-xs text-fg disabled:opacity-40"
+                    />
+                  </label>
+                ))}
+                <label className="flex items-center gap-2 text-xs text-muted">
+                  <input
+                    type="checkbox"
+                    checked={trendGate}
+                    onChange={(e) => setTrendGate(e.target.checked)}
+                    className="accent-[var(--accent)]"
+                  />
+                  {t.lab.overlay.trendGate}
+                </label>
+                <div className="flex items-center gap-3 text-xs text-muted">
+                  <span className="shrink-0">{t.lab.overlay.regimes}:</span>
+                  {(["low", "mid", "high"] as const).map((r) => (
+                    <label key={r} className="flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={allowedRegimes.includes(r)}
+                        onChange={(e) =>
+                          setAllowedRegimes((prev) =>
+                            e.target.checked ? [...prev, r] : prev.filter((x) => x !== r)
+                          )
+                        }
+                        className="accent-[var(--accent)]"
+                      />
+                      {t.lab.overlay[r]}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[10px] leading-relaxed text-muted/70">{t.lab.overlay.note}</p>
+              </div>
             </div>
 
             <label className="block text-xs text-muted">

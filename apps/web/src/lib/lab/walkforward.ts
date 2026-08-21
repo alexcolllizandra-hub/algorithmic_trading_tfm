@@ -168,7 +168,7 @@ export function runWalkForward(input: WalkForwardInput): WalkForwardResult {
     const key = paramHash(values);
     const hit = cache.get(key);
     if (hit) return hit;
-    const side = def.run(bars, values);
+    const side = def.run(bars, values, { funding });
     const ledger = runBacktest(bars, side, costs, funding);
     cache.set(key, ledger);
     return ledger;
