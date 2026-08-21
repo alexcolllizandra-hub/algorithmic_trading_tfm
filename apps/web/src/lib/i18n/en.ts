@@ -1057,6 +1057,15 @@ export const en = {
     collapse: "Collapse",
   },
 
+  experimentosApi: {
+    title: "This section needs the local API",
+    body:
+      "The run browser reads the artifacts under artifacts/runs through the read-only " +
+      "API. The rest of the panel works without it; this page does not. Start it with the " +
+      "command below and press retry.",
+    retry: "Retry",
+  },
+
   cuadernos: {
     title: "Study notebooks",
     subtitle:

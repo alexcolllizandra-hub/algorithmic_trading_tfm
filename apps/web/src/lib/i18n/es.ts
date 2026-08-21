@@ -1054,6 +1054,15 @@ export const es = {
     collapse: "Contraer",
   },
 
+  experimentosApi: {
+    title: "Esta sección necesita la API local",
+    body:
+      "El navegador de runs lee los artefactos de artifacts/runs a través de la API de " +
+      "solo lectura. El resto del panel funciona sin ella; esta página no. Arránquela con " +
+      "el comando siguiente y pulse reintentar.",
+    retry: "Reintentar",
+  },
+
   cuadernos: {
     title: "Cuadernos del estudio",
     subtitle:

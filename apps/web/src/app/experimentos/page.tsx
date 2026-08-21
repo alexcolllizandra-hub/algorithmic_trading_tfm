@@ -33,8 +33,28 @@ type MainTab = "lista" | "detalle" | "rendimiento" | "analytics" | "fairness";
 type DetailTab = "comparison" | "candidates" | "folds";
 type Method = "random_search" | "genetic_algorithm";
 
-const FAMILIES = ["", "momentum", "breakout", "mean_reversion"];
 const KINDS = ["", "development", "synthetic-smoke", "final-holdout"];
+
+/** Friendly gate shown when the local API is down: this page needs it. */
+function ApiRequiredBanner({ onRetry }: { onRetry: () => void }) {
+  const t = useI18n();
+  return (
+    <div className="rounded-card border border-warn/40 bg-warn/5 p-6">
+      <p className="text-sm font-semibold text-warn">{t.experimentosApi.title}</p>
+      <p className="mt-2 text-sm leading-relaxed text-muted">{t.experimentosApi.body}</p>
+      <p className="mt-3 rounded-md border border-border bg-surface-2 px-3 py-2 font-mono text-xs">
+        uv run uvicorn perp_lab.api.main:app --port 8000
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-4 rounded-md border border-border px-3 py-1.5 text-sm text-accent hover:bg-accent/10"
+      >
+        {t.experimentosApi.retry}
+      </button>
+    </div>
+  );
+}
 
 function ExperimentosInner() {
   const t = useI18n();
@@ -94,7 +114,7 @@ function ExperimentosInner() {
 }
 
 function RunsList() {
-  const { data, error, isLoading } = useRuns();
+  const { data, error, isLoading, mutate } = useRuns();
   const [family, setFamily] = useState("");
   const [kind, setKind] = useState("");
   const [query, setQuery] = useState("");
@@ -106,6 +126,17 @@ function RunsList() {
     if (query) items = items.filter((r) => r.run_id.toLowerCase().includes(query.toLowerCase()));
     return items;
   }, [data, family, kind, query]);
+
+  // Families offered by the filter come from the data itself, so every
+  // family that ever produced a run (22 registered, incl. S2 and CRT) shows
+  // up — the old hard-coded three-family list hid most of the archive.
+  const families = useMemo(() => {
+    const seen = new Set<string>();
+    for (const item of data?.items ?? []) if (item.family) seen.add(item.family);
+    return ["", ...[...seen].sort()];
+  }, [data]);
+
+  if (error) return <ApiRequiredBanner onRetry={() => void mutate()} />;
 
   const columns: Column<RunSummary>[] = [
     {
@@ -133,7 +164,7 @@ function RunsList() {
             id="f-family"
             label="Familia"
             value={family}
-            options={FAMILIES}
+            options={families}
             onChange={setFamily}
             allLabel="Todas"
           />
@@ -161,8 +192,6 @@ function RunsList() {
       </Card>
       {isLoading ? (
         <Skeleton className="h-64" />
-      ) : error ? (
-        <ErrorState title="Error al cargar runs" detail={error.message} />
       ) : rows.length === 0 ? (
         <EmptyState title="Sin runs" />
       ) : (
