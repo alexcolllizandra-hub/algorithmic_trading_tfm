@@ -9,7 +9,7 @@
   "config": {
     "seed": null,
     "study_seed": 42,
-    "code_commit_resolved": "e4a75f51b124cd727f8428c383d97b80610df7c3",
+    "code_commit_resolved": "538846f1990eeca2d72f8755bb6ad13f955be99f",
     "data_contract_cutoff": "2026-07-01",
     "contract_label": "INFRAESTRUCTURA/EXPLORATORIO (seccion 5; ADR 0017)",
     "family": "crt_htf_range_reversal",
@@ -21,8 +21,8 @@
       "lightgbm"
     ]
   },
-  "generated_at": "2026-08-19T21:33:24.171139+00:00",
-  "code_commit": "e4a75f51b124cd727f8428c383d97b80610df7c3",
+  "generated_at": "2026-08-25T17:39:58.992958+00:00",
+  "code_commit": "538846f1990eeca2d72f8755bb6ad13f955be99f",
   "output_path": "reports/figures/ml/m01_economia_por_fold.png",
   "kind": "figure",
   "dpi": 300,

@@ -10,7 +10,7 @@
   },
   "config": {
     "seed": null,
-    "code_commit_resolved": "e4a75f51b124cd727f8428c383d97b80610df7c3",
+    "code_commit_resolved": "538846f1990eeca2d72f8755bb6ad13f955be99f",
     "data_contract_cutoff": "2026-07-01",
     "holdout_start": "2026-01-01",
     "n_families": 13,
@@ -20,8 +20,8 @@
     "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
     "holdout_publication": "AUDIT_PENDING"
   },
-  "generated_at": "2026-08-19T21:29:19.357338+00:00",
-  "code_commit": "e4a75f51b124cd727f8428c383d97b80610df7c3",
+  "generated_at": "2026-08-25T17:39:49.430928+00:00",
+  "code_commit": "538846f1990eeca2d72f8755bb6ad13f955be99f",
   "output_path": "reports/tables/closure/t06_deflated_sharpe.md",
   "kind": "table",
   "n_rows": 2,
