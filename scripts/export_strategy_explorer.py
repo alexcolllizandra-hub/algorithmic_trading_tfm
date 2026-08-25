@@ -137,9 +137,7 @@ def main() -> int:
     }
 
     for family, (study_dir, round_tag) in STUDIES.items():
-        rob = json.loads(
-            (Path(study_dir) / "study_robustness.json").read_text(encoding="utf-8")
-        )
+        rob = json.loads((Path(study_dir) / "study_robustness.json").read_text(encoding="utf-8"))
         per_asset: dict[str, Any] = {}
         for key, entry in sorted(rob["per_run"].items()):
             symbol, seed_part, engine = key.split("|")
@@ -176,9 +174,7 @@ def main() -> int:
         for symbol, asset in per_asset.items():
             mean_net = asset.pop("_net_sum") / max(len(asset["seeds"]), 1)
             asset["average_curve"] = decimate(np.cumprod(1.0 + mean_net))
-            asset["average_metrics"] = {
-                k: round(v, 6) for k, v in path_metrics(mean_net).items()
-            }
+            asset["average_metrics"] = {k: round(v, 6) for k, v in path_metrics(mean_net).items()}
             meta = closure.get(family, {}).get(symbol, {})
             asset["closure"] = meta or None
 

@@ -100,7 +100,12 @@ def fig_2_1() -> str:
     )
     ax.set_ylabel("Price")
     ax.legend(loc="upper left", fontsize=8)
-    ax.set_title("Illustrative diagram (synthetic path, not market data)", fontsize=8, loc="right", color=GREY)
+    ax.set_title(
+        "Illustrative diagram (synthetic path, not market data)",
+        fontsize=8,
+        loc="right",
+        color=GREY,
+    )
 
     funding = np.clip(gap / 8, -0.4, 0.4)
     ax2.axhline(0, color=GREY, lw=0.8)
@@ -186,12 +191,51 @@ def fig_2_3() -> str:
     ax = axes[0]
     for k, f in enumerate(folds):
         y = len(folds) - 1 - k
-        ax.barh(y, ts(f["train_end"]) - ts(f["train_start"]), left=ts(f["train_start"]), height=0.72, color=GREY, alpha=0.35)
-        ax.barh(y, ts(f["val_end"]) - ts(f["val_start"]), left=ts(f["val_start"]), height=0.72, color=SECOND, alpha=0.75)
-        ax.barh(y, ts(f["test_end"]) - ts(f["test_start"]), left=ts(f["test_start"]), height=0.72, color=ACCENT, alpha=0.9)
+        ax.barh(
+            y,
+            ts(f["train_end"]) - ts(f["train_start"]),
+            left=ts(f["train_start"]),
+            height=0.72,
+            color=GREY,
+            alpha=0.35,
+        )
+        ax.barh(
+            y,
+            ts(f["val_end"]) - ts(f["val_start"]),
+            left=ts(f["val_start"]),
+            height=0.72,
+            color=SECOND,
+            alpha=0.75,
+        )
+        ax.barh(
+            y,
+            ts(f["test_end"]) - ts(f["test_start"]),
+            left=ts(f["test_start"]),
+            height=0.72,
+            color=ACCENT,
+            alpha=0.9,
+        )
         # purge gaps (train->val and val->test) as hatched bands
-        ax.barh(y, ts(f["val_start"]) - ts(f["train_end"]), left=ts(f["train_end"]), height=0.72, color="none", edgecolor=BAD, hatch="////", lw=0)
-        ax.barh(y, ts(f["test_start"]) - ts(f["val_end"]), left=ts(f["val_end"]), height=0.72, color="none", edgecolor=BAD, hatch="////", lw=0)
+        ax.barh(
+            y,
+            ts(f["val_start"]) - ts(f["train_end"]),
+            left=ts(f["train_end"]),
+            height=0.72,
+            color="none",
+            edgecolor=BAD,
+            hatch="////",
+            lw=0,
+        )
+        ax.barh(
+            y,
+            ts(f["test_start"]) - ts(f["val_end"]),
+            left=ts(f["val_end"]),
+            height=0.72,
+            color="none",
+            edgecolor=BAD,
+            hatch="////",
+            lw=0,
+        )
     ax.set_yticks([len(folds) - 1, 0], ["fold 0", f"fold {len(folds) - 1}"])
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
     ax.set_title(
@@ -245,9 +289,27 @@ def fig_2_3() -> str:
             else:
                 ax.barh(y, 1, left=left, height=0.72, color=GREY, alpha=0.35)
         if k > 0:
-            ax.barh(y, purge, left=k - purge, height=0.72, color="none", edgecolor=BAD, hatch="////", lw=0)
+            ax.barh(
+                y,
+                purge,
+                left=k - purge,
+                height=0.72,
+                color="none",
+                edgecolor=BAD,
+                hatch="////",
+                lw=0,
+            )
         if k < K - 1:
-            ax.barh(y, purge + embargo, left=k + 1, height=0.72, color="none", edgecolor=BAD, hatch="////", lw=0)
+            ax.barh(
+                y,
+                purge + embargo,
+                left=k + 1,
+                height=0.72,
+                color="none",
+                edgecolor=BAD,
+                hatch="////",
+                lw=0,
+            )
     ax.set_yticks([K - 1, 0], ["fold 0", f"fold {K - 1}"])
     ax.set_xticks([])
     ax.set_title(
@@ -298,15 +360,49 @@ def fig_2_4() -> str:
 
     fig, ax = plt.subplots(figsize=(7.6, 3.9))
     ax.plot(times, close, color=GREY, lw=0.9)
-    ax.plot(times[entry_idx : touch_idx + 1], close[entry_idx : touch_idx + 1], color=ACCENT, lw=1.4)
-    ax.hlines([upper], times[entry_idx], times[min(vertical, len(times) - 1)], color=ACCENT, ls="--", lw=1.1)
-    ax.hlines([lower], times[entry_idx], times[min(vertical, len(times) - 1)], color=BAD, ls="--", lw=1.1)
+    ax.plot(
+        times[entry_idx : touch_idx + 1], close[entry_idx : touch_idx + 1], color=ACCENT, lw=1.4
+    )
+    ax.hlines(
+        [upper],
+        times[entry_idx],
+        times[min(vertical, len(times) - 1)],
+        color=ACCENT,
+        ls="--",
+        lw=1.1,
+    )
+    ax.hlines(
+        [lower], times[entry_idx], times[min(vertical, len(times) - 1)], color=BAD, ls="--", lw=1.1
+    )
     ax.axvline(times[min(vertical, len(times) - 1)], color=SECOND, ls=":", lw=1.2)
     ax.scatter([times[entry_idx]], [entry], color="black", zorder=5, s=22, label="entry")
-    ax.scatter([times[touch_idx]], [close[touch_idx]], color=ACCENT if touch_kind == "profit-taking" else BAD if touch_kind == "stop-loss" else SECOND, zorder=5, s=34, marker="X", label=f"first touch: {touch_kind}")
-    ax.text(times[entry_idx], upper, " profit-taking barrier", fontsize=8, color=ACCENT, va="bottom")
+    ax.scatter(
+        [times[touch_idx]],
+        [close[touch_idx]],
+        color=ACCENT
+        if touch_kind == "profit-taking"
+        else BAD
+        if touch_kind == "stop-loss"
+        else SECOND,
+        zorder=5,
+        s=34,
+        marker="X",
+        label=f"first touch: {touch_kind}",
+    )
+    ax.text(
+        times[entry_idx], upper, " profit-taking barrier", fontsize=8, color=ACCENT, va="bottom"
+    )
     ax.text(times[entry_idx], lower, " stop-loss barrier", fontsize=8, color=BAD, va="top")
-    ax.text(times[min(vertical, len(times) - 1)], entry, " vertical barrier (24 h)", fontsize=8, color=SECOND, rotation=90, va="center", ha="right")
+    ax.text(
+        times[min(vertical, len(times) - 1)],
+        entry,
+        " vertical barrier (24 h)",
+        fontsize=8,
+        color=SECOND,
+        rotation=90,
+        va="center",
+        ha="right",
+    )
     ax.set_ylabel("BTCUSDT close (5m)")
     ax.set_xlabel("2024-03-04 … 2024-03-05 UTC — real 5-minute bars, development partition")
     ax.legend(loc="upper left", fontsize=8)
@@ -326,21 +422,44 @@ def fig_2_5() -> str:
     def box(x, y, w, h, text, color, fs=8.5):
         ax.add_patch(
             FancyBboxPatch(
-                (x, y), w, h, boxstyle="round,pad=0.08", linewidth=1.1, edgecolor=color, facecolor="white"
+                (x, y),
+                w,
+                h,
+                boxstyle="round,pad=0.08",
+                linewidth=1.1,
+                edgecolor=color,
+                facecolor="white",
             )
         )
         ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=fs, color="black")
 
     def arrow(x1, y1, x2, y2, label=None, color=GREY):
-        ax.add_patch(FancyArrowPatch((x1, y1), (x2, y2), arrowstyle="-|>", mutation_scale=12, color=color, lw=1.1))
+        ax.add_patch(
+            FancyArrowPatch(
+                (x1, y1), (x2, y2), arrowstyle="-|>", mutation_scale=12, color=color, lw=1.1
+            )
+        )
         if label:
-            ax.text((x1 + x2) / 2, (y1 + y2) / 2 + 0.16, label, ha="center", fontsize=7.5, color=color)
+            ax.text(
+                (x1 + x2) / 2, (y1 + y2) / 2 + 0.16, label, ha="center", fontsize=7.5, color=color
+            )
 
     box(0.2, 3.3, 2.1, 1.2, "Market data\n(OHLCV, funding)", GREY)
-    box(3.2, 3.3, 2.6, 1.2, "Primary strategy\ninterpretable rule\n→ direction (long/short)", ACCENT)
+    box(
+        3.2, 3.3, 2.6, 1.2, "Primary strategy\ninterpretable rule\n→ direction (long/short)", ACCENT
+    )
     box(3.2, 0.4, 2.6, 1.5, "Triple-barrier labels\non net returns\n(PT / SL / vertical)", SECOND)
-    box(6.8, 3.3, 2.9, 1.2, "Secondary classifier\nLR / RF / LightGBM\n→ participate? size?", SECOND)
-    box(6.8, 0.55, 2.9, 1.2, "Execution\nonly trades the classifier\naccepts; abstains otherwise", ACCENT)
+    box(
+        6.8, 3.3, 2.9, 1.2, "Secondary classifier\nLR / RF / LightGBM\n→ participate? size?", SECOND
+    )
+    box(
+        6.8,
+        0.55,
+        2.9,
+        1.2,
+        "Execution\nonly trades the classifier\naccepts; abstains otherwise",
+        ACCENT,
+    )
 
     arrow(2.3, 3.9, 3.2, 3.9)
     arrow(1.2, 3.3, 3.1, 1.2, label="features", color=GREY)
@@ -384,13 +503,29 @@ def fig_2_6() -> str:
     theory = np.sqrt(2 * np.log(np.maximum(N, 2)) / n) * np.sqrt(bpy)
 
     fig, ax = plt.subplots(figsize=(7.2, 3.9))
-    ax.plot(N, running_max, color=ACCENT, lw=1.4, label="observed max Sharpe among N random strategies")
-    ax.plot(N, theory, color=GREY, lw=1.2, ls="--", label=r"theoretical $E[\max] \approx \sqrt{2\ln N\,/\,T}$ (annualised)")
+    ax.plot(
+        N, running_max, color=ACCENT, lw=1.4, label="observed max Sharpe among N random strategies"
+    )
+    ax.plot(
+        N,
+        theory,
+        color=GREY,
+        lw=1.2,
+        ls="--",
+        label=r"theoretical $E[\max] \approx \sqrt{2\ln N\,/\,T}$ (annualised)",
+    )
     ax.set_xscale("log")
     ax.set_xlabel("N — number of no-edge strategies tried (log scale)")
     ax.set_ylabel("Best annualised Sharpe found")
     ax.axhline(1.0, color=BAD, lw=0.9, ls=":")
-    ax.text(1.3, 1.02, 'Sharpe 1.0 — a level often marketed as "good"', fontsize=7.5, color=BAD, va="bottom")
+    ax.text(
+        1.3,
+        1.02,
+        'Sharpe 1.0 — a level often marketed as "good"',
+        fontsize=7.5,
+        color=BAD,
+        va="bottom",
+    )
     ax.legend(loc="lower right", fontsize=8)
     ax.set_title(
         f"Real BTCUSDT 1h development returns (n={n:,} bars), random ±1 positions, seed {SEED}",

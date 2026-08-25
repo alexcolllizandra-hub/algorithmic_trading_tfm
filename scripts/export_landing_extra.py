@@ -20,6 +20,7 @@ Everything here traces to an artifact; nothing is invented for layout.
 from __future__ import annotations
 
 import csv
+import itertools
 import json
 import sys
 from datetime import UTC, datetime
@@ -74,11 +75,7 @@ def null_block() -> dict:
             "artifacts/runs/r3_full_budget100_ga21/volatility_breakout/study_robustness.json"
         ).read_text(encoding="utf-8")
     )
-    units = {
-        k: v
-        for k, v in rob["per_run"].items()
-        if "BTCUSDT" in k and "random_search" in k
-    }
+    units = {k: v for k, v in rob["per_run"].items() if "BTCUSDT" in k and "random_search" in k}
     pooled = []
     reals = []
     for _key, entry in sorted(units.items()):
@@ -134,9 +131,7 @@ def funded_block() -> dict:
     return {"n_paths": 1000, "firms": firms}
 
 
-ROB_PATH = Path(
-    "artifacts/runs/r3_full_budget100_ga21/volatility_breakout/study_robustness.json"
-)
+ROB_PATH = Path("artifacts/runs/r3_full_budget100_ga21/volatility_breakout/study_robustness.json")
 R3_ROOT = Path("artifacts/runs/r3_full_budget100_ga21")
 R3_FAMILIES = (
     "breakout",
@@ -150,11 +145,7 @@ R3_FAMILIES = (
 def _vb_btc_run_dirs() -> list[str]:
     """The ten BTCUSDT random-search run dirs of the study's best family."""
     rob = json.loads(ROB_PATH.read_text(encoding="utf-8"))
-    units = {
-        k: v
-        for k, v in rob["per_run"].items()
-        if "BTCUSDT" in k and "random_search" in k
-    }
+    units = {k: v for k, v in rob["per_run"].items() if "BTCUSDT" in k and "random_search" in k}
     return [entry["run_dir"] for _key, entry in sorted(units.items())]
 
 
@@ -216,7 +207,6 @@ def folds_block() -> dict:
         )
     positive = [r for r in rows if r["mean"] > 0]
     total_positive_mean = sum(r["mean"] for r in positive)
-    total_mean = sum(abs(r["mean"]) for r in rows) or 1.0
     top2 = sorted((r["mean"] for r in rows), reverse=True)[:2]
     return {
         "family": "volatility_breakout",
@@ -224,9 +214,9 @@ def folds_block() -> dict:
         "n_seeds": len(run_dirs),
         "folds": rows,
         "n_positive": len(positive),
-        "top2_share_of_gains": round(
-            sum(top2) / total_positive_mean, 4
-        ) if total_positive_mean > 0 else None,
+        "top2_share_of_gains": round(sum(top2) / total_positive_mean, 4)
+        if total_positive_mean > 0
+        else None,
     }
 
 
@@ -234,9 +224,7 @@ def rs_ga_block() -> dict:
     """Random search vs genetic algorithm, same budget, per R3 family (BTC)."""
     rows = []
     for family in R3_FAMILIES:
-        rob = json.loads(
-            (R3_ROOT / family / "study_robustness.json").read_text(encoding="utf-8")
-        )
+        rob = json.loads((R3_ROOT / family / "study_robustness.json").read_text(encoding="utf-8"))
         rs_vals = []
         ga_vals = []
         for key, entry in sorted(rob["per_run"].items()):
@@ -283,7 +271,7 @@ def meta_block() -> dict:
 
 
 def market_structure_block() -> dict:
-    """Funding series, buy-and-hold underwater curve and hour×weekday
+    """Funding series, buy-and-hold underwater curve and hour-by-weekday
     volatility seasonality — all from the validated/processed BTC datasets."""
     import polars as pl
 
@@ -304,7 +292,7 @@ def market_structure_block() -> dict:
         current = current + 1 if flag else 0
         longest = max(longest, current)
 
-    # Hour-of-day × weekday mean absolute 1h return, in basis points.
+    # Hour-of-day by weekday mean absolute 1h return, in basis points.
     rets = np.diff(close) / close[:-1]
     frame = pl.DataFrame(
         {
@@ -370,7 +358,7 @@ def cost_sweep_block() -> dict:
             for r in csv.DictReader(fh)
         ]
     breakeven = None
-    for a, b in zip(rows, rows[1:]):
+    for a, b in itertools.pairwise(rows):
         if a["ret"] >= 0 > b["ret"]:
             breakeven = a["m"] + (b["m"] - a["m"]) * a["ret"] / (a["ret"] - b["ret"])
             break

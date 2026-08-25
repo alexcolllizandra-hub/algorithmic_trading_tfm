@@ -12,6 +12,8 @@ Nothing here is invented: every list is a directory listing and every label
 cites its source document.
 """
 
+# ruff: noqa: RUF001  # en dashes in chapter labels are intentional UI text
+
 from __future__ import annotations
 
 import json
@@ -84,8 +86,18 @@ NOTEBOOKS = [
         "chapter": "Síntesis transversal (caps. 6–9)",
         # The synthesis computes nothing; it chains these frozen figures.
         "chain": [
-            "f03", "g04", "h05", "h02", "i02", "i05",
-            "j02", "j03", "m01", "m02", "k03", "k05",
+            "f03",
+            "g04",
+            "h05",
+            "h02",
+            "i02",
+            "i05",
+            "j02",
+            "j03",
+            "m01",
+            "m02",
+            "k03",
+            "k05",
         ],
     },
 ]
@@ -144,7 +156,9 @@ def main() -> int:
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     n_figs = sum(len(i["figures"]) for i in items)
     n_tabs = sum(len(i["tables"]) for i in items)
-    print(f"{OUT} -> {OUT.stat().st_size // 1024} KB | notebooks={len(items)} figures={n_figs} tables={n_tabs}")
+    print(
+        f"{OUT} -> {OUT.stat().st_size // 1024} KB | notebooks={len(items)} figures={n_figs} tables={n_tabs}"
+    )
     return 0
 
 

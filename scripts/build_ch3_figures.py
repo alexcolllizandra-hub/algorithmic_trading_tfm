@@ -13,6 +13,8 @@ fig_3_2_temporal_layout   development window, frozen holdout, global cutoff
 fig_3_3_funnel            phases A/B/C with the study's real parameters
 """
 
+# ruff: noqa: RUF001  # typographic characters are intentional in figure text
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -20,10 +22,11 @@ from datetime import datetime
 import matplotlib
 
 matplotlib.use("Agg")
+from pathlib import Path
+
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
-from pathlib import Path
 
 OUT = Path("reports/figures/thesis_ch3")
 
@@ -57,7 +60,13 @@ def save(fig: plt.Figure, name: str) -> str:
 def box(ax, x, y, w, h, text, color, fs=9):
     ax.add_patch(
         FancyBboxPatch(
-            (x, y), w, h, boxstyle="round,pad=0.10", linewidth=1.2, edgecolor=color, facecolor="white"
+            (x, y),
+            w,
+            h,
+            boxstyle="round,pad=0.10",
+            linewidth=1.2,
+            edgecolor=color,
+            facecolor="white",
         )
     )
     ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=fs)
@@ -66,7 +75,13 @@ def box(ax, x, y, w, h, text, color, fs=9):
 def arrow(ax, x1, y1, x2, y2, color=GREY, style="-|>", ls="-", label=None, lfs=8):
     ax.add_patch(
         FancyArrowPatch(
-            (x1, y1), (x2, y2), arrowstyle=style, mutation_scale=13, color=color, lw=1.2, linestyle=ls
+            (x1, y1),
+            (x2, y2),
+            arrowstyle=style,
+            mutation_scale=13,
+            color=color,
+            lw=1.2,
+            linestyle=ls,
         )
     )
     if label:
@@ -82,9 +97,36 @@ def fig_3_1() -> str:
     ax.set_ylim(0, 6)
     ax.axis("off")
 
-    box(ax, 0.3, 3.6, 2.6, 1.6, "1 · Specify\nhypothesis document:\nrationale, rules,\nparameter bounds", ACCENT, 8.5)
-    box(ax, 3.4, 3.6, 2.6, 1.6, "2 · Freeze\ncommitted to version\ncontrol, dated,\nbefore any backtest", SECOND, 8.5)
-    box(ax, 6.5, 3.6, 2.6, 1.6, "3 · Execute\nexactly as specified\n(fold geometry,\nbudget, both engines)", ACCENT, 8.5)
+    box(
+        ax,
+        0.3,
+        3.6,
+        2.6,
+        1.6,
+        "1 · Specify\nhypothesis document:\nrationale, rules,\nparameter bounds",
+        ACCENT,
+        8.5,
+    )
+    box(
+        ax,
+        3.4,
+        3.6,
+        2.6,
+        1.6,
+        "2 · Freeze\ncommitted to version\ncontrol, dated,\nbefore any backtest",
+        SECOND,
+        8.5,
+    )
+    box(
+        ax,
+        6.5,
+        3.6,
+        2.6,
+        1.6,
+        "3 · Execute\nexactly as specified\n(fold geometry,\nbudget, both engines)",
+        ACCENT,
+        8.5,
+    )
     box(ax, 9.6, 3.6, 2.2, 1.6, "4 · Verdict\npromote /\nreject /\npartial signal", SECOND, 8.5)
 
     arrow(ax, 2.9, 4.4, 3.4, 4.4)
@@ -102,7 +144,16 @@ def fig_3_1() -> str:
         color=BAD,
     )
     # Allowed path: a new registration that increments the trial count.
-    box(ax, 3.9, 0.25, 4.4, 1.05, "allowed: register a NEW hypothesis, new freeze\n→ trial count N := N + 1", AMBER, 8.5)
+    box(
+        ax,
+        3.9,
+        0.25,
+        4.4,
+        1.05,
+        "allowed: register a NEW hypothesis, new freeze\n→ trial count N := N + 1",
+        AMBER,
+        8.5,
+    )
     arrow(ax, 3.9, 0.95, 1.6, 3.5, color=AMBER)
     ax.text(
         1.9,
@@ -155,14 +206,18 @@ def fig_3_2() -> str:
         ha="center",
         arrowprops={"arrowstyle": "->", "color": AMBER, "lw": 0.9},
     )
-    ax.text(cutoff, 0.62, " global cutoff\n 2026-07-01", fontsize=8, color=BAD, va="bottom", ha="left")
+    ax.text(
+        cutoff, 0.62, " global cutoff\n 2026-07-01", fontsize=8, color=BAD, va="bottom", ha="left"
+    )
 
     ax.set_ylim(-1.15, 1.15)
     ax.set_yticks([])
     ax.xaxis.set_major_locator(mdates.YearLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
     ax.set_xlim(d(datetime(2019, 9, 1)), d(datetime(2027, 2, 1)))
-    ax.set_xlabel("Contract v0.1.0 — configs/data_contract.yaml; bar counts from the dataset manifests")
+    ax.set_xlabel(
+        "Contract v0.1.0 — configs/data_contract.yaml; bar counts from the dataset manifests"
+    )
     return save(fig, "fig_3_2_temporal_layout")
 
 
@@ -221,7 +276,16 @@ def fig_3_3() -> str:
     arrow(ax, 6, ys[1] - 0.1, 6, ys[2] + 2.0, color=GREY)
     arrow(ax, 6, ys[2] - 0.1, 6, 0.9, color=GREY)
 
-    box(ax, 3.4, 0.15, 5.2, 0.75, "Promotion: all six frozen criteria (Table 3.2) — study outcome: 0 of 15", BAD, 8.5)
+    box(
+        ax,
+        3.4,
+        0.15,
+        5.2,
+        0.75,
+        "Promotion: all six frozen criteria (Table 3.2) — study outcome: 0 of 15",
+        BAD,
+        8.5,
+    )
 
     # Side annotations: real counts and the partial-signal side channel.
     ax.text(
