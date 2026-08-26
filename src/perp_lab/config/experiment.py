@@ -1023,6 +1023,36 @@ class FlowPriceDivergenceFamily(_Strict):
         return self
 
 
+class MacroEventBrakeFamily(_Strict):
+    """Gate S3: momentum carrier forced flat around scheduled US macro events."""
+
+    fast_ma: _PosIntTuple = (12, 24)
+    slow_ma: _PosIntTuple = (96, 168)
+    event_set: tuple[str, ...] = ("cpi", "fomc", "both")
+    pre_bars: tuple[int, ...] = (1, 2, 4)
+    post_bars: tuple[int, ...] = (2, 4, 8)
+
+    @field_validator("fast_ma", "slow_ma")
+    @classmethod
+    def _positive(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        return _ensure_positive(v, "macro_event_brake moving-average windows")
+
+    @field_validator("event_set")
+    @classmethod
+    def _events(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        bad = [e for e in v if e not in {"cpi", "fomc", "both"}]
+        if bad:
+            raise ValueError(f"macro_event_brake event_set has unknown entries {bad}.")
+        return v
+
+    @field_validator("pre_bars", "post_bars")
+    @classmethod
+    def _windows(cls, v: tuple[int, ...]) -> tuple[int, ...]:
+        if any(b < 0 for b in v):
+            raise ValueError("macro_event_brake pre/post bars must be non-negative.")
+        return v
+
+
 class Families(_Strict):
     momentum: MomentumFamily = MomentumFamily()
     breakout: BreakoutFamily = BreakoutFamily()
@@ -1039,6 +1069,9 @@ class Families(_Strict):
     taker_flow_extreme: TakerFlowExtremeFamily = TakerFlowExtremeFamily()
     illiquidity_reversion: IlliquidityReversionFamily = IlliquidityReversionFamily()
     flow_price_divergence: FlowPriceDivergenceFamily = FlowPriceDivergenceFamily()
+
+    # -- Gate S3 batch (pre-specified 2026-08-26; ADR 0019) --
+    macro_event_brake: MacroEventBrakeFamily = MacroEventBrakeFamily()
 
     # -- Round CRT_INTRADAY_V1 (Candle Range Theory); not part of R2 or R3 -- #
     crt_intraday: CrtIntradayFamilies = CrtIntradayFamilies()

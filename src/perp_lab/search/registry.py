@@ -44,6 +44,7 @@ from perp_lab.strategies.funding import FundingTilt
 from perp_lab.strategies.funding_reversal import FundingReversal
 from perp_lab.strategies.illiquidity_reversion import IlliquidityReversion
 from perp_lab.strategies.intraday_seasonality import IntradaySeasonality
+from perp_lab.strategies.macro_event_brake import MacroEventBrake
 from perp_lab.strategies.mean_reversion import MeanReversion
 from perp_lab.strategies.momentum import MomentumCrossover
 from perp_lab.strategies.mtf_trend_consensus import MultiHorizonTrendConsensus
@@ -96,11 +97,16 @@ S2_FAMILIES: tuple[str, ...] = (
     "flow_price_divergence",
 )
 
+# Gate S3 batch, pre-specified and frozen before any S3 result was observed
+# (ADR 0019, docs/methodology/strategy_catalogue_s3.md).
+S3_FAMILIES: tuple[str, ...] = ("macro_event_brake",)
+
 ROUND_TAGS: dict[str, str] = {
     **dict.fromkeys(R3_CLOSED_FAMILIES, "R3"),
     **dict.fromkeys(S1_FAMILIES, "S1"),
     **dict.fromkeys(S2_FAMILIES, "S2"),
     **dict.fromkeys(CRT_INTRADAY_V1_FAMILIES, CRT_ROUND_TAG),
+    **dict.fromkeys(S3_FAMILIES, "S3"),
 }
 
 FAMILIES: tuple[str, ...] = (
@@ -108,6 +114,7 @@ FAMILIES: tuple[str, ...] = (
     *S1_FAMILIES,
     *S2_FAMILIES,
     *CRT_INTRADAY_V1_FAMILIES,
+    *S3_FAMILIES,
 )
 
 
@@ -127,6 +134,59 @@ def _regime_gate(values: Mapping[str, ParamValue]) -> tuple[str, ...] | None:
         return None
     gate = values.get("regime_gate")
     return tuple(gate) if isinstance(gate, tuple) else None
+
+
+def _macro_event_brake_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.macro_event_brake
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    params = (
+        CategoricalParam("fast", tuple(fam.fast_ma)),
+        CategoricalParam("slow", tuple(fam.slow_ma)),
+        CategoricalParam("event_set", tuple(fam.event_set)),
+        CategoricalParam("pre_bars", tuple(fam.pre_bars)),
+        CategoricalParam("post_bars", tuple(fam.post_bars)),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    fast_choices = sorted(fam.fast_ma)
+    slow_choices = sorted(fam.slow_ma)
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        fast, slow = int(v["fast"]), int(v["slow"])  # type: ignore[arg-type]
+        if fast >= slow:
+            faster = [f for f in fast_choices if f < slow]
+            if faster:
+                v["fast"] = faster[-1]
+            else:
+                slower = [s for s in slow_choices if s > fast]
+                if slower:
+                    v["slow"] = slower[0]
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        if int(v["fast"]) >= int(v["slow"]):  # type: ignore[arg-type]
+            return False, f"fast ({v['fast']}) must be < slow ({v['slow']})"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return MacroEventBrake(
+            fast=int(v["fast"]),  # type: ignore[arg-type]
+            slow=int(v["slow"]),  # type: ignore[arg-type]
+            event_set=str(v["event_set"]),
+            pre_bars=int(v["pre_bars"]),  # type: ignore[arg-type]
+            post_bars=int(v["post_bars"]),  # type: ignore[arg-type]
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    items: tuple[FeatureItemLike, ...] = tuple(
+        _FeatureItem("sma", window=w) for w in sorted({*fam.fast_ma, *fam.slow_ma})
+    )
+    return SearchSpace("macro_event_brake", SPACE_VERSION, params, build, repair, validate, items)
 
 
 def _momentum_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
@@ -1098,6 +1158,7 @@ def _crt_three_candle_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
 
 _BUILDERS: dict[str, Callable[[ExperimentConfig, str], SearchSpace]] = {
     "momentum": _momentum_space,
+    "macro_event_brake": _macro_event_brake_space,
     "breakout": _breakout_space,
     "mean_reversion": _mean_reversion_space,
     "volatility_breakout": _volatility_breakout_space,

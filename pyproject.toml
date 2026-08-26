@@ -63,6 +63,9 @@ ml = [
     "numba>=0.60",
     "shap>=0.46",
 ]
+dl = [
+    "torch>=2.13.0",
+]
 
 [project.scripts]
 perp-lab = "perp_lab.cli:main"
