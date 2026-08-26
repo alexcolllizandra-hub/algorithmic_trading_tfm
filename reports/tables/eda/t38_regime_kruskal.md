@@ -1,4 +1,4 @@
-**Table — Kruskal-Wallis test across low/medium/high volatility regimes (BTC 1h, development): H, p-value and epsilon-squared effect size.**
+**Table — Kruskal-Wallis across low/medium/high volatility regimes (BTC 1h, development): H, p-value and epsilon-squared effect size.**
 
 | variable | n | n_groups | H | pvalue | epsilon_squared |
 | --- | --- | --- | --- | --- | --- |

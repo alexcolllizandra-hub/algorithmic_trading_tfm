@@ -1,4 +1,4 @@
-**Table — BTC-ETH joint tail behaviour at the 5% and 1% quantiles (1h, development): joint probabilities, exceedance ratios vs independence and conditional crash probabilities.**
+**Table — BTC-ETH joint tail behaviour at 5% and 1% (1h, development): joint probabilities, exceedance ratios vs independence and conditional crash probabilities.**
 
 | quantile | n | joint_lower | joint_upper | lower_ratio | upper_ratio | p_right_given_left_lower | p_left_given_right_lower |
 | --- | --- | --- | --- | --- | --- | --- | --- |

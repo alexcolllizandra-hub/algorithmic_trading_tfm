@@ -1,32 +1,11 @@
 {
-  "generated_at": "2026-08-25T17:40:56.402161+00:00",
+  "generated_at": "2026-08-26T17:26:47.421503+00:00",
   "results": [
     {
-      "notebook": "05_study_closure_and_multiple_testing.ipynb",
+      "notebook": "01_comprehensive_exploratory_data_analysis.ipynb",
       "status": "ok",
-      "started_at": "2026-08-25T17:39:37.899930+00:00",
-      "elapsed_s": 16.7,
-      "error": ""
-    },
-    {
-      "notebook": "06_meta_etiquetado_supervisado.ipynb",
-      "status": "ok",
-      "started_at": "2026-08-25T17:39:54.670968+00:00",
-      "elapsed_s": 10.7,
-      "error": ""
-    },
-    {
-      "notebook": "07_monte_carlo_nula.ipynb",
-      "status": "ok",
-      "started_at": "2026-08-25T17:40:05.436442+00:00",
-      "elapsed_s": 49.2,
-      "error": ""
-    },
-    {
-      "notebook": "08_sintesis.ipynb",
-      "status": "ok",
-      "started_at": "2026-08-25T17:40:54.640865+00:00",
-      "elapsed_s": 1.8,
+      "started_at": "2026-08-26T17:16:30.978715+00:00",
+      "elapsed_s": 616.3,
       "error": ""
     }
   ]

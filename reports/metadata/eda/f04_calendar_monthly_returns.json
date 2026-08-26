@@ -10,7 +10,7 @@
     "binance_um_BTCUSDT_fundingRate": "a85942930e58a2d1ab7efd77b15e16c163384d610cc51e5997a7b5c3f99137c4",
     "binance_um_BTCUSDT_markPriceKlines_5m": "8e094718da4a90b818b94c0c36f51e5de560c683989e4fe0dcdfcd2e4254fc8c",
     "binance_um_ETHUSDT_klines_5m": "695edc275f449f2955921decb07d9db886729a7662094880bf60f2f6fd187b20",
-    "binance_um_ETHUSDT_klines_15m_development": "579fc4a24181fe6f741bad1c243852c5aec4436fd3e2d79d55ecf125f08e2cc3",
+    "binance_um_ETHUSDT_klines_15m_development": "1d1869e73551e5b2ed453339d462763d331e878e7eb946292f2f0c211c11c9a8",
     "binance_um_ETHUSDT_klines_1h_development": "8c2b03db26c673e81451c88e0a112401dbdd4e3b585c8d7f1d3447ae445e6917",
     "binance_um_ETHUSDT_fundingRate": "8168dc2f700469095a5157056a90ba8028629ce3728d1d44b948c62935e3e71c",
     "binance_um_ETHUSDT_markPriceKlines_5m": "c4f3ac6dcd51eba9dea67d7b845dcfe236792ecb249becfcda26e9880e0c2a9c"
@@ -30,8 +30,8 @@
     "return_kind": "log",
     "rolling_moment_window_days": 30
   },
-  "generated_at": "2026-07-30T17:55:14.639698+00:00",
-  "code_commit": "feefebf83999f68304a1152f66900e76ed565612",
+  "generated_at": "2026-08-26T17:17:14.007922+00:00",
+  "code_commit": "de5b9d82a591ac5f95f35b438516d5511c14330f",
   "output_path": "reports/figures/eda/f04_calendar_monthly_returns.png",
   "kind": "figure",
   "dpi": 300,

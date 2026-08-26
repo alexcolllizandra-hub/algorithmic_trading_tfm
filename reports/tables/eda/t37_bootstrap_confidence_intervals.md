@@ -1,4 +1,4 @@
-**Table — Block-bootstrap 95% confidence intervals (24-bar moving blocks, 1000 resamples) for return, volatility, Sharpe, BTC-ETH correlation and frequency differences (development).**
+**Table — Block-bootstrap 95% CIs (24-bar moving blocks, 1000 resamples) for return, volatility, Sharpe, BTC-ETH correlation and the 5m-vs-1h volatility difference (development).**
 
 | statistic | group | timeframe | estimate | ci_low | ci_high | prob_positive | n |
 | --- | --- | --- | --- | --- | --- | --- | --- |

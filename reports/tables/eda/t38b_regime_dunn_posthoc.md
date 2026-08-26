@@ -1,4 +1,4 @@
-**Table — Dunn post-hoc pairwise comparisons across volatility regimes with Benjamini-Hochberg correction (BTC 1h, development).**
+**Table — Dunn post-hoc pairwise regime comparisons with Benjamini-Hochberg correction (BTC 1h, development).**
 
 | variable | group_a | group_b | n_a | n_b | z | p_raw | p_adj | reject |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

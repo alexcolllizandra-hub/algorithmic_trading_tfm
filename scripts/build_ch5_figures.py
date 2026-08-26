@@ -90,10 +90,16 @@ SYM_COLOR = {"BTCUSDT": ACCENT, "ETHUSDT": SECOND}
 VALUES: dict[str, object] = {}
 
 
+EDA_MIRROR = Path("reports/figures/eda")
+
+
 def save(fig: plt.Figure, name: str) -> str:
-    OUT.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT / f"{name}.png", bbox_inches="tight")
-    fig.savefig(OUT / f"{name}.pdf", bbox_inches="tight")
+    # Canonical thesis location plus a mirror in the notebook's EDA gallery,
+    # so every chapter-5 figure is reachable from reports/figures/eda too.
+    for out_dir in (OUT, EDA_MIRROR):
+        out_dir.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out_dir / f"{name}.png", bbox_inches="tight")
+        fig.savefig(out_dir / f"{name}.pdf", bbox_inches="tight")
     plt.close(fig)
     return f"{OUT / name}.png|.pdf"
 
