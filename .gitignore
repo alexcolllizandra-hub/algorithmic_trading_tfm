@@ -41,6 +41,8 @@ data/processed/
 *.parquet
 *.feather
 *.csv
+# Exception: the curated macro-events calendar is committed source, not market data.
+!configs/altdata/*.csv
 *.db
 *.sqlite
 *.sqlite3
