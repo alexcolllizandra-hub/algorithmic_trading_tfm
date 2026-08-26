@@ -897,6 +897,707 @@ def fig_4_10() -> str:
     return save(fig, "fig_4_10_ci_pipeline")
 
 
+# =========================================================================== #
+# Final-draft composites and engineering-depth figures (module map, catalogue
+# ERD, config lifecycle, seed derivation). fig_4_3/fig_4_4 are the two-panel
+# composites the final chapter text describes; the fig_4x_* files are
+# insertable engineering figures whose numbers the author assigns.
+# =========================================================================== #
+def fig_4_3_temporal_contract() -> str:
+    """Figure 4.3 of the final draft: causal aggregation (A) + execution (B)."""
+    fig, (axa, axb) = plt.subplots(2, 1, figsize=(8.6, 6.4), height_ratios=[1, 1.15])
+
+    axa.set_xlim(-0.4, 15.2)
+    axa.set_ylim(-0.2, 5.8)
+    axa.axis("off")
+    axa.text(
+        -0.3,
+        5.55,
+        "A · Causal aggregation: when a 1h bar becomes observable",
+        fontsize=9.5,
+        weight="bold",
+    )
+    for i in range(12):
+        axa.add_patch(
+            FancyBboxPatch(
+                (i * 0.95, 3.4),
+                0.78,
+                0.9,
+                boxstyle="round,pad=0.03",
+                lw=0.9,
+                edgecolor=GREY,
+                facecolor="#f3f4f6",
+            )
+        )
+    axa.text(0.0, 4.55, "5m bars 10:00 … 10:55 (open_time labels)", fontsize=8, color=GREY)
+    axa.text(-0.05, 3.12, "10:00", fontsize=7, color=GREY)
+    axa.text(10.45, 3.12, "10:55", fontsize=7, color=GREY)
+    box(
+        axa,
+        1.8,
+        1.2,
+        7.0,
+        1.1,
+        "1h bar, open_time = 10:00\nopen = first 5m open · close = last 5m close · volume = Σ",
+        ACCENT,
+        7.6,
+    )
+    arrow(axa, 5.3, 3.3, 5.3, 2.5)
+    axa.text(5.55, 2.85, "closed only at 11:00", fontsize=7.5, color=BAD, ha="left")
+    box(
+        axa,
+        9.9,
+        1.1,
+        5.0,
+        1.3,
+        "earliest use by a strategy:\ndecision at 11:00 close →\nposition from the 12:00 bar open",
+        SECOND,
+        7.8,
+    )
+    arrow(axa, 8.9, 1.75, 9.9, 1.75)
+
+    axb.set_xlim(0, 14)
+    axb.set_ylim(0, 7.6)
+    axb.axis("off")
+    axb.text(
+        0.1,
+        7.3,
+        "B · Next-open execution: one complete trade through the ledger",
+        fontsize=9.5,
+        weight="bold",
+    )
+    labels = ["bar t−1", "bar t", "bar t+1", "bar t+2", "bar t+3"]
+    for i, lab in enumerate(labels):
+        x = 0.6 + i * 2.7
+        axb.add_patch(
+            FancyBboxPatch(
+                (x, 5.5),
+                2.2,
+                0.9,
+                boxstyle="round,pad=0.04",
+                lw=1.0,
+                edgecolor=GREY,
+                facecolor="#f3f4f6",
+            )
+        )
+        axb.text(x + 1.1, 5.95, lab, ha="center", fontsize=8.5)
+    ann = [
+        (1.7, "signal computed\non bar t−1 close", ACCENT),
+        (
+            4.4,
+            "position applied\nfrom bar t open;\nentry cost on turnover\n(4 + 1 bps per side)",
+            SECOND,
+        ),
+        (7.1, "return accrues\nopen-to-open;\nfunding as-of-past on\nthe held position", ACCENT),
+        (
+            9.8,
+            "exit signal on close;\nflat — or reversal:\nturnover 2, charged\nas two sides",
+            SECOND,
+        ),
+        (12.5, "PnL, costs and\nfunding closed into\nthe trade ledger\nat exit open", ACCENT),
+    ]
+    for x, text, color in ann:
+        arrow(axb, x, 5.4, x, 4.3, color=color)
+        box(axb, x - 1.15, 2.6, 2.3, 1.7, text, color, 7.4)
+    axb.text(
+        7.0,
+        1.3,
+        "Invariant: no quantity computed on bar t can influence the position held during bar t. The last bar is dropped\n"
+        "(its open-to-open return is unknowable). Pinned-output unit tests fix these numbers exactly.",
+        ha="center",
+        fontsize=8,
+        color=GREY,
+        style="italic",
+    )
+    fig.tight_layout()
+    return save(fig, "fig_4_3_temporal_contract")
+
+
+def fig_4_4_orchestration_evidence() -> str:
+    """Figure 4.4 of the final draft: orchestration plus evidence capture."""
+    fig, ax = plt.subplots(figsize=(8.6, 6.4))
+    ax.set_xlim(0, 12)
+    ax.set_ylim(0, 12.4)
+    ax.axis("off")
+
+    box(
+        ax,
+        2.6,
+        11.1,
+        6.8,
+        1.0,
+        "registered family × asset × seed\n15 walk-forward folds, processed independently",
+        GREY,
+        8.5,
+    )
+
+    box(
+        ax,
+        0.4,
+        8.7,
+        5.2,
+        1.7,
+        "random search (primary engine)\n100 candidates per fold\nseed: SeedSequence(base_seed,\nspawn_key = blake2b(stream label))",
+        ACCENT,
+        8,
+    )
+    box(
+        ax,
+        6.4,
+        8.7,
+        5.2,
+        1.7,
+        "genetic algorithm (cross-check)\nidentical evaluation budget;\ncandidate hashes de-duplicate, so parity\ncounts unique evaluated configurations",
+        SECOND,
+        8,
+    )
+    arrow(ax, 5.0, 11.1, 3.0, 10.5)
+    arrow(ax, 7.0, 11.1, 9.0, 10.5)
+
+    box(
+        ax,
+        0.4,
+        6.6,
+        5.2,
+        1.3,
+        "select on validation Sharpe\n(train fit → validation ranking;\ntest window never touched)",
+        ACCENT,
+        8,
+    )
+    box(
+        ax,
+        6.4,
+        6.6,
+        5.2,
+        1.3,
+        "select on validation Sharpe\nsame folds, costs and\nseed discipline",
+        SECOND,
+        8,
+    )
+    arrow(ax, 3.0, 8.7, 3.0, 8.0)
+    arrow(ax, 9.0, 8.7, 9.0, 8.0)
+
+    box(
+        ax,
+        3.0,
+        4.6,
+        6.0,
+        1.2,
+        "winner re-run once on the fold's untouched test window\n→ OOS segments concatenated · verdicts read on random search",
+        BAD,
+        8,
+    )
+    arrow(ax, 3.0, 6.6, 4.6, 5.9)
+    arrow(ax, 9.0, 6.6, 7.4, 5.9)
+
+    box(
+        ax,
+        0.3,
+        2.2,
+        7.2,
+        1.7,
+        "evidence package (per run, immutable)\nresolved config · folds.json · seed_schedule · candidates parquet\nOOS equity + trade ledgers · metrics · gate results · logs · figures",
+        AMBER,
+        8,
+    )
+    box(
+        ax,
+        8.0,
+        2.2,
+        3.8,
+        1.7,
+        "experiment catalogue\nSQLite/SQLAlchemy index\n+ DuckDB analytics over\nthe parquet artefacts",
+        AMBER,
+        8,
+    )
+    arrow(ax, 6.0, 4.6, 3.9, 3.9)
+    arrow(ax, 6.0, 4.6, 9.9, 3.9)
+    arrow(ax, 7.5, 3.05, 8.0, 3.05, label="indexed by\nrun id", lfs=7, dy=0.35)
+
+    ax.text(
+        6.0,
+        1.2,
+        "A catalogue row that cannot be linked to its originating run and immutable artefact is an integrity error:\n"
+        "the database indexes the evidence, it never replaces it.",
+        ha="center",
+        fontsize=8,
+        color=GREY,
+        style="italic",
+    )
+    return save(fig, "fig_4_4_orchestration_evidence")
+
+
+def fig_4x_module_map() -> str:
+    """Monorepo module map with real packages, file counts and LOC."""
+    fig, ax = plt.subplots(figsize=(8.8, 6.6))
+    ax.axis("off")
+
+    planes = [
+        (
+            "Data plane",
+            ACCENT,
+            [
+                ("data", "10 · 1,261", "acquisition, causal bars, dev/holdout splits, provenance"),
+                (
+                    "validation",
+                    "4 · 503",
+                    "schema + quality report, walk-forward CV, purge/embargo",
+                ),
+                ("features", "7 · 1,738", "config-driven causal feature engine"),
+                ("labeling", "2 · 483", "triple-barrier event labels"),
+            ],
+        ),
+        (
+            "Research engine",
+            SECOND,
+            [
+                ("strategies", "19 · 2,592", "interpretable baseline families"),
+                ("crt", "9 · 4,856", "candle-range battery (9 families)"),
+                ("backtesting", "3 · 489", "vectorised next-open engine with costs + funding"),
+                ("search", "11 · 4,213", "shared spaces, evaluator, random search + GA"),
+                ("experiments", "4 · 1,253", "walk-forward + multi-seed orchestration"),
+                ("regimes", "3 · 422", "fold-fit regime transforms"),
+                ("stochastic", "3 · 701", "synthetic markets that audit the pipeline"),
+                ("meta_labeling", "6 · 2,391", "pre-registered supervised ML layer"),
+            ],
+        ),
+        (
+            "Evidence plane",
+            AMBER,
+            [
+                ("evaluation", "8 · 2,862", "robustness battery C1-C6, multiple testing, DSR/PBO"),
+                ("catalog", "8 · 3,249", "SQLite registry + DuckDB analytics + artifact store"),
+                ("tracking", "4 · 567", "run ids, identity fingerprints, environment capture"),
+                ("reporting", "11 · 4,754", "house style, artifact export, closure reports"),
+                ("eda", "27 · 3,853", "reusable EDA functions (Ch. 5)"),
+            ],
+        ),
+        (
+            "Consumption plane",
+            GREY,
+            [
+                ("api", "19 · 2,456", "read-only FastAPI over frozen artefacts"),
+                (
+                    "dashboard",
+                    "3 · 823",
+                    "legacy Streamlit inspector (the Next.js panel lives in apps/web)",
+                ),
+            ],
+        ),
+        (
+            "Cross-cutting",
+            BAD,
+            [
+                ("config", "4 · 1,693", "pydantic contracts for data + experiment YAML"),
+                ("utils", "5 · 264", "hashing, UTC time, logging, deterministic seeds"),
+                ("cli.py", "2 · 957", "thin command layer; orchestration stays in modules"),
+            ],
+        ),
+    ]
+
+    y = 0.985
+    ax.text(
+        0.0,
+        y,
+        "src/perp_lab — 172 Python files · 42,380 lines · 22 packages",
+        fontsize=10.5,
+        weight="bold",
+        transform=ax.transAxes,
+        va="top",
+    )
+    y -= 0.045
+    for title, color, mods in planes:
+        ax.text(
+            0.0,
+            y,
+            title,
+            fontsize=9.5,
+            weight="bold",
+            color=color,
+            transform=ax.transAxes,
+            va="top",
+        )
+        y -= 0.033
+        for name, size, role in mods:
+            ax.text(
+                0.03,
+                y,
+                name,
+                fontsize=8.3,
+                family="monospace",
+                color=color,
+                transform=ax.transAxes,
+                va="top",
+            )
+            ax.text(0.175, y, size, fontsize=7.6, color=GREY, transform=ax.transAxes, va="top")
+            ax.text(0.26, y, role, fontsize=8.3, transform=ax.transAxes, va="top")
+            y -= 0.0295
+        y -= 0.012
+    ax.text(
+        0.0,
+        y - 0.005,
+        "Companion trees: tests/ (1,539 pytest), scripts/ (deterministic notebook + figure builders), configs/ (frozen contracts),\n"
+        "apps/web (Next.js panel, 112 vitest), docs/decisions (18 ADRs), artifacts/runs (447 evidence packages).",
+        fontsize=8,
+        color=GREY,
+        style="italic",
+        transform=ax.transAxes,
+        va="top",
+    )
+    return save(fig, "fig_4x_module_map")
+
+
+def fig_4x_catalog_erd() -> str:
+    """Detailed catalogue ERD with the real columns of the core tables."""
+    fig, ax = plt.subplots(figsize=(9.2, 6.8))
+    ax.set_xlim(0, 12)
+    ax.set_ylim(0, 12.6)
+    ax.axis("off")
+
+    def table_box(x, y, w, h, title, cols, color, fs=6.6):
+        ax.add_patch(
+            FancyBboxPatch(
+                (x, y), w, h, boxstyle="round,pad=0.06", lw=1.2, edgecolor=color, facecolor="white"
+            )
+        )
+        ax.text(
+            x + w / 2, y + h - 0.28, title, ha="center", fontsize=7.8, weight="bold", color=color
+        )
+        ax.plot([x + 0.1, x + w - 0.1], [y + h - 0.52, y + h - 0.52], color=color, lw=0.7)
+        ax.text(x + 0.14, y + h - 0.68, "\n".join(cols), fontsize=fs, va="top", family="monospace")
+
+    table_box(
+        0.2,
+        9.4,
+        2.6,
+        2.9,
+        "studies",
+        [
+            "id · key · title",
+            "primary_symbol",
+            "secondary_symbol",
+            "timeframe",
+            "holdout_start/end",
+        ],
+        ACCENT,
+    )
+    table_box(
+        3.2,
+        9.4,
+        2.7,
+        2.9,
+        "experiment_rounds",
+        ["id · study_id (FK)", "key · name", "sequence", "criterion", "opened_at/closed_at"],
+        ACCENT,
+    )
+    table_box(
+        6.2,
+        9.4,
+        2.7,
+        2.9,
+        "strategy_families",
+        ["id · study_id (FK)", "key · name", "hypothesis", "module", "status"],
+        ACCENT,
+    )
+    table_box(
+        9.2,
+        9.4,
+        2.6,
+        2.9,
+        "strategy_specs",
+        ["id · family_id (FK)", "spec_hash", "symbol · timeframe", "params (JSON)"],
+        ACCENT,
+    )
+
+    table_box(
+        0.2,
+        5.6,
+        2.9,
+        3.3,
+        "runs",
+        [
+            "id · run_id",
+            "study/round/family FK",
+            "symbol · timeframe",
+            "engine · run_dir",
+            "identity_fingerprint",
+            "config (JSON) · seeds",
+            "started/finished_at",
+        ],
+        SECOND,
+    )
+    table_box(
+        3.4,
+        5.6,
+        2.5,
+        3.3,
+        "run_seeds",
+        [
+            "id · run_id (FK)",
+            "seed",
+            "n_folds · n_bars",
+            "+ CoreMetrics:",
+            "return · sharpe",
+            "max_dd · trades …",
+        ],
+        SECOND,
+    )
+    table_box(
+        6.2,
+        5.6,
+        2.7,
+        3.3,
+        "folds",
+        [
+            "id · run_id (FK)",
+            "fold_index",
+            "train_start/end",
+            "test_start/end",
+            "purge_bars = 96",
+            "embargo_bars = 118",
+        ],
+        SECOND,
+    )
+    table_box(
+        9.2,
+        5.6,
+        2.6,
+        3.3,
+        "fold_results",
+        ["id · fold_id (FK)", "run_seed_id (FK)", "spec_id (FK)", "is_train", "+ CoreMetrics"],
+        SECOND,
+    )
+
+    table_box(
+        0.2,
+        1.8,
+        2.9,
+        3.1,
+        "search_evaluations",
+        [
+            "id · run_id (FK)",
+            "seed · fold_index",
+            "evaluation_index",
+            "generation (GA)",
+            "spec_id (FK)",
+            "objective · feasible",
+        ],
+        GREY,
+    )
+    table_box(
+        3.4,
+        1.8,
+        2.5,
+        3.1,
+        "metrics",
+        ["id · study_id (FK)", "scope · scope_ref", "metric_key", "value · unit", "context (JSON)"],
+        GREY,
+    )
+    table_box(
+        6.2,
+        1.8,
+        2.7,
+        3.1,
+        "gate_results",
+        [
+            "id · round/family FK",
+            "symbol",
+            "criterion_key (C1-C6)",
+            "verdict · observed",
+            "threshold",
+            "n_seeds_passed/total",
+        ],
+        GREY,
+    )
+    table_box(
+        9.2,
+        1.8,
+        2.6,
+        3.1,
+        "artifacts",
+        [
+            "id · uri · backend",
+            "object_key · kind",
+            "byte_size · row_count",
+            "content_sha256",
+            "run_id/study_id FK",
+        ],
+        GREY,
+    )
+
+    for x1, x2 in ((2.8, 3.2), (5.9, 6.2), (8.9, 9.2)):
+        arrow(ax, x1, 10.85, x2, 10.85)
+    arrow(ax, 7.5, 9.4, 1.8, 8.9)
+    for x1, x2 in ((3.1, 3.4), (5.9, 6.2), (8.9, 9.2)):
+        arrow(ax, x1, 7.2, x2, 7.2)
+    for x in (1.6, 4.6, 7.5, 10.4):
+        arrow(ax, x if x != 4.6 else 1.9, 5.6, x, 4.9)
+
+    ax.text(
+        6.0,
+        0.7,
+        "monte_carlo_runs and holdout_registry (append-only) complete the schema. Every table inherits ProvenanceMixin\n"
+        "(source_artifact, source_sha256, git_commit, code_version, ingested_at); results tables add StatusMixin and CoreMetricsMixin.\n"
+        "A Metric row without a linked measurement raises MetricsWithoutMeasurementError at ingest time.",
+        ha="center",
+        fontsize=7.6,
+        color=GREY,
+        style="italic",
+    )
+    return save(fig, "fig_4x_catalog_erd")
+
+
+def fig_4x_config_lifecycle() -> str:
+    """Config-as-code lifecycle: YAML contracts to resolved, validated runs."""
+    fig, ax = plt.subplots(figsize=(8.6, 4.6))
+    ax.set_xlim(0, 12)
+    ax.set_ylim(0, 8.6)
+    ax.axis("off")
+
+    box(
+        ax,
+        0.2,
+        6.6,
+        3.4,
+        1.5,
+        "configs/data_contract.yaml\nsymbols · timeframes · cutoff\nholdout window (frozen v0.1.0)",
+        ACCENT,
+        7.8,
+    )
+    box(
+        ax,
+        4.3,
+        6.6,
+        3.4,
+        1.5,
+        "configs/experiment.yaml\nfeatures · families · costs\nwalk-forward · labeling · fitness",
+        ACCENT,
+        7.8,
+    )
+    box(
+        ax,
+        8.4,
+        6.6,
+        3.4,
+        1.5,
+        "CLI / experiment call\nfamily · asset · seed · engine\n(abbreviated researcher input)",
+        GREY,
+        7.8,
+    )
+
+    box(
+        ax,
+        2.2,
+        4.2,
+        7.6,
+        1.3,
+        "pydantic contracts (perp_lab.config)\nunknown kind / bad window / bad lag → hard error at load time, before any data is read",
+        SECOND,
+        8,
+    )
+    for x in (1.9, 6.0, 10.1):
+        arrow(ax, x, 6.6, 6.0, 5.5)
+
+    box(
+        ax,
+        0.4,
+        1.9,
+        5.2,
+        1.4,
+        "resolved configuration\nstored verbatim in the run\n(resolved_experiment_config.yaml)\n— the authoritative description",
+        ACCENT,
+        7.8,
+    )
+    box(
+        ax,
+        6.4,
+        1.9,
+        5.2,
+        1.4,
+        "family registry gate\nunregistered families cannot enter\ncanonical searches — exploratory code\nstays out of the confirmatory study",
+        BAD,
+        7.8,
+    )
+    arrow(ax, 4.6, 4.2, 3.0, 3.3)
+    arrow(ax, 7.4, 4.2, 9.0, 3.3)
+
+    ax.text(
+        6.0,
+        0.8,
+        "What executes is the resolved configuration, never the researcher's shorthand: the same YAML + code state\n"
+        "always resolves to the same run identity fingerprint (Fig. 4.5).",
+        ha="center",
+        fontsize=8,
+        color=GREY,
+        style="italic",
+    )
+    return save(fig, "fig_4x_config_lifecycle")
+
+
+def fig_4x_seed_derivation() -> str:
+    """Deterministic seed tree with the real values of a recorded run."""
+    fig, ax = plt.subplots(figsize=(8.6, 4.8))
+    ax.set_xlim(0, 12)
+    ax.set_ylim(0, 9)
+    ax.axis("off")
+
+    box(
+        ax,
+        4.1,
+        7.4,
+        3.8,
+        1.2,
+        "base seed (one integer per\nfamily × asset × seed unit)\ne.g. 278037",
+        ACCENT,
+        8.5,
+    )
+    box(
+        ax,
+        2.6,
+        5.0,
+        6.8,
+        1.3,
+        "stream label → blake2b(label, 16 bytes) → spawn_key\nSeedSequence(entropy=base_seed, spawn_key=digest)",
+        SECOND,
+        8.5,
+    )
+    arrow(ax, 6.0, 7.4, 6.0, 6.3)
+
+    leaves = [
+        (0.6, "random_search\nfold 0\n→ 705502381"),
+        (3.4, "random_search\nfold 1\n→ 3035994299"),
+        (6.2, "genetic_algorithm\nfold 0\n→ 139268233"),
+        (9.0, "regime tagging\nstream\n→ 2257660800"),
+    ]
+    for x, text in leaves:
+        box(ax, x, 2.4, 2.4, 1.5, text, GREY, 7.6)
+        arrow(ax, 6.0, 5.0, x + 1.2, 3.9)
+
+    ax.text(
+        6.0,
+        1.2,
+        "Recorded per run in seed_schedule.json: every stream is reconstructible from the base seed alone, a repeated run\n"
+        "replays identical randomness, and two logically distinct experiment units can never share a stream by accident.",
+        ha="center",
+        fontsize=8,
+        color=GREY,
+        style="italic",
+    )
+    return save(fig, "fig_4x_seed_derivation")
+
+
+def build_final_draft_figures() -> None:
+    for fn in (
+        fig_4_3_temporal_contract,
+        fig_4_4_orchestration_evidence,
+        fig_4x_module_map,
+        fig_4x_catalog_erd,
+        fig_4x_config_lifecycle,
+        fig_4x_seed_derivation,
+    ):
+        print(fn())
+
+
 def main() -> int:
     for fn in (
         fig_4_1,
@@ -911,6 +1612,7 @@ def main() -> int:
         fig_4_10,
     ):
         print(fn())
+    build_final_draft_figures()
     return 0
 
 

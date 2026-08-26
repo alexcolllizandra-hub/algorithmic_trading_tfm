@@ -229,3 +229,80 @@ sistema a argumento:
    preceda a la discusión del registro (4.8) si la sección 4.x de integridad
    del punto 1 se adopta — la cadena es la premisa, el registro la
    consecuencia.
+
+---
+
+## Addendum — profundidad de ingeniería para la versión final del capítulo
+
+La versión final del capítulo (7 figuras) queda cubierta así por los ficheros
+de `reports/figures/thesis_ch4/`:
+
+| Figura final | Fichero | Nota |
+|---|---|---|
+| 4.1 arquitectura end-to-end | `fig_4_1_architecture` | planos + gobernanza |
+| 4.2 linaje de datos y particiones | `fig_4_2_data_dag` (+ `fig_4_3_storage_layout` como apoyo) | |
+| 4.3 contrato temporal (2 paneles) | **`fig_4_3_temporal_contract`** | compuesta nueva: A agregación causal + B ejecución next-open |
+| 4.4 orquestación + captura de evidencia | **`fig_4_4_orchestration_evidence`** | compuesta nueva: búsqueda + paquete de evidencia + catálogo |
+| 4.5 cadena de identidad | `fig_4_9_reproducibility_chain` | |
+| 4.6 quality gates | `fig_4_10_ci_pipeline` | |
+| 4.7 dashboard | `fig_4_11_dashboard` (EN) / `_es` | captura real |
+
+Y las cuatro figuras de ingeniería adicionales que pediste, numerables donde
+prefieras (sugerencia entre paréntesis):
+
+| Fichero | Contenido | Inserción sugerida |
+|---|---|---|
+| **`fig_4x_module_map`** | mapa real del monorepo: 22 paquetes, 172 ficheros, 42.380 líneas, agrupados por plano con su papel | §4.1, tras la Fig. 4.1 (como Fig. 4.2 nueva o apéndice) |
+| **`fig_4x_catalog_erd`** | ERD detallado del catálogo con las columnas reales de las 12 tablas + mixins (Provenance/Status/CoreMetrics) | §4.4, junto al párrafo del catálogo |
+| **`fig_4x_config_lifecycle`** | ciclo config-as-code: YAML congelado → pydantic → configuración resuelta → gate del registro de familias | §4.4, primer párrafo |
+| **`fig_4x_seed_derivation`** | árbol de semillas determinista con los valores reales de un run (base 278037 → streams por motor/pliegue) | §4.4, párrafo de independencia estocástica |
+
+Párrafos en inglés listos para insertar (verificados contra el repo):
+
+**§4.1 — organización del código (con `fig_4x_module_map`):**
+
+> The monorepo contains twenty-two Python packages totalling roughly 42,000
+> lines, organised along the four operational planes of Figure 4.1. The data
+> plane (`data`, `validation`, `features`, `labeling`) owns everything that
+> touches raw observations; the research engine (`strategies`, `crt`,
+> `backtesting`, `search`, `experiments`, `meta_labeling`) defines and
+> simulates hypotheses; the evidence plane (`evaluation`, `catalog`,
+> `tracking`, `reporting`, `eda`) turns simulations into auditable artefacts;
+> and the consumption plane (`api`, plus the Next.js application) exposes
+> them read-only. Configuration contracts and deterministic utilities cut
+> across all planes. The command-line layer is deliberately thin:
+> orchestration logic lives in importable, tested modules, so every pipeline
+> step can be exercised by the test suite without a subprocess.
+
+**§4.4 — esquema del catálogo (con `fig_4x_catalog_erd`):**
+
+> The catalogue schema mirrors the experimental hierarchy: a study contains
+> rounds and families; families freeze specifications; runs bind a family,
+> asset, engine and seed schedule to a resolved configuration and an identity
+> fingerprint; and per-run children record seeds, folds, fold results,
+> candidate evaluations, metrics, gate verdicts and artefact receipts. Three
+> mixins give the schema its scientific character. Every table inherits
+> provenance columns (source artefact, SHA-256, Git commit, code version,
+> ingestion time); result-bearing tables add a status pair so that partial or
+> superseded evidence remains distinguishable from clean results; and
+> performance tables share one fixed metric vocabulary, which prevents the
+> same quantity from appearing under different names in different rounds.
+> Ingestion enforces referential integrity as a research rule: a metric row
+> that cannot be traced to a concrete measurement raises an integrity error
+> rather than being stored as an orphan number.
+
+**§4.4 — ciclo de configuración (con `fig_4x_config_lifecycle`):**
+
+> Configuration follows a single lifecycle. The frozen YAML contracts and the
+> researcher's abbreviated invocation are parsed into typed pydantic models,
+> which reject unknown feature kinds, invalid windows or malformed parameter
+> ranges before any data is read. The fully resolved configuration is then
+> written into the run directory verbatim and hashed into the run fingerprint,
+> so the authoritative description of an experiment is always what executed,
+> never what was typed.
+
+Cifras de apoyo verificadas: 172 ficheros / 42.380 líneas en `src/perp_lab`
+(el builder las imprime al regenerar); 22 paquetes; 447 paquetes de evidencia
+en `artifacts/runs`; purga 96 / embargo 118 en la tabla `folds`; token
+`OPEN_FINAL_HOLDOUT` y registro append-only en `holdout_registry`
+(coincide con §4.5 del borrador).
