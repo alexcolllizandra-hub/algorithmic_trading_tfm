@@ -1,0 +1,9 @@
+round,family,symbol,n_seeds,engine,budget_per_fold,n_folds,unique_evaluations,oos_bars,median_fold_test_sharpe,folds_positive_return,folds_with_trades,total_test_trades,oos_mean_net_return_per_bar,oos_bootstrap_p_value,mechanically_viable,run_dir
+S1-B (pilot),funding_reversal,BTCUSDT,1,genetic_algorithm,25,15,375,32385,0.7561654004152346,8,15,463.0,3.5414334550251027e-6,0.402,true,artifacts/runs/search_funding_reversal_20260811T111329Z_fe5008
+S1-B (pilot),funding_reversal,BTCUSDT,1,random_search,25,15,375,32385,0.17054614535683832,8,14,515.0,-0.000010415102607151633,0.7455,true,artifacts/runs/search_funding_reversal_20260811T111329Z_fe5008
+S1-B (pilot),intraday_seasonality,BTCUSDT,1,genetic_algorithm,25,15,375,32385,-1.3034269462862982,2,14,1468.0,-0.00003221559218480079,0.999,true,artifacts/runs/search_intraday_seasonality_20260811T111339Z_ba21a8
+S1-B (pilot),intraday_seasonality,BTCUSDT,1,random_search,25,15,375,32385,-1.2183870133646986,4,15,1387.0,-0.000015044484515001657,0.9195,true,artifacts/runs/search_intraday_seasonality_20260811T111339Z_ba21a8
+S1-B (pilot),mtf_trend_consensus,BTCUSDT,1,genetic_algorithm,25,15,375,30226,-0.5730646147308073,5,14,441.0,-0.000022355155973901856,0.811,true,artifacts/runs/search_mtf_trend_consensus_20260811T111305Z_cec7ab
+S1-B (pilot),mtf_trend_consensus,BTCUSDT,1,random_search,25,15,375,32385,-0.9365437522421791,6,15,1334.0,-0.000024805527458501234,0.8375,true,artifacts/runs/search_mtf_trend_consensus_20260811T111305Z_cec7ab
+S1-B (pilot),xasset_spread_reversion,BTCUSDT,1,genetic_algorithm,25,15,375,32385,-0.9292450635688866,4,15,844.0,-0.0000477555637736878,0.9975,true,artifacts/runs/search_xasset_spread_reversion_20260811T111350Z_9791ce
+S1-B (pilot),xasset_spread_reversion,BTCUSDT,1,random_search,25,15,375,32385,-1.1206550689319372,3,15,1227.0,-0.00004970548397863567,0.991,true,artifacts/runs/search_xasset_spread_reversion_20260811T111350Z_9791ce

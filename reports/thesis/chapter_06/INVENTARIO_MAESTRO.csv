@@ -12,22 +12,23 @@ xasset_spread_reversion,S1-B,piloto (gate no superado),BTC,1,15,25,750,artifacts
 taker_flow_extreme,S2-B,piloto (gate no superado),BTC+ETH,3,15,25,4500,artifacts/runs/s2b_pilot_* + reports/gate_s2b,SI (nivel piloto),incluida en el universo de 13 con evidencia de piloto de 3 semillas
 illiquidity_reversion,S2-B,piloto (gate no superado),BTC+ETH,3,15,25,4500,artifacts/runs/s2b_pilot_* + reports/gate_s2b,SI (nivel piloto),idem
 flow_price_divergence,S2-B,piloto (gate no superado),BTC+ETH,3,15,25,4500,artifacts/runs/s2b_pilot_* + reports/gate_s2b,SI (nivel piloto),idem
-crt_htf_range_reversal,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas promovidas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/crt_htf_range_reversal,NO,ronda posterior al cierre del 2026-08-13; Holm/BH/DSR/PBO ampliados no calculados
-crt_turtle_soup,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/crt_turtle_soup,NO,idem
-crt_po3_expansion,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/crt_po3_expansion,NO,idem
-crt_pdl_reclaim_long,CRT_INTRADAY_V1,confirmatoria cerrada (señal parcial BTC 10/10 semillas +0.163),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/crt_pdl_reclaim_long,NO,idem; ninguna celda supera C1-C6 (0/10 CI>0)
-crt_pdh_reclaim_short,CRT_INTRADAY_V1,confirmatoria cerrada (señal parcial BTC 5/10 +0.153),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/crt_pdh_reclaim_short,NO,idem
-crt_asia_range_fade,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/crt_asia_range_fade,NO,idem
-crt_ny_open_continuation,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/crt_ny_open_continuation,NO,idem
-crt_liquidity_sweep_reversal,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/crt_liquidity_sweep_reversal,NO,idem
+pdl_reclaim_long,CRT_INTRADAY_V1,confirmatoria cerrada (señal parcial BTC 10/10 semillas positivas; 0/10 CI>0),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/pdl_reclaim_long,NO,ronda posterior al cierre del 2026-08-13; Holm/BH/DSR/PBO ampliados no calculados
+pdh_reclaim_short,CRT_INTRADAY_V1,confirmatoria cerrada (señal parcial BTC 5/10),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/pdh_reclaim_short,NO,idem
+crt_htf_range_reversal,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/crt_htf_range_reversal,NO,idem
+session_liquidity_sweep,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/session_liquidity_sweep,NO,idem
+session_range_rotation,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/session_range_rotation,NO,idem
+opening_range_breakout_retest,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/opening_range_breakout_retest,NO,idem
+failed_breakout_reversal,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/failed_breakout_reversal,NO,idem
+double_sweep_reversal,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/double_sweep_reversal,NO,idem
 crt_three_candle_model,CRT_INTRADAY_V1,confirmatoria cerrada (0 celdas),BTC+ETH,10,15,100,60000,artifacts/runs/crt_v1_budget100/crt_three_candle_model,NO,idem
-macro_event_brake,S3,confirmatoria cerrada (0/10 semillas positivas),BTC+ETH,10,15,100,60750,artifacts/runs/multiseed_20260826T165028Z_0d3a92 + ADR 0019,NO,ronda posterior; N:=N+1 declarado en prerregistro; correccion ampliada no calculada
+macro_event_brake,S3,confirmatoria cerrada (0/10 semillas positivas),BTC+ETH,10,15,100,60000,artifacts/runs/multiseed_20260826T165028Z_0d3a92 + ADR 0019,NO,ronda posterior; N:=N+1 declarado en prerregistro; correccion ampliada no calculada
 smoke_phase_A,exploratoria,tecnica (sintetico),varios,,,,621,artifacts/runs/smoke_*,NO,validez tecnica; sin lectura de rentabilidad
 development_slice,exploratoria,previa al contrato,BTC,,,,9244,artifacts/runs/development_*,NO,anterior al contrato congelado
 pilotos_R2_R3,exploratoria,no-futilidad,BTC+ETH,,,,20760,artifacts/runs/pilot_*,NO,el protocolo prohibe citar Sharpe de piloto como evidencia
-crt_v1_abortado,CRT_INTRADAY_V1,descartada,BTC+ETH,,,,102000,artifacts/runs/crt_v1_ABORTED_fc662f9 + _DESCARTADO_huella_arbol_sucio,NO,huella de identidad sobre arbol sucio; invalidada y re-ejecutada limpia
+crt_v1_abortado,CRT_INTRADAY_V1,descartada,BTC+ETH,,,,93000,artifacts/runs/crt_v1_ABORTED_fc662f9 + crt_v1_budget100/_DESCARTADO_huella_arbol_sucio,NO,huella de identidad sobre arbol sucio; invalidada y re-ejecutada limpia (31 runs: 24000+9000+60000)
+s3_pilot,S3,exploratoria (screen tecnico),BTC+ETH,,,25,750,artifacts/runs/search_macro_event_brake_20260826T164228Z_d02e91,NO,superado por el estudio completo; mismo trato que pilotos R2/R3
 s1c_full_configs,S1-C,implementada NO ejecutada,BTC+ETH,,,,0,configs/search_s1c_*.yaml,NO,configs completas preparadas; decision humana pendiente (NOT YET EXECUTED)
-s3_checkpoint_abandonado,S3,descartada,BTC+ETH,,,,parcial,artifacts/runs/multiseed_20260826T164332Z_4c7762,NO,huella distinta tras cambios de codigo; relanzado limpio
+s3_checkpoint_abandonado,S3,descartada,BTC+ETH,,,,18000,artifacts/runs/multiseed_20260826T164332Z_4c7762,NO,huella distinta tras cambios de codigo; relanzado limpio (6x3000 + 1 parcial)
 momentum_baseline_R1,R1,sustituida,BTC+ETH,,,,,artifacts/runs/multiseed_momentum_baseline + ADR 0011-0013,NO,contaminacion de pliegue externo detectada; sustituida por R2
 meta_labeling_sintetico,anexo,ejecutado,sintetico,,,,,reports/meta_labeling_synthetic + ADR 0017,NO,validacion de maquinaria con edge plantado; capitulo 9
 meta_labeling_real,anexo,ejecutado,BTC,,15,,,reports/meta_labeling_real + reports/tables/ml,NO,capa secundaria sobre primaria momentum; capitulo 9

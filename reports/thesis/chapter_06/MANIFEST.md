@@ -114,8 +114,11 @@ number above:
 
 Consequences for the text: any sentence citing "496,500 trials" or "13
 families" refers to the closure only; the project-wide confirmatory total is
-23 family hypotheses and ≈1,157,250 valid evaluated configurations, and no
-correction has been run over that extended universe. Merging the universes
+23 family hypotheses and **1,096,500** valid evaluated configurations
+(496,500 + 540,000 CRT + 60,000 S3, each addend verified by summing the
+candidates parquets; the 750-evaluation S3 pilot is excluded like every
+other superseded pilot), and no correction has been run over that extended
+universe. Merging the universes
 post hoc would require re-running the four corrections over a rebuilt
 23-family OOS matrix — with the caveat that the designs are not exchangeable
 (1–10 seeds, budgets 25–300). See `INVENTARIO_MAESTRO.md` and

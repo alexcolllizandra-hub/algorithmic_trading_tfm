@@ -25,8 +25,8 @@ CSV gemelo: `INVENTARIO_MAESTRO.csv`.
 | illiquidity_reversion (S2-B) | solo piloto | 2 × 3 × 15 | 25 | 4.500 | ídem | SÍ (nivel piloto) |
 | flow_price_divergence (S2-B) | solo piloto | 2 × 3 × 15 | 25 | 4.500 | ídem | SÍ (nivel piloto) |
 | **Subtotal cierre de 13** | | **284 unidades (fam×activo×semilla×motor)** | | **496.500** ✓ verificado | `study_closure/` (2026-08-13, commit 232bc372) | — |
-| crt_htf_range_reversal … crt_three_candle_model (9 familias, CRT_INTRADAY_V1) | confirmatoria, cerrada (0/18 celdas) | 2 × 10 × 15 cada una | 100 | 540.000 (9×60.000) | `crt_v1_budget100/<fam>/study_robustness.json` + `crt_v1_execution.json` | **NO — posterior al cierre; sin Holm/BH/DSR/PBO ampliados (no calculado)** |
-| macro_event_brake (S3) | confirmatoria, cerrada (0/10 semillas) | 2 × 10 × 15 | 100 | 60.000 (+750 piloto) | `multiseed_20260826T165028Z_0d3a92/` + ADR 0019 + `docs/thesis/resultados_s3.md`* | **NO — posterior; N:=N+1 declarado; corrección ampliada no calculada** |
+| CRT_INTRADAY_V1 — 9 familias: pdl_reclaim_long, pdh_reclaim_short, crt_htf_range_reversal, session_liquidity_sweep, session_range_rotation, opening_range_breakout_retest, failed_breakout_reversal, double_sweep_reversal, crt_three_candle_model (nombres del `frozen_order` de `crt_v1_execution.json`) | confirmatoria, cerrada (0/18 celdas) | 2 × 10 × 15 cada una | 100 | 540.000 (9×60.000, verificado por parquets) | `crt_v1_budget100/<fam>/study_robustness.json` + `crt_v1_execution.json` | **NO — posterior al cierre; sin Holm/BH/DSR/PBO ampliados (no calculado)** |
+| macro_event_brake (S3) | confirmatoria, cerrada (0/10 semillas) | 2 × 10 × 15 | 100 | 60.000 (verificado por parquets; piloto de 750 aparte, abajo) | `multiseed_20260826T165028Z_0d3a92/` + ADR 0019 + `docs/thesis/resultados_s3.md`* | **NO — posterior; N:=N+1 declarado; corrección ampliada no calculada** |
 
 \* `docs/thesis/` no viaja al repo público de entrega; el veredicto S3 vive también en los artefactos del estudio.
 
@@ -37,9 +37,10 @@ CSV gemelo: `INVENTARIO_MAESTRO.csv`.
 | Smoke (fase A) | exploratoria técnica | 21 / 621 | validez técnica sintética, sin lectura de rentabilidad | runs `smoke_*` |
 | Desarrollo (slice vertical, momentum) | exploratoria | 29 / 9.244 | anterior al contrato congelado | runs `development_*` |
 | Pilotos R2/R3 (6 familias) | exploratoria (no-futilidad) | 19 / 20.760 | el protocolo prohíbe citar Sharpe de piloto como evidencia | runs `pilot_*` |
-| CRT v1 abortado | **descartada** | 34 / 102.000 | huella de identidad sobre árbol sucio → invalidada y re-ejecutada limpia | `crt_v1_ABORTED_fc662f9/`, `_DESCARTADO_huella_arbol_sucio/` |
+| CRT v1 abortado | **descartada** | 31 / 93.000 (verificado: 24.000 en `crt_v1_ABORTED_fc662f9` + 9.000 + 60.000 en `_DESCARTADO_huella_arbol_sucio`) | huella de identidad sobre árbol sucio → invalidada y re-ejecutada limpia | `crt_v1_ABORTED_fc662f9/`, `_DESCARTADO_huella_arbol_sucio/` |
+| Piloto S3 | exploratoria (screen técnico) | 1 / 750 | mismo trato que los pilotos R2/R3: superado por el estudio completo | `search_macro_event_brake_20260826T164228Z_d02e91` |
 | S1-C configs (4 familias, estudio completo) | **implementada, NO ejecutada** | 0 | decisión humana pendiente («NOT YET EXECUTED» en las configs) | `configs/search_s1c_*.yaml` |
-| Checkpoint S3 abandonado | descartada | parcial | huella distinta tras cambios de código; relanzado limpio | `multiseed_20260826T164332Z_4c7762/` |
+| Checkpoint S3 abandonado | descartada | 7 / 18.000 (6×3.000 + 1 parcial) | huella distinta tras cambios de código; relanzado limpio | `multiseed_20260826T164332Z_4c7762/` |
 | momentum baseline R1 | **sustituida** | (runs pre-R2) | contaminación de pliegue externo detectada → ADR 0011/0012/0013 | `multiseed_momentum_baseline/`, ADRs |
 
 ## Capas no-familia (otros capítulos)
@@ -68,6 +69,10 @@ sería 13 + 9 + 1 = 23 hipótesis de familia (N de Holm/BH), con la advertencia
 de que la evidencia por familia es heterogénea (10 semillas en R2/R3/CRT/S3;
 1–3 en S1/S2) y los presupuestos difieren (25–300/fold), de modo que los
 p-valores no provienen de diseños intercambiables; y el denominador del DSR
-pasaría de 496.500 a 1.096.500 + 60.750 (CRT válido + S3) = 1.157.250
-configuraciones confirmatorias. No se ha ejecutado; requeriría reconstruir la
-matriz OOS con las 23 series concatenadas y re-correr las cuatro correcciones.
+pasaría de 496.500 a **496.500 + 540.000 (CRT válido) + 60.000 (S3) =
+1.096.500** configuraciones confirmatorias válidas (1.097.250 si se contara
+también el piloto S3 de 750, que este inventario excluye por el mismo motivo
+que los pilotos R2/R3: quedó superado por el estudio completo). Cada sumando
+está verificado sumando los `*_candidates.parquet` de los run-dirs. No se ha
+ejecutado; requeriría reconstruir la matriz OOS con las 23 series
+concatenadas y re-correr las cuatro correcciones.
