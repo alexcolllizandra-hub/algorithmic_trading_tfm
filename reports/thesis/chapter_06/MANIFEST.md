@@ -50,3 +50,32 @@ holm_bonferroni, benjamini_hochberg_correction, stationary_bootstrap_indices,
 reality_check, superior_predictive_ability) and
 `src/perp_lab/evaluation/study_robustness.py` (block-bootstrap Sharpe CI,
 blocks 24/168/720, 500 resamples; the C2 gate reads block_168).
+
+---
+
+## Extended set (added on request — choose per section)
+
+### Chapter 6 — method-and-diagnostic figures (core + optional)
+
+| File | Shows | Section | Suggested caption (EN) |
+|---|---|---|---|
+| `fig_2_6_data_snooping.png` | 10,000 random ±1 strategies on real 1h returns: the best Sharpe grows like sqrt(2 ln N / T) and crosses 1.0 at ~80 tries | 6.1/6.2 opener | *The mechanics of data snooping: the maximum Sharpe among N random strategies on the real development returns tracks the E[max] growth curve, crossing 1.0 within about eighty attempts.* |
+| `i03_optimism_structure.png` | How selection optimism varies by family and fold (structure, not just the mean) | 6.2 optional | *Selection optimism is not uniform: per-family and per-fold decomposition of the validation-minus-test Sharpe gap across the 3,000 R3 fold winners.* |
+| `k01_bootstrap_distribuciones.png` | Block-bootstrap distributions of OOS statistics for the real seeds (the machinery behind the C2 gate) | 6.5 method illustration | *Moving-block bootstrap distributions of the out-of-sample statistics; the C2 promotion gate requires the 168-bar-block Sharpe interval to exclude zero.* |
+| `k02_permutacion_secuencia.png` | Sequence-permutation null vs the real result | 6.5 optional (or Ch. 8) | *Sequence-permutation null: destroying the temporal order of positions while keeping their marginal distribution brackets the realized result.* |
+| `k03_nula_con_la_estrategia_dentro.png` | "Null with the strategy inside": circular-shift null distribution with the observed statistic marked — the closest existing analogue to a Reality-Check null plot | 6.5 optional (or Ch. 8) | *Circular-shift null with the strategy inside: 1,000 rotations of the position series against the real prices; the observed return sits inside the null mass.* |
+
+### Chapter 7 boundary — results comparisons (use there, not in 6)
+
+| File | Shows | Why chapter 7 |
+|---|---|---|
+| `j01_promotion_criteria.png` | C1–C6 pass counts per family×asset cell | It is the per-round verdict, not the method |
+| `j04_regime_conditioned.png` | Regime-conditioned re-evaluation of the top cells | Results comparison |
+| `i04_rs_vs_ga.png` | Paired RS vs GA outcomes | Engine comparison (results) |
+| `i05_seed_instability.png` | Seed dispersion of OOS results | Results dispersion |
+| `i06_convergence.png` | Search convergence within budget | Search behaviour |
+
+### Still category 3 (would need new computation — not run)
+
+- CSCV logit distribution (only the aggregate PBO=0.486 was persisted).
+- White RC / Hansen SPA null distributions (only p-values persisted).
