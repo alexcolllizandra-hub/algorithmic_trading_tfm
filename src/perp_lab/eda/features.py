@@ -12,6 +12,8 @@ consumes the finished matrix.
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 import polars as pl
 from sklearn.feature_selection import mutual_info_regression
@@ -122,10 +124,10 @@ def label_summary(labels: pl.DataFrame) -> dict[str, float]:
         "share_positive": counts.get(1, 0) / n,
         "share_negative": counts.get(-1, 0) / n,
         "share_zero": counts.get(0, 0) / n,
-        "share_meta_positive": float(labels["meta_label"].mean()),
+        "share_meta_positive": float(cast("float", labels["meta_label"].mean() or 0.0)),
         "share_upper": barrier.get("upper", 0) / n,
         "share_lower": barrier.get("lower", 0) / n,
         "share_vertical": barrier.get("vertical", 0) / n,
-        "median_holding_bars": float(labels["holding_bars"].median()),
-        "mean_holding_bars": float(labels["holding_bars"].mean()),
+        "median_holding_bars": float(cast("float", labels["holding_bars"].median() or 0.0)),
+        "mean_holding_bars": float(cast("float", labels["holding_bars"].mean() or 0.0)),
     }

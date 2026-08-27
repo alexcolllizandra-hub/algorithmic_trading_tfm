@@ -1,96 +1,68 @@
 # perp-lab
 
-Reproducible framework for **discovering and validating interpretable intraday
-trading strategies** on Bitcoin and Ether **USDT-M perpetual futures**.
+**Reproducible discovery and validation of interpretable intraday trading
+strategies on BTC/ETH USDT-M perpetual futures** — the research platform and
+evidence base of a Master's Thesis in Data Science (La Salle — URL).
 
-This repository accompanies a Master's Thesis (TFM). It is being built in
-phases; the code currently covers **Phase 1** only:
+**Headline result: a rigorous negative.** Across 14 pre-registered strategy
+family gates (R2–R3, S1, S2, CRT, S3) — 2 assets × 10 seeds × 15 expanding
+walk-forward folds, 1.17 M candidate evaluations under realistic costs —
+**no family met the six frozen promotion criteria**, and no result survives
+study-level multiple-testing correction (Holm/BH, Deflated Sharpe, SPA,
+PBO = 0.49). Two annexes measure why: predictability in this market lives in
+the *variance* (forecastable even by a 4-parameter HAR; an LSTM adds no
+separable margin) and does not extend to the *sign*. The thesis's
+contribution is the machine that makes such a claim auditable.
 
-- Project foundation and reproducible environment.
-- A formal **data contract** for the market data used throughout the thesis.
-- Bulk data acquisition from `data.binance.vision` (+ CCXT for incrementals).
-- Data-quality validation.
-- A reusable **exploratory data analysis (EDA)** library.
+## What is in this repository
 
-Strategy grammar, search, backtesting, market-regime detection, meta-labeling,
-MLOps, API and dashboard are intentionally **out of scope** for Phase 1. See
-[docs/roadmap.md](docs/roadmap.md).
+| Layer | Where | What |
+|---|---|---|
+| Research code | `src/perp_lab/` | 22 packages: data contracts + causal features, vectorised backtester (next-open, fees + slippage + realized funding), RS/GA search with budget parity, walk-forward orchestration, robustness battery (C1–C6), multiple testing, meta-labeling, EDA library, run identity/tracking, read-only API |
+| Tests | `tests/` | 1,560+ pytest (unit, property/invariant, integration, pinned-output, estimator-vs-synthetic); 112 vitest for the web engine |
+| Notebooks | `notebooks/` | 8 executed, deterministic notebooks (generated from `scripts/build_*_notebook.py`; zero loose logic) narrating data → EDA → features → backtest → search → closure → meta-labeling → Monte Carlo |
+| Frozen evidence | `reports/tables/`, `reports/metadata/`, `reports/study_closure/` | every table/figure the thesis cites, with provenance sidecars (dataset SHA-256, commit, config) |
+| Thesis figure builders | `scripts/build_ch*_figures.py`, `scripts/build_*_annex*.py` | regenerate every chapter figure deterministically (seed 42) |
+| Data contracts | `configs/`, `data/manifests/` | frozen YAML contracts and per-dataset SHA-256 manifests (market data itself is not committed; see below) |
+| Governance | `docs/decisions/` (19 ADRs), `docs/methodology/` | pre-registrations, protocol, the outer-fold contamination incident and its correction, holdout audit status |
+| Web panel | `apps/web/` | bilingual Next.js dashboard over the frozen artifacts + an in-browser strategy laboratory (TypeScript port of the engine) |
 
-## Research-integrity principles
+## Research-integrity principles (enforced in code)
 
-These principles are enforced by the project rules in `.cursor/rules/` and must
-never be violated:
+1. **Chronological splits only** — expanding walk-forward (15 folds,
+   730/90/90/90 days); purge 96 / embargo 118 bars derived, not chosen.
+2. **Frozen holdout** `[2026-01-01, 2026-07-01)` — gated loader raises on any
+   leak; opened exactly once (2026-08-13) on a pre-declared candidate; the
+   reading is withheld pending a provenance audit and no conclusion depends
+   on it (`docs/methodology/holdout_audit_status.md`).
+3. **Pre-registration** — families are frozen (hypothesis, space, contract)
+   before any bar is simulated; every new hypothesis pays N := N + 1.
+4. **Identity, not naming** — each run records a SHA-256 fingerprint over the
+   resolved config, contracts, data hashes and code state; a stale-claims
+   sweep in CI fails the build if a committed document asserts a result no
+   artifact backs.
 
-1. **Chronological splits only.** No random train/test splits.
-2. **The final holdout is frozen against EDA-driven decisions and parameter
-   selection**, and is opened at most once. It *was* opened, on 2026-08-13, over
-   a candidate that the study-level correction had already rejected. That reading
-   is withheld pending a provenance audit, the partition is now consumed, and no
-   conclusion in this repository depends on it. See
-   [docs/methodology/holdout_audit_status.md](docs/methodology/holdout_audit_status.md).
-3. **Raw data is immutable.** `data/raw/` is written once and never edited.
-4. **No silent outlier removal.** Extreme observations are flagged and
-   investigated, not automatically dropped.
-5. **Everything is reproducible.** Deterministic seeds, pinned environment,
-   and a manifest (source, symbol, timeframe, period, timestamp, hash) for
-   every processed dataset.
-6. **Crypto is 24/7.** Annualization uses 365 days, not the 252-day equity
-   convention.
-
-## Requirements
-
-- Python 3.12
-- [uv](https://docs.astral.sh/uv/) for environment and dependency management.
-
-## Setup
-
-> Note: an older stray virtualenv (`Lib/`, `Scripts/`, `pyvenv.cfg`) may exist
-> at the repository root from a previous project. It is git-ignored and can be
-> deleted. The commands below create a clean `.venv/` managed by uv.
+## Reproducing
 
 ```bash
-# 1. Create the environment and install dependencies (runtime + dev)
-uv sync --extra dev
-
-# 2. Run the quality gate
-uv run ruff check .
-uv run ruff format --check .
-uv run pyright
-uv run pytest -m "not network"
-
-# 3. (optional) register the Jupyter kernel for the EDA notebooks (later phase)
-uv run python -m ipykernel install --user --name perp-lab
+uv sync --extra dev          # locked Python 3.12 environment
+uv run pytest -m "not network" -q
+uv run python -m perp_lab.cli download   # rebuilds the data lake from data.binance.vision
+                                          # (byte-identical to the recorded SHA-256 manifests)
+uv run python scripts/run_notebooks.py    # re-executes the 8 notebooks
+uv run python scripts/build_ch5_figures.py  # (or any other chapter builder)
 ```
 
-## Repository layout
+The web panel: `npm install && npm run dev` inside `apps/web` (the strategy
+laboratory is fully client-side; study pages use the read-only API:
+`uv run uvicorn perp_lab.api.main:app`).
 
-```
-src/perp_lab/        # library code (importable, testable)
-  config/            # pydantic-settings models loaded from configs/*.yaml
-  data/              # providers, download, bar construction, manifests
-  validation/        # pandera schemas + data-quality reporting
-  eda/               # reusable EDA statistics and plotting functions
-  utils/             # time, hashing, logging, seeds
-configs/             # YAML configuration (data_contract.yaml, eda.yaml)
-data/                # raw / validated / processed / manifests (git-ignored except manifests)
-docs/                # data contract, experimental protocol, roadmap, ADRs
-reports/             # generated figures and tables
-tests/               # unit + integration tests
-.cursor/             # project rules, skills and subagents (project governance)
-```
+Market data is **not** committed (only its manifests are). A full
+re-ingestion on 2026-08-19 reproduced every dataset with identical SHA-256 —
+the recorded hashes are the ground truth the download must match.
 
-## Command reference
+## Scope
 
-| Task | Command |
-|------|---------|
-| Install env | `uv sync --extra dev` |
-| Lint | `uv run ruff check .` |
-| Format | `uv run ruff format .` |
-| Type-check | `uv run pyright` |
-| Tests (offline) | `uv run pytest -m "not network"` |
-| Tests (incl. network) | `uv run pytest` |
-| Download data | `uv run perp-lab download --config configs/data_contract.yaml` |
-
-## License
-
-MIT
+This is a research system, not a live-trading venue: no order-book queueing,
+partial fills or latency modelling. Its purpose is that every number in the
+thesis can be traced from source data to statistical verdict.

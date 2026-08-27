@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import polars as pl
@@ -61,7 +62,11 @@ def test_event_study_recovers_planted_spike() -> None:
 
     study = event_study(_bars(ret), events, window_bars=6)
     at_zero = study.filter(pl.col("offset_bars") == 0)["mean_absret_bps"].item()
-    away = study.filter(pl.col("offset_bars").abs() >= 3)["mean_absret_bps"].mean()
+    away = float(
+        cast(
+            "float", study.filter(pl.col("offset_bars").abs() >= 3)["mean_absret_bps"].mean() or 0.0
+        )
+    )
     assert at_zero > 5 * away
     assert study.filter(pl.col("offset_bars") == 0)["n_events"].item() == events.len()
 
@@ -152,8 +157,10 @@ def test_macro_events_csv_contract() -> None:
     counts = dict(frame.group_by("event_type").agg(pl.len()).iter_rows())
     assert counts == {"cpi_release": 71, "fomc_decision": 49}
     # All inside the development window.
-    assert frame["datetime_utc"].min() >= datetime(2020, 1, 1, tzinfo=UTC)
-    assert frame["datetime_utc"].max() < datetime(2026, 1, 1, tzinfo=UTC)
+    dt_min, dt_max = frame["datetime_utc"].min(), frame["datetime_utc"].max()
+    assert isinstance(dt_min, datetime) and isinstance(dt_max, datetime)
+    assert dt_min >= datetime(2020, 1, 1, tzinfo=UTC)
+    assert dt_max < datetime(2026, 1, 1, tzinfo=UTC)
     # DST conversion: 08:30 ET is 13:30 UTC in winter, 12:30 UTC in summer.
     jan = frame.filter(pl.col("local_time") == "2020-01-14 08:30 ET")["datetime_utc"].item()
     jul = frame.filter(pl.col("local_time") == "2020-07-14 08:30 ET")["datetime_utc"].item()

@@ -17,6 +17,7 @@ than producing plausible-looking numbers:
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 import numpy as np
 import polars as pl
@@ -148,8 +149,11 @@ def test_student_t_fit_recovers_df() -> None:
 
 def test_survival_function_monotone() -> None:
     surv = survival_function(WHITE)
-    assert surv["survival"].diff().drop_nulls().max() <= 0
-    assert 0 < surv["survival"].min() <= surv["survival"].max() <= 1
+    max_step = float(cast("float", surv["survival"].diff().drop_nulls().max() or 0.0))
+    assert max_step <= 0
+    s_min = float(cast("float", surv["survival"].min() or -1.0))
+    s_max = float(cast("float", surv["survival"].max() or -1.0))
+    assert 0 < s_min <= s_max <= 1
 
 
 def test_kurtosis_by_aggregation_declines_for_t() -> None:
@@ -196,7 +200,7 @@ def test_market_regime_stats_computes_corr() -> None:
     btc, eth = _frame(r_btc), _frame(r_eth)
     stats = market_regime_stats(btc, eth)
     assert stats.height >= 4
-    assert stats["btc_eth_corr"].min() > 0.5
+    assert float(cast("float", stats["btc_eth_corr"].min() or -1.0)) > 0.5
 
 
 # --------------------------------------------------------------------------- #
