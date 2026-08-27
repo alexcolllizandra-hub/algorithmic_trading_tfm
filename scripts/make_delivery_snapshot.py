@@ -41,6 +41,7 @@ PRUNE = [
     "docs/roadmap",
     "docs/roadmap.md",
     "docs/thesis",
+    "reports/thesis",
     "scripts/make_delivery_snapshot.py",
 ]
 
