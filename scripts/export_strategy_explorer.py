@@ -24,13 +24,21 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from perp_lab.evaluation.montecarlo import bar_net_returns, path_metrics
+from perp_lab.evaluation.montecarlo import (
+    bar_net_returns,
+    path_metrics,
+    percentile_of,
+    stationary_bar_bootstrap,
+)
 from perp_lab.evaluation.study_robustness import load_oos_ledger
 from perp_lab.tracking.identity import worktree_state
 
 OUT = Path("apps/web/public/data/strategies")
 ENGINE = "random_search"  # the study's primary engine; GA lives in /experimentos
 CURVE_POINTS = 400
+MC_PATHS = 500
+MC_BLOCK_BARS = 168  # the C2 gate's decision block
+MC_SEED = 42
 
 STUDIES: dict[str, tuple[str, str]] = {
     # family -> (study_dir, round tag)
@@ -96,14 +104,63 @@ METRIC_KEYS = (
 )
 
 
-def decimate(equity: np.ndarray) -> list[float]:
-    """Every k-th exact equity value plus the last one, rounded for transport."""
-    n = equity.size
+def decimate_indices(n: int) -> list[int]:
     step = max(1, n // CURVE_POINTS)
     idx = list(range(0, n, step))
     if idx[-1] != n - 1:
         idx.append(n - 1)
-    return [round(float(equity[i]), 5) for i in idx]
+    return idx
+
+
+def decimate(equity: np.ndarray) -> list[float]:
+    """Every k-th exact equity value plus the last one, rounded for transport."""
+    return [round(float(equity[i]), 5) for i in decimate_indices(equity.size)]
+
+
+def fold_winners(run_dir: str) -> list[dict[str, Any]]:
+    """The frozen winner of each fold: params and its one test evaluation."""
+    path = Path(run_dir) / f"{ENGINE}_fold_winners.json"
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for w in json.loads(path.read_text(encoding="utf-8")):
+        test = w.get("test_metrics") or {}
+        rows.append(
+            {
+                "fold": w.get("fold"),
+                "params": w.get("params") or {},
+                "val_sharpe": w.get("val_sharpe"),
+                "test_sharpe": test.get("sharpe"),
+                "test_return": test.get("total_return"),
+                "n_trades": test.get("n_trades"),
+            }
+        )
+    return rows
+
+
+def monte_carlo_block(net: np.ndarray, source_seed: int) -> dict[str, Any]:
+    """Terminal-return dispersion of the median seed under the study's bootstrap.
+
+    Same machinery as notebook 07 (stationary bar bootstrap, 168-bar expected
+    block); it measures dispersion under resampling and validates nothing.
+    """
+    table = stationary_bar_bootstrap(
+        net, block_length=MC_BLOCK_BARS, n_resamples=MC_PATHS, seed=MC_SEED
+    )
+    terminal = np.asarray(table["total_return"], dtype=float)
+    observed = float(np.prod(1.0 + net) - 1.0)
+    qs = {f"p{p:02d}": round(float(np.percentile(terminal, p)), 5) for p in (5, 25, 50, 75, 95)}
+    return {
+        "method": "stationary_bar_bootstrap",
+        "block_bars": MC_BLOCK_BARS,
+        "n_paths": MC_PATHS,
+        "seed": MC_SEED,
+        "source_seed": source_seed,
+        "observed_total_return": round(observed, 5),
+        "observed_percentile": round(percentile_of(observed, terminal), 4),
+        "probability_positive": round(float((terminal > 0).mean()), 4),
+        "terminal_quantiles": qs,
+    }
 
 
 def closure_metadata() -> dict[str, dict[str, Any]]:
@@ -158,23 +215,41 @@ def main() -> int:
                         k: entry["buy_and_hold"].get(k)
                         for k in ("total_return", "sharpe", "max_drawdown")
                     },
+                    # Real bar timestamps at the decimated points (day precision)
+                    # and the benchmark equity on exactly the same bars.
+                    "curve_times": [
+                        str(ledger["open_time"][i])[:10] for i in decimate_indices(net.size)
+                    ],
                     "seeds": [],
                     "_net_sum": np.zeros(net.size),
+                    "_nets": {},
                 },
             )
+            if "curve" not in asset["buy_and_hold"]:
+                bh_equity = np.cumprod(1.0 + ledger["oo_return"].to_numpy())
+                asset["buy_and_hold"]["curve"] = decimate(bh_equity)
             asset["_net_sum"] = asset["_net_sum"] + net
+            asset["_nets"][seed] = net
             asset["seeds"].append(
                 {
                     "seed": seed,
                     "metrics": {k: entry["strategy"].get(k) for k in METRIC_KEYS},
                     "curve": decimate(equity),
+                    "fold_winners": fold_winners(entry["run_dir"]),
                 }
             )
 
         for symbol, asset in per_asset.items():
             mean_net = asset.pop("_net_sum") / max(len(asset["seeds"]), 1)
+            nets = asset.pop("_nets")
             asset["average_curve"] = decimate(np.cumprod(1.0 + mean_net))
             asset["average_metrics"] = {k: round(v, 6) for k, v in path_metrics(mean_net).items()}
+            # Monte Carlo on the median seed by total return: no seed cherry-pick.
+            by_ret = sorted(
+                asset["seeds"], key=lambda s: s["metrics"].get("total_return") or 0.0
+            )
+            median_seed = by_ret[len(by_ret) // 2]["seed"]
+            asset["monte_carlo"] = monte_carlo_block(nets[median_seed], median_seed)
             meta = closure.get(family, {}).get(symbol, {})
             asset["closure"] = meta or None
 

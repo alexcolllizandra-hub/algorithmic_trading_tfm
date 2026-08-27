@@ -1005,6 +1005,37 @@ export const es = {
       "Ventana {start} — {end} · {bars} barras · motor {engine}. Curvas decimadas para el dibujo; cada punto conserva su valor exacto.",
     metricsTitle: "Métricas completas",
     metricsSubtitle: "Las dieciséis métricas de la batería, para la selección actual.",
+    medianAcrossSeeds: "mediana entre las {n} semillas",
+    medianNote:
+      "Con la media seleccionada, cada métrica es la mediana entre semillas; el rango min–max aparece al pasar el cursor.",
+    bestSeed: "Mejor",
+    worstSeed: "Peor",
+    benchmarkLine: "Comprar y mantener (misma ventana)",
+    averageLine: "Media de las semillas",
+    seedLine: "Semilla {seed}",
+    configTitle: "Configuración ganadora por pliegue",
+    configSubtitleSeed:
+      "Los 15 ganadores congelados de la semilla {seed}: los parámetros se eligieron en la ventana de validación y se puntuaron una única vez en el test de su pliegue.",
+    configSubtitleAverage:
+      "Valores más elegidos por la búsqueda entre los {n} ganadores de pliegue de todas las semillas. Seleccione una semilla concreta para ver sus 15 configuraciones exactas.",
+    configFold: "Pliegue",
+    configParams: "Parámetros",
+    configValSharpe: "Sharpe val.",
+    configTestSharpe: "Sharpe test",
+    configTestReturn: "Retorno test",
+    configTrades: "Ops.",
+    configParam: "Parámetro",
+    configTopValues: "Valores más frecuentes (nº de pliegues)",
+    mcTitle: "Monte Carlo — dispersión bajo remuestreo",
+    mcSubtitle:
+      "Bootstrap estacionario por bloques ({block} barras esperadas, {paths} caminos, semilla del generador fija) sobre la serie OOS real de la semilla mediana por retorno ({seed}). Mide dispersión; no valida nada.",
+    mcObserved: "Retorno observado",
+    mcPercentile: "Percentil de lo observado",
+    mcProbPositive: "P(retorno > 0) bajo remuestreo",
+    mcQuantile: "Cuantil",
+    mcTotalReturn: "Retorno total",
+    mcNote:
+      "La distribución remuestrea los retornos reales de una sola semilla: si lo observado cae dentro de la masa, el resultado es indistinguible de la variación de muestreo de su propia serie.",
     buyAndHold: "Comprar y mantener",
     thesis: "Qué apuesta esta familia",
     thesisMissing: "La hipótesis registrada de esta familia vive en su ronda, no en el cierre.",
@@ -1227,6 +1258,19 @@ export const es = {
       "(ejecución next-open, comisiones, deslizamiento y funding reales), pero un resultado " +
       "favorable aquí NO valida nada: la batería del estudio exige multi-semilla, walk-forward y " +
       "corrección por comparaciones múltiples. El periodo de reserva está excluido de estos datos.",
+    flow: {
+      title: "El flujo completo, en el mismo orden que el estudio",
+      design: "Diseña",
+      designDesc: "Familia y parámetros del espacio del estudio",
+      backtest: "Ejecuta",
+      backtestDesc: "Backtest con costes y funding reales",
+      validate: "Valida",
+      validateDesc: "Walk-forward multi-semilla, el protocolo del estudio",
+      compare: "Compara",
+      compareDesc: "Frente a las 15 familias formales",
+      done: "hecho",
+      pending: "pendiente",
+    },
     que: "¿Qué es esto?",
     queAnswer:
       "Un backtester real que corre en su navegador sobre la partición de desarrollo (2020–2025). " +

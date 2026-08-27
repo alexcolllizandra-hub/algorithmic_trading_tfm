@@ -1008,6 +1008,37 @@ export const en = {
       "Window {start} — {end} · {bars} bars · engine {engine}. Curves decimated for drawing; every point keeps its exact value.",
     metricsTitle: "Full metrics",
     metricsSubtitle: "All sixteen battery metrics, for the current selection.",
+    medianAcrossSeeds: "median across the {n} seeds",
+    medianNote:
+      "With the average selected, each metric is the median across seeds; hover to see the min–max range.",
+    bestSeed: "Best",
+    worstSeed: "Worst",
+    benchmarkLine: "Buy and hold (same window)",
+    averageLine: "Average of the seeds",
+    seedLine: "Seed {seed}",
+    configTitle: "Winning configuration per fold",
+    configSubtitleSeed:
+      "The 15 frozen winners of seed {seed}: parameters were selected on the validation window and scored exactly once on their fold's test.",
+    configSubtitleAverage:
+      "Most-chosen values across the {n} fold winners of all seeds. Pick a specific seed to see its 15 exact configurations.",
+    configFold: "Fold",
+    configParams: "Parameters",
+    configValSharpe: "Val. Sharpe",
+    configTestSharpe: "Test Sharpe",
+    configTestReturn: "Test return",
+    configTrades: "Trades",
+    configParam: "Parameter",
+    configTopValues: "Most frequent values (fold count)",
+    mcTitle: "Monte Carlo — dispersion under resampling",
+    mcSubtitle:
+      "Stationary block bootstrap ({block} expected bars, {paths} paths, fixed generator seed) over the real OOS series of the median-return seed ({seed}). It measures dispersion; it validates nothing.",
+    mcObserved: "Observed return",
+    mcPercentile: "Percentile of the observed",
+    mcProbPositive: "P(return > 0) under resampling",
+    mcQuantile: "Quantile",
+    mcTotalReturn: "Total return",
+    mcNote:
+      "The distribution resamples one seed's real returns: if the observed value sits inside the mass, the result is indistinguishable from the sampling variation of its own series.",
     buyAndHold: "Buy and hold",
     thesis: "What this family bets on",
     thesisMissing: "This family's registered hypothesis lives in its round, not in the closure.",
@@ -1228,6 +1259,19 @@ export const en = {
       "execution, real fees, slippage, and funding), but a favourable result here validates " +
       "NOTHING: the study's battery requires multi-seed runs, walk-forward, and " +
       "multiple-comparison correction. The holdout period is excluded from this data.",
+    flow: {
+      title: "The complete flow, in the study's own order",
+      design: "Design",
+      designDesc: "Family and parameters from the study's space",
+      backtest: "Run",
+      backtestDesc: "Backtest under real costs and funding",
+      validate: "Validate",
+      validateDesc: "Multi-seed walk-forward, the study's protocol",
+      compare: "Compare",
+      compareDesc: "Against the 15 formal families",
+      done: "done",
+      pending: "pending",
+    },
     que: "What is this?",
     queAnswer:
       "A real backtester running in your browser on the development partition (2020–2025). Four " +

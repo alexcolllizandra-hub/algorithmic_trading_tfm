@@ -1131,9 +1131,60 @@ export default function LaboratorioPage() {
     }, 30);
   };
 
+  const flowSteps = [
+    { href: "#lab-design", label: t.lab.flow.design, desc: t.lab.flow.designDesc, done: true },
+    {
+      href: "#lab-backtest",
+      label: t.lab.flow.backtest,
+      desc: t.lab.flow.backtestDesc,
+      done: result != null,
+    },
+    {
+      href: "#lab-walkforward",
+      label: t.lab.flow.validate,
+      desc: t.lab.flow.validateDesc,
+      done: false,
+    },
+    { href: "#lab-compare", label: t.lab.flow.compare, desc: t.lab.flow.compareDesc, done: false },
+  ];
+
   return (
     <PageShell title={t.lab.title}>
       <ExploratoryBanner message={t.lab.banner} />
+
+      {/* The guided flow: same order as the study's own pipeline. */}
+      <nav
+        aria-label={t.lab.flow.title}
+        className="rounded-card border border-border bg-surface p-4"
+      >
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+          {t.lab.flow.title}
+        </p>
+        <ol className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {flowSteps.map((step, i) => (
+            <li key={step.href}>
+              <a
+                href={step.href}
+                className="group flex items-start gap-3 rounded-md border border-border bg-surface-2/60 px-3 py-2.5 transition-colors hover:border-accent/40"
+              >
+                <span
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                    step.done ? "bg-accent text-accent-fg" : "border border-border text-muted"
+                  }`}
+                >
+                  {step.done ? "✓" : i + 1}
+                </span>
+                <span>
+                  <span className="block text-sm font-medium text-fg group-hover:text-accent">
+                    {step.label}
+                  </span>
+                  <span className="block text-xs text-muted">{step.desc}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
 
       <Card>
         <CardHeader title={t.lab.title} subtitle={t.lab.subtitle} />
@@ -1152,7 +1203,7 @@ export default function LaboratorioPage() {
       </Card>
 
       {/* Strategy picker with schematic mini-panels. */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div id="lab-design" className="grid scroll-mt-24 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {STRATEGIES.map((s) => {
           const copy = t.lab.strategies[s.id];
           const active = s.id === strategyId;
@@ -1393,16 +1444,11 @@ export default function LaboratorioPage() {
 
       {running && <Skeleton className="h-72 w-full" />}
 
-      <HistoryPanel t={t} />
-
-      <WalkForwardSection
-        data={data}
-        strategyId={strategyId}
-        costs={{ feeBpsPerSide: feeBps, slippageBpsPerSide: slipBps }}
-      />
-
+      {/* Step 2: the single backtest's results, before validation on purpose —
+          the flow mirrors the study: first the in-sample illusion, then the
+          protocol that disciplines it. */}
       {result && data && !running && (
-        <>
+        <div id="lab-backtest" className="scroll-mt-24 space-y-6">
           <TestsPanel result={result} t={t} />
           <EquityPanel result={result} t={t} />
           <SignalsPanel result={result} bars={data.bars} t={t} />
@@ -1410,15 +1456,27 @@ export default function LaboratorioPage() {
           <MaeMfePanel result={result} t={t} />
           <TornadoPanel result={result} t={t} />
           <RegimePanel2 result={result} t={t} />
-        </>
+        </div>
       )}
 
-      <Card>
-        <CardHeader title={t.lab.pretrainedTitle} subtitle={t.lab.pretrainedBody} />
-        <a href="/estrategias" className="text-sm font-medium text-accent hover:underline">
-          {t.lab.pretrainedLink}
-        </a>
-      </Card>
+      <HistoryPanel t={t} />
+
+      <div id="lab-walkforward" className="scroll-mt-24">
+        <WalkForwardSection
+          data={data}
+          strategyId={strategyId}
+          costs={{ feeBpsPerSide: feeBps, slippageBpsPerSide: slipBps }}
+        />
+      </div>
+
+      <div id="lab-compare" className="scroll-mt-24">
+        <Card>
+          <CardHeader title={t.lab.pretrainedTitle} subtitle={t.lab.pretrainedBody} />
+          <a href="/estrategias" className="text-sm font-medium text-accent hover:underline">
+            {t.lab.pretrainedLink}
+          </a>
+        </Card>
+      </div>
     </PageShell>
   );
 }

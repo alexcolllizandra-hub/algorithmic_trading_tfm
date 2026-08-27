@@ -38,10 +38,24 @@ export function navGroups(t: Dictionary): NavGroup[] {
       ],
     },
     {
-      key: "learn",
-      label: t.navGroups.learn,
+      // The product comes first: build and validate in the lab, then inspect
+      // every studied family. Notebooks left the nav on purpose (2026-08-28):
+      // they are repo artifacts, not part of the site's essential flow.
+      key: "explore",
+      label: t.navGroups.explore,
       items: [
-        { href: "/guia", label: t.nav.guia.label, icon: "◔", description: t.nav.guia.description },
+        {
+          href: "/laboratorio",
+          label: t.nav.laboratorio.label,
+          icon: "⚗",
+          description: t.nav.laboratorio.description,
+        },
+        {
+          href: "/estrategias",
+          label: t.nav.estrategias.label,
+          icon: "∿",
+          description: t.nav.estrategias.description,
+        },
       ],
     },
     {
@@ -72,30 +86,13 @@ export function navGroups(t: Dictionary): NavGroup[] {
           icon: "⚖",
           description: t.nav.resultados.description,
         },
-        {
-          href: "/cuadernos",
-          label: t.nav.cuadernos.label,
-          icon: "≡",
-          description: t.nav.cuadernos.description,
-        },
       ],
     },
     {
-      key: "explore",
-      label: t.navGroups.explore,
+      key: "learn",
+      label: t.navGroups.learn,
       items: [
-        {
-          href: "/estrategias",
-          label: t.nav.estrategias.label,
-          icon: "∿",
-          description: t.nav.estrategias.description,
-        },
-        {
-          href: "/laboratorio",
-          label: t.nav.laboratorio.label,
-          icon: "⚗",
-          description: t.nav.laboratorio.description,
-        },
+        { href: "/guia", label: t.nav.guia.label, icon: "◔", description: t.nav.guia.description },
       ],
     },
     {
