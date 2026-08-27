@@ -1,0 +1,5 @@
+definition,n_tests,bonferroni_threshold,smallest_raw_p,any_survive
+families,13,0.0038461538461538464,0.3455,false
+family_x_asset,22,0.002272727272727273,0.3455,false
+family_x_asset_x_seed,142,0.00035211267605633805,0.3455,false
+all_configurations_evaluated,496500,1.0070493454179255e-7,0.3455,false

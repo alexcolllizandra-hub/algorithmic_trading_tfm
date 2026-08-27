@@ -79,3 +79,39 @@ blocks 24/168/720, 500 resamples; the C2 gate reads block_168).
 
 - CSCV logit distribution (only the aggregate PBO=0.486 was persisted).
 - White RC / Hansen SPA null distributions (only p-values persisted).
+
+---
+
+## Scope of the closure diagnostics (read before citing any number)
+
+Every study-level diagnostic in this folder — Holm/BH (t04), trial-count
+sensitivity (t05), DSR (t06), PBO — covers **only the 13-family universe
+closed on 2026-08-13** (496,500 unique evaluated configurations; 284
+heterogeneous units = family × asset × seed × engine). That universe mixes
+evidence of very different depth:
+
+- R2 momentum and the five R3 families: full studies, 2 assets × 10 seeds,
+  budgets 300/100 per fold per engine.
+- The four S1 families: **pilot evidence only** (BTC, 1 seed, budget 25);
+  the full-study S1-C configs exist but were never executed.
+- The three S2 families: pilot evidence (2 assets, 3 seeds, budget 25).
+
+Two later confirmatory rounds sit **outside** this closure and outside every
+number above:
+
+- **CRT_INTRADAY_V1** (9 families, 2×10×15, budget 100, ~540,000 valid
+  evals): 0/18 cells promoted; per-cell C1–C6 verdicts in
+  `crt_v1_gate_summary.csv/.md` (chapter 7 material). Study-level
+  Holm/BH/DSR/PBO for this round: **not computed**.
+- **Gate S3 macro_event_brake** (2×10×15, budget 100, 60,750 evals incl.
+  pilot): 0/10 seeds positive; preregistered as N := N+1 (ADR 0019).
+  Extended corrections: **not computed**.
+
+Consequences for the text: any sentence citing "496,500 trials" or "13
+families" refers to the closure only; the project-wide confirmatory total is
+23 family hypotheses and ≈1,157,250 valid evaluated configurations, and no
+correction has been run over that extended universe. Merging the universes
+post hoc would require re-running the four corrections over a rebuilt
+23-family OOS matrix — with the caveat that the designs are not exchangeable
+(1–10 seeds, budgets 25–300). See `INVENTARIO_MAESTRO.md` and
+`METRICAS_DEFINICIONES.md`.

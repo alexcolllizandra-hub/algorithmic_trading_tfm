@@ -43,6 +43,8 @@ data/processed/
 *.csv
 # Exception: the curated macro-events calendar is committed source, not market data.
 !configs/altdata/*.csv
+# Exception: chapter-6 evidence tables are thesis deliverables, not market data.
+!reports/thesis/chapter_06/*.csv
 *.db
 *.sqlite
 *.sqlite3
