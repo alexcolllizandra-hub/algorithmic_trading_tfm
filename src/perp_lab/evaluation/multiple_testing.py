@@ -271,6 +271,97 @@ def benjamini_hochberg(p_values: Sequence[float], *, alpha: float = 0.05) -> tup
     return tuple(bool(x) for x in rejected)
 
 
+@dataclass(frozen=True)
+class MultipleTestCorrection:
+    """Outcome of correcting a family of p-values, with the adjusted values kept.
+
+    ``adjusted_p_values`` are reported in the input order and are directly
+    comparable against ``alpha``: a test is rejected exactly when its adjusted
+    value is at or below it. Reporting them rather than only the flags lets a
+    reader see how far a result was from surviving.
+    """
+
+    method: str
+    alpha: float
+    n_tests: int
+    rejected: tuple[bool, ...]
+    adjusted_p_values: tuple[float, ...]
+
+    @property
+    def n_rejected(self) -> int:
+        return sum(self.rejected)
+
+
+def _checked_p_values(p_values: Sequence[float], alpha: float) -> np.ndarray:
+    if not 0.0 < alpha < 1.0:
+        raise ValueError(f"alpha ({alpha}) must lie strictly inside (0, 1).")
+    values = np.asarray(p_values, dtype=float)
+    if np.any((values < 0.0) | (values > 1.0)) or not np.isfinite(values).all():
+        raise ValueError("p_values must be finite and lie in [0, 1].")
+    return values
+
+
+def holm_bonferroni(p_values: Sequence[float], *, alpha: float = 0.05) -> MultipleTestCorrection:
+    """Holm step-down control of the family-wise error rate at level ``alpha``.
+
+    Holm controls the probability of **even one** false rejection across the
+    whole family, which is the guarantee wanted when the question is "did any of
+    the strategies we tried actually work". It is uniformly more powerful than
+    plain Bonferroni and needs no independence assumption.
+
+    The adjusted value for the *i*-th smallest p-value is
+    ``max_{j <= i} (m - j + 1) * p_(j)``, capped at one; the running maximum is
+    what keeps the sequence monotone, so a test is never rejected while a
+    stronger one is not.
+    """
+    if not p_values:
+        return MultipleTestCorrection("holm_bonferroni", alpha, 0, (), ())
+    values = _checked_p_values(p_values, alpha)
+    m = values.size
+    order = np.argsort(values)
+    scaled = (m - np.arange(m)) * values[order]
+    adjusted_sorted = np.maximum.accumulate(scaled).clip(max=1.0)
+    adjusted = np.empty(m, dtype=float)
+    adjusted[order] = adjusted_sorted
+    return MultipleTestCorrection(
+        method="holm_bonferroni",
+        alpha=alpha,
+        n_tests=int(m),
+        rejected=tuple(bool(x) for x in adjusted <= alpha),
+        adjusted_p_values=tuple(float(x) for x in adjusted),
+    )
+
+
+def benjamini_hochberg_correction(
+    p_values: Sequence[float], *, alpha: float = 0.05
+) -> MultipleTestCorrection:
+    """Benjamini-Hochberg FDR control, returning adjusted p-values as well.
+
+    Same rejection set as :func:`benjamini_hochberg`; this variant additionally
+    reports the adjusted values (q-values), which is what a results table needs.
+    The adjusted value for the *i*-th smallest p-value is
+    ``min_{j >= i} (m / j) * p_(j)``, capped at one.
+    """
+    if not p_values:
+        return MultipleTestCorrection("benjamini_hochberg", alpha, 0, (), ())
+    values = _checked_p_values(p_values, alpha)
+    m = values.size
+    order = np.argsort(values)
+    ranks = np.arange(1, m + 1)
+    scaled = (m / ranks) * values[order]
+    # Running minimum from the largest p-value downwards keeps q-values monotone.
+    adjusted_sorted = np.minimum.accumulate(scaled[::-1])[::-1].clip(max=1.0)
+    adjusted = np.empty(m, dtype=float)
+    adjusted[order] = adjusted_sorted
+    return MultipleTestCorrection(
+        method="benjamini_hochberg",
+        alpha=alpha,
+        n_tests=int(m),
+        rejected=tuple(bool(x) for x in adjusted <= alpha),
+        adjusted_p_values=tuple(float(x) for x in adjusted),
+    )
+
+
 # --------------------------------------------------------------------------- #
 # Data-snooping tests over a whole set of candidates (White RC / Hansen SPA)
 # --------------------------------------------------------------------------- #

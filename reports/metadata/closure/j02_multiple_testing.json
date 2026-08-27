@@ -1,0 +1,32 @@
+{
+  "notebook": "05_study_closure_and_multiple_testing",
+  "analysis_id": "j02_multiple_testing",
+  "caption": "Raw and adjusted p-values per family (a), and the sensitivity of the Bonferroni threshold to how the number of hypotheses is counted (b).",
+  "period": "development walk-forward out-of-sample; holdout NOT published",
+  "datasets": {
+    "reports/study_closure/study_dashboard.json": "f6776c51b4deb66a6700b797305d5d69b17e7e169b9033f8262c98fdc5ac7b14",
+    "reports/study_closure/study_level_multiple_testing.json": "7d2b235e196d733506292cf190dba92eb2bf00542acc2bd8a6fb88bd777351e3",
+    "reports/study_closure/regime_conditioned.json": "738b51ea638404313f5ec7bc18cd57bc94562ddda498fe72f98613dba6062449"
+  },
+  "config": {
+    "seed": null,
+    "code_commit_resolved": "0399be8651e12c1da24149f4b573d4ef15e1c711",
+    "data_contract_cutoff": "2026-07-01",
+    "holdout_start": "2026-01-01",
+    "n_families": 13,
+    "n_units": 284,
+    "n_configurations": 496500,
+    "alpha": 0.05,
+    "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
+    "holdout_publication": "AUDIT_PENDING"
+  },
+  "generated_at": "2026-08-27T10:50:25.631696+00:00",
+  "code_commit": "0399be8651e12c1da24149f4b573d4ef15e1c711",
+  "output_path": "reports/figures/closure/j02_multiple_testing.png",
+  "kind": "figure",
+  "dpi": 300,
+  "formats": [
+    "png",
+    "pdf"
+  ]
+}

@@ -182,7 +182,7 @@ def render_markdown(payload: dict[str, Any]) -> str:
             )
         lines.append("")
 
-    lines.append("Development-period evidence only. The frozen holdout was never opened.")
+    lines.append("Development-period evidence only. No holdout row informs any number above.")
     return "\n".join(lines) + "\n"
 
 

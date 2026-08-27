@@ -1993,7 +1993,7 @@ ax.set_yticks(range(7), ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
 ax.set_xlabel("UTC hour"); ax.set_title("Appendix: BTC mean |return| by weekday x UTC hour (bps, 5m, development)")
 fig.colorbar(im, ax=ax, label="mean |return| (bps)")
 show(fig, "fa2_seasonality_heatmap", caption="Appendix - BTC mean |return| by weekday and UTC hour (5m, development)")
-print("Notebook complete: all sections executed on development data only; holdout untouched.")
+print("Notebook complete: all sections executed on development data only; holdout partition not read.")
 """
 )
 
@@ -2244,6 +2244,258 @@ conditional probability that ETH is in its extreme lower tail *given* BTC is the
 development period. The practical implication for Chapter 5: BTC-ETH diversification weakens precisely
 during the joint sell-offs when it is most needed, so portfolio-exposure and risk limits must be sized
 on tail co-movement, not on the average correlation.
+"""
+)
+
+
+# --------------------------------------------------------------------------- #
+# SECTION 16 - Thesis chapter-5 extensions: tails, random-walk diagnostics,
+# dated regimes, cointegration, labels and alternative data
+# --------------------------------------------------------------------------- #
+md(
+    r"""
+## 16. Chapter-5 extensions: tails, random-walk tests, dated regimes and alternative data
+
+The thesis EDA chapter added a second layer of diagnostics on top of Sections 1-15. Every
+estimator lives in `perp_lab.eda` (validated against synthetic processes in
+`tests/unit/test_eda_ch5.py` and `test_eda_altdata.py`) and the full 16-figure chapter build is
+`scripts/build_ch5_figures.py`; this section reproduces the headline numbers inside the
+notebook so the EDA record is complete in one place.
+"""
+)
+
+code(
+    r"""
+# 16.1 Tail machinery: Student-t fit, Hill index and the survival function (1h).
+from perp_lab.eda import fit_student_t, hill_tail_index, survival_function
+
+tail_rows = []
+fig, ax = plt.subplots(figsize=(8.0, 4.2))
+for sym in SYMBOLS:
+    color = asset_color(sym)
+    r = RET[sym]["1h"]["log_return"].drop_nulls().to_numpy()
+    tfit = fit_student_t(r)
+    hill = hill_tail_index(r, tail_fraction=0.02)
+    tail_rows.append(
+        {
+            "symbol": sym,
+            "t_df": round(tfit["df"], 2),
+            "hill_alpha": round(hill["alpha"], 2),
+            "hill_se": round(hill["se"], 2),
+            "tail_fraction": hill["tail_fraction"],
+            "k_tail_obs": int(hill["k"]),
+        }
+    )
+    surv = survival_function(r).filter(pl.col("abs_return") >= 1e-4)
+    ax.loglog(
+        surv["abs_return"].to_list(),
+        surv["survival"].to_list(),
+        ".",
+        ms=2.5,
+        color=color,
+        label=f"{sym[:3]} (Hill α={hill['alpha']:.2f}±{hill['se']:.2f})",
+    )
+    grid = np.logspace(np.log10(hill["threshold"]), np.log10(float(np.abs(r).max())), 50)
+    ax.loglog(grid, 0.02 * (grid / hill["threshold"]) ** (-hill["alpha"]), "--", color=color, lw=1.0)
+ax.set_xlabel("|1h log-return|")
+ax.set_ylabel("P(|r| > x)")
+ax.legend()
+ax.set_title("Empirical survival of absolute returns (log-log), dashed = Hill power-law fit")
+show(fig, "f25_tail_survival_hill",
+     caption="Survival function of |1h returns| with Hill tail-index fits over the top 2% (development).")
+
+tails = pl.DataFrame(tail_rows)
+save_table(tails, "t40_tail_indices", ctx,
+           caption="Student-t ML fit (df) and Hill tail index over the top 2% of |returns| (1h, development).")
+tails
+"""
+)
+
+md(
+    r"""
+**Interpretation (16.1).** The ML t fit lands at df ≈ 2 (it weighs the centre), while Hill on the
+top 2% gives α ≈ 2.9 (BTC) / 3.1 (ETH) — the two numbers answer different questions and both say
+the same thing operationally: variance exists, the fourth moment is fragile, so kurtosis and any
+statistic built on it are descriptive rather than asymptotically trustworthy.
+"""
+)
+
+code(
+    r"""
+# 16.2 Sharper random-walk diagnostics: Lo-MacKinlay variance ratios and Hurst.
+from perp_lab.eda import hurst_rs, variance_ratio_profile
+from perp_lab.eda.dependence import rolling_hurst
+
+vr_rows = []
+fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.0))
+for sym in SYMBOLS:
+    color = asset_color(sym)
+    frame = RET[sym]["1h"].drop_nulls("log_return")
+    r = frame["log_return"].to_numpy()
+    profile = variance_ratio_profile(r, [2, 4, 8, 16, 24, 48])
+    for q, vr, z in zip(profile["q"], profile["vr"], profile["z_robust"]):
+        vr_rows.append({"symbol": sym, "q_hours": int(q), "vr": round(vr, 3), "z_robust": round(z, 2)})
+    axes[0].plot(profile["q"].to_list(), profile["vr"].to_list(), "o-", color=color, label=sym[:3])
+    rh = rolling_hurst(frame)
+    axes[1].plot(rh["time"].to_list(), rh["hurst"].to_list(), color=color, lw=1.0,
+                 label=f"{sym[:3]} (global {hurst_rs(r):.3f})")
+axes[0].axhline(1.0, ls="--", lw=0.8, color="crimson")
+axes[0].set_xlabel("horizon q (hours)")
+axes[0].set_ylabel("VR(q)")
+axes[0].set_title("Lo-MacKinlay variance ratios")
+axes[0].legend()
+axes[1].axhline(0.5, ls="--", lw=0.8, color="crimson")
+axes[1].set_ylabel("Hurst (180-day window)")
+axes[1].set_title("Rolling R/S Hurst exponent")
+axes[1].legend()
+fig.tight_layout()
+show(fig, "f26_variance_ratio_hurst",
+     caption="Variance ratios (all below one, none beyond the robust bands) and rolling Hurst (a narrow band just above 0.5).")
+
+vr_table = pl.DataFrame(vr_rows)
+save_table(vr_table, "t41_variance_ratios", ctx,
+           caption="Lo-MacKinlay VR(q) with heteroskedasticity-robust z-statistics (1h, development).")
+vr_table
+"""
+)
+
+code(
+    r"""
+# 16.3 Date-frozen market regimes and BTC-ETH cointegration.
+from perp_lab.eda import engle_granger_by_regime, market_regime_stats
+
+regime_stats = market_regime_stats(RET["BTCUSDT"]["1h"], RET["ETHUSDT"]["1h"])
+save_table(regime_stats, "t42_market_regime_stats", ctx,
+           caption="Conditional statistics per date-frozen market regime (perp_lab.eda.MARKET_REGIMES).")
+
+eg = engle_granger_by_regime(KL["BTCUSDT"]["1h"], KL["ETHUSDT"]["1h"])
+save_table(eg, "t43_engle_granger", ctx,
+           caption="Engle-Granger cointegration on BTC-ETH log prices: full sample and per regime window.")
+display(regime_stats)
+eg
+"""
+)
+
+md(
+    r"""
+**Interpretation (16.3).** The regime table quantifies what the shaded volatility plot suggests
+(annualised BTC volatility spans roughly 0.44-1.15 across windows, and the COVID-crash slice alone
+carries excess kurtosis near 94), and Engle-Granger **never rejects** the no-cointegration null —
+neither on the full sample (p = 0.87) nor inside any regime (p 0.31-0.87). The BTC-ETH pair moves
+as one risk factor at hourly frequency without any stationary long-run spread to lean on.
+"""
+)
+
+code(
+    r"""
+# 16.4 Triple-barrier labels at the protocol's parameters (BTC, every-bar long events).
+from perp_lab.eda import label_summary
+from perp_lab.eda.funding import attach_funding
+from perp_lab.labeling.triple_barrier import LabelCosts, TripleBarrierSpec, triple_barrier_labels
+
+bars_l = attach_funding(RET["BTCUSDT"]["1h"], FUND["BTCUSDT"]).with_columns(
+    pl.when(
+        pl.col("funding_time").is_not_null()
+        & (pl.col("funding_time") > pl.col("open_time") - pl.duration(hours=1))
+    )
+    .then(pl.col("funding_rate"))
+    .otherwise(0.0)
+    .alias("funding_rate_in_bar")
+)
+tr = pl.max_horizontal(
+    pl.col("high") - pl.col("low"),
+    (pl.col("high") - pl.col("close").shift(1)).abs(),
+    (pl.col("low") - pl.col("close").shift(1)).abs(),
+)
+bars_l = bars_l.with_columns(
+    (tr.rolling_mean(window_size=14, min_samples=14) / pl.col("close")).alias("atr_frac")
+).drop_nulls("atr_frac")
+events = bars_l.select(
+    pl.col("open_time").alias("event_time"), pl.lit(1).cast(pl.Int64).alias("side")
+).head(bars_l.height - 26)
+labels = triple_barrier_labels(
+    bars_l,
+    events,
+    TripleBarrierSpec(upper_barrier_atr=2.0, lower_barrier_atr=2.0, vertical_barrier_bars=24,
+                      exit_fill="next_open"),
+    volatility_col="atr_frac",
+    costs=LabelCosts(fee_bps_per_side=4.0, slippage_bps_per_side=1.0,
+                     funding_rate_col="funding_rate_in_bar"),
+)
+label_stats = pl.DataFrame([{"metric": k, "value": round(v, 4)} for k, v in label_summary(labels).items()])
+save_table(label_stats, "t44_triple_barrier_labels", ctx,
+           caption="Triple-barrier label profile at the protocol's parameters (2 ATR / 24 bars, study costs; BTC 1h).")
+label_stats
+"""
+)
+
+md(
+    r"""
+**Interpretation (16.4).** At the frozen barrier geometry the labels are essentially balanced
+(49.6% / 50.4%, no neutral class at a zero dead-band), the median event resolves in 9 bars and only
+~15% survive to the vertical barrier — so the meta-labeling layer needs no class-imbalance
+machinery, exactly as Chapter 5 states.
+"""
+)
+
+code(
+    r"""
+# 16.5 Alternative data: Fear & Greed conditioning and scheduled macro events.
+# Inputs are materialised by scripts/ingest_altdata.py (data/external/*.parquet,
+# SHA-256 manifests in data/manifests).
+from perp_lab.eda.altdata import (
+    event_hour_vs_matched_control,
+    event_study,
+    fear_greed_conditional,
+    load_fear_greed,
+    load_macro_events,
+)
+
+fg = load_fear_greed(Path("data/external/fear_greed.parquet"), holdout_start=LAKE.holdout_start)
+events_macro = load_macro_events(
+    Path("data/external/us_macro_events.parquet"), holdout_start=LAKE.holdout_start
+)
+
+fg_table = fear_greed_conditional(fg, RET["BTCUSDT"]["1h"], horizon_bars=24)
+save_table(fg_table, "t45_fear_greed_conditional", ctx,
+           caption="Next-24h BTC return by Fear & Greed quintile with moving-block bootstrap CIs (one-day availability lag).")
+
+fig, axes = plt.subplots(1, 2, figsize=(11.5, 4.0), sharey=True)
+matched_rows = []
+for ax, kind, color in (
+    (axes[0], "cpi_release", asset_color("BTCUSDT")),
+    (axes[1], "fomc_decision", asset_color("ETHUSDT")),
+):
+    times = events_macro.filter(pl.col("event_type") == kind)["datetime_utc"]
+    study = event_study(RET["BTCUSDT"]["1h"], times, window_bars=12)
+    ax.bar(study["offset_bars"].to_list(), study["mean_absret_bps"].to_list(), color=color, width=0.8)
+    base = float(RET["BTCUSDT"]["1h"]["log_return"].abs().mean() * 1e4)
+    ax.axhline(base, ls="--", lw=0.9, color="crimson")
+    ax.set_title(f"{kind.replace('_', ' ')} · {study['n_events'][0]} events")
+    ax.set_xlabel("hours from event bar")
+    matched = event_hour_vs_matched_control(RET["BTCUSDT"]["1h"], times)
+    matched_rows.append({"event": kind, **{k: round(v, 4) for k, v in matched.items()}})
+axes[0].set_ylabel("mean |1h return| (bps)")
+fig.tight_layout()
+show(fig, "f27_macro_event_study",
+     caption="BTC hourly volatility around scheduled US macro events; dashed line = unconditional mean (development).")
+
+matched_table = pl.DataFrame(matched_rows)
+save_table(matched_table, "t46_event_matched_control", ctx,
+           caption="Event-bar |return| vs same-UTC-hour non-event control with permutation p-values (BTC 1h).")
+matched_table
+"""
+)
+
+md(
+    r"""
+**Interpretation (16.5).** The Fear & Greed level does **not** order next-day signed returns (every
+quintile's CI is wide; there is no monotone gradient), while the macro calendar orders *variance*
+decisively: CPI and FOMC hours carry 2.5-3.2x the absolute return of seasonality-matched non-event
+hours (permutation p < 0.001), with elevated volatility persisting two to three hours. This is the
+event-level expression of the thesis's central stylized fact — *when* the market will move is far
+more predictable than *in which direction* — and it motivates the pre-registered Gate S3 family
+(`macro_event_brake`, ADR 0019) rather than any retroactive filter on already-evaluated families.
 """
 )
 

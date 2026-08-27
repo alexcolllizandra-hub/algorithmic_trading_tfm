@@ -1,0 +1,398 @@
+{
+ "generated_at": "2026-08-19T22:10:20.659787+00:00",
+ "code_commit": "26b4c86a4bd579af9555d46f8ee36a2c4f4738a5",
+ "engine": "random_search",
+ "note": "Development walk-forward out-of-sample only. No study figure is final holdout performance; nothing here is promoted or promotable.",
+ "studies": [
+  {
+   "family": "momentum",
+   "round": "R2",
+   "verdict": "REJECTED",
+   "thesis": "Lo que ha subido sigue subiendo: entra a favor del movimiento reciente.",
+   "file": "/data/strategies/momentum.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.350254,
+     "median_sharpe": -0.23662,
+     "median_max_drawdown": -0.527821,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.475339,
+     "median_sharpe": -0.320834,
+     "median_max_drawdown": -0.596385,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "breakout",
+   "round": "R3",
+   "verdict": "REJECTED",
+   "thesis": "Si el precio rompe el m\u00e1ximo o m\u00ednimo de las \u00faltimas N horas, empieza un movimiento.",
+   "file": "/data/strategies/breakout.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.157958,
+     "median_sharpe": -0.730803,
+     "median_max_drawdown": -0.298867,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.255259,
+     "median_sharpe": -1.054524,
+     "median_max_drawdown": -0.265928,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "mean_reversion",
+   "round": "R3",
+   "verdict": "REJECTED",
+   "thesis": "Lo que se estira vuelve al centro: entra en contra del movimiento reciente.",
+   "file": "/data/strategies/mean_reversion.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.599685,
+     "median_sharpe": -0.500501,
+     "median_max_drawdown": -0.709012,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.799086,
+     "median_sharpe": -0.893212,
+     "median_max_drawdown": -0.840385,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "volatility_breakout",
+   "round": "R3",
+   "verdict": "REJECTED",
+   "thesis": "Igual que la ruptura, pero el umbral se mide en unidades de volatilidad actual, as\u00ed que se adapta a mercados tranquilos y agitados.",
+   "file": "/data/strategies/volatility_breakout.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": 0.064925,
+     "median_sharpe": 0.215376,
+     "median_max_drawdown": -0.463563,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.735242,
+     "median_sharpe": -0.662358,
+     "median_max_drawdown": -0.818452,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "funding",
+   "round": "R3",
+   "verdict": "REJECTED",
+   "thesis": "El funding alto indica exceso de largos apalancados; opera contra ese desequilibrio.",
+   "file": "/data/strategies/funding.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.409144,
+     "median_sharpe": -0.268854,
+     "median_max_drawdown": -0.637891,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.599394,
+     "median_sharpe": -0.315236,
+     "median_max_drawdown": -0.698695,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "BTC_ETH_confirmation",
+   "round": "R3",
+   "verdict": "REJECTED",
+   "thesis": "Opera ETH solamente cuando BTC confirma la misma direcci\u00f3n.",
+   "file": "/data/strategies/BTC_ETH_confirmation.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.657886,
+     "median_sharpe": -0.548606,
+     "median_max_drawdown": -0.792733,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.68302,
+     "median_sharpe": -0.297663,
+     "median_max_drawdown": -0.820487,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "pdl_reclaim_long",
+   "round": "CRT_V1",
+   "verdict": "EVALUATED_POST_CLOSURE_NOT_PROMOTABLE",
+   "thesis": null,
+   "file": "/data/strategies/pdl_reclaim_long.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": 0.157288,
+     "median_sharpe": 0.521589,
+     "median_max_drawdown": -0.095422,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.230553,
+     "median_sharpe": -0.388293,
+     "median_max_drawdown": -0.371944,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "pdh_reclaim_short",
+   "round": "CRT_V1",
+   "verdict": "EVALUATED_POST_CLOSURE_NOT_PROMOTABLE",
+   "thesis": null,
+   "file": "/data/strategies/pdh_reclaim_short.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.021903,
+     "median_sharpe": -0.036609,
+     "median_max_drawdown": -0.139846,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.235093,
+     "median_sharpe": -0.500088,
+     "median_max_drawdown": -0.339594,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "crt_htf_range_reversal",
+   "round": "CRT_V1",
+   "verdict": "EVALUATED_POST_CLOSURE_NOT_PROMOTABLE",
+   "thesis": null,
+   "file": "/data/strategies/crt_htf_range_reversal.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.056752,
+     "median_sharpe": -0.084936,
+     "median_max_drawdown": -0.261365,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.331739,
+     "median_sharpe": -0.551137,
+     "median_max_drawdown": -0.378437,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "session_liquidity_sweep",
+   "round": "CRT_V1",
+   "verdict": "EVALUATED_POST_CLOSURE_NOT_PROMOTABLE",
+   "thesis": null,
+   "file": "/data/strategies/session_liquidity_sweep.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.058297,
+     "median_sharpe": -0.262535,
+     "median_max_drawdown": -0.118192,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.127446,
+     "median_sharpe": -0.486313,
+     "median_max_drawdown": -0.230035,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "session_range_rotation",
+   "round": "CRT_V1",
+   "verdict": "EVALUATED_POST_CLOSURE_NOT_PROMOTABLE",
+   "thesis": null,
+   "file": "/data/strategies/session_range_rotation.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.053174,
+     "median_sharpe": -0.381316,
+     "median_max_drawdown": -0.061925,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.136335,
+     "median_sharpe": -0.917789,
+     "median_max_drawdown": -0.153973,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "opening_range_breakout_retest",
+   "round": "CRT_V1",
+   "verdict": "EVALUATED_POST_CLOSURE_NOT_PROMOTABLE",
+   "thesis": null,
+   "file": "/data/strategies/opening_range_breakout_retest.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.071196,
+     "median_sharpe": -0.483749,
+     "median_max_drawdown": -0.130841,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.096909,
+     "median_sharpe": -0.549798,
+     "median_max_drawdown": -0.122912,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "failed_breakout_reversal",
+   "round": "CRT_V1",
+   "verdict": "EVALUATED_POST_CLOSURE_NOT_PROMOTABLE",
+   "thesis": null,
+   "file": "/data/strategies/failed_breakout_reversal.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": 0.049795,
+     "median_sharpe": 0.179789,
+     "median_max_drawdown": -0.151267,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.187966,
+     "median_sharpe": -0.515945,
+     "median_max_drawdown": -0.282842,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "double_sweep_reversal",
+   "round": "CRT_V1",
+   "verdict": "EVALUATED_POST_CLOSURE_NOT_PROMOTABLE",
+   "thesis": null,
+   "file": "/data/strategies/double_sweep_reversal.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.005799,
+     "median_sharpe": 0.023738,
+     "median_max_drawdown": -0.115599,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": 0.015387,
+     "median_sharpe": 0.091888,
+     "median_max_drawdown": -0.14788,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  },
+  {
+   "family": "crt_three_candle_model",
+   "round": "CRT_V1",
+   "verdict": "EVALUATED_POST_CLOSURE_NOT_PROMOTABLE",
+   "thesis": null,
+   "file": "/data/strategies/crt_three_candle_model.json",
+   "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+   ],
+   "n_seeds": 10,
+   "headline": {
+    "BTCUSDT": {
+     "median_total_return": -0.359206,
+     "median_sharpe": -0.758239,
+     "median_max_drawdown": -0.451643,
+     "buy_and_hold_return": 0.522747844787544
+    },
+    "ETHUSDT": {
+     "median_total_return": -0.129271,
+     "median_sharpe": -0.129212,
+     "median_max_drawdown": -0.315043,
+     "buy_and_hold_return": -0.2190192992677874
+    }
+   }
+  }
+ ]
+}

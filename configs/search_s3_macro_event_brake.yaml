@@ -1,0 +1,43 @@
+# =====================================================================
+# GATE S3 FULL MULTI-SEED STUDY -- family: macro_event_brake
+#
+# Pre-specified in docs/methodology/strategy_catalogue_s3.md (ADR 0019),
+# frozen BEFORE any run of this family.
+#
+# Frozen contract (identical to Gate R3/S1-C so the gates are comparable):
+#   * BTCUSDT + ETHUSDT
+#   * 10 seeds derived from base seed 42
+#   * 15 chronological outer folds over development data
+#   * independent search per fold; winner frozen before test
+#   * effective_budget = 100 per fold and engine
+#   * Random Search is confirmatory; the GA is a secondary diagnostic
+#
+# This is development-period evidence, never final-holdout evidence.
+# The frozen holdout [2026-01-01, 2026-07-01) is NEVER loaded.
+# =====================================================================
+
+experiment_config: configs/experiment.yaml
+data_contract: configs/data_contract.yaml
+
+family: macro_event_brake
+algorithm: comparison
+symbol: BTCUSDT
+timeframe: "1h"
+seed: 42
+regime_model: threshold
+
+require_funding: true
+synthetic: false
+label: s3_macro_event_brake_full_multiseed_DEV_ONLY_not_holdout
+
+# Unique, valid, non-cached evaluations spent by EVERY engine in EVERY fold.
+effective_budget: 100
+
+ga:
+  population_size: 30
+  # Safety cap only; search stops immediately when effective_budget is reached.
+  max_generations: 200
+  crossover_rate: 0.7
+  mutation_rate: 0.2
+  elitism: 1
+  tournament_size: 3

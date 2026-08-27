@@ -1,163 +1,254 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+// Data & EDA, static-first: every primary chart is rendered live from the
+// exported real datasets (market series, distributions, landing-extra
+// structure blocks). The frozen matplotlib gallery — the artifacts the
+// thesis cites — remains available as a collapsed annex served by the
+// optional local API.
 
+import { Suspense, useState } from "react";
+
+import { EdaFigureAnnex } from "@/components/eda/EdaFigureAnnex";
+import {
+  ChartReading,
+  EdaDistributionChart,
+  EdaFundingChart,
+  EdaPriceChart,
+  EdaSeasonalityHeatmap,
+  EdaSigmaTable,
+  EdaUnderwaterChart,
+  EdaVolatilityChart,
+} from "@/components/eda/EdaCharts";
 import { HowToRead } from "@/components/education/HowToRead";
 import { InterpretationBox } from "@/components/education/InterpretationBox";
 import { SectionIntro } from "@/components/education/SectionIntro";
 import { PageShell } from "@/components/layout/PageShell";
-import { RunPicker, useSelectedRun } from "@/components/RunPicker";
-import { TimelineChart } from "@/components/research/TimelineChart";
+import { useLandingExtra } from "@/components/landing/charts/extra";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/Table";
-import { EmptyState, ErrorState, PartialNotice, Skeleton } from "@/components/ui/States";
+import { ErrorState, PartialNotice, Skeleton } from "@/components/ui/States";
 import { StatCard } from "@/components/ui/StatCard";
-import { API_BASE } from "@/lib/api";
-import type { DatasetCoverage, EdaFigureModel } from "@/lib/api-types";
-import { fmtDate, fmtInt } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
+import { cn } from "@/lib/cn";
+import { fmtInt, fmtPercent } from "@/lib/format";
+import { useI18n, useIntlLocale } from "@/lib/i18n";
 import {
-  useEdaFigures,
-  useEdaSummary,
-  useMarketCoverage,
-  useResearchSummary,
-  useTimeline,
-} from "@/lib/hooks";
+  baseAsset,
+  useDistributions,
+  useMarketSeries,
+  useProvenance,
+  useSummary,
+  type ProvenanceDataset,
+} from "@/lib/site-data";
 
 function DatosEdaInner() {
-  const runId = useSelectedRun();
-  const { data: research } = useResearchSummary();
-  const effectiveRun = runId ?? research?.pilot_run_id ?? null;
+  const t = useI18n();
+  const intl = useIntlLocale();
+  const [symbol, setSymbol] = useState("BTCUSDT");
 
-  const { data: coverage, error: covError, isLoading: covLoading } = useMarketCoverage();
-  const { data: edaSummary } = useEdaSummary();
-  const { data: keyFigures } = useEdaFigures({ key_only: true, limit: 12 });
-  const { data: allFigures } = useEdaFigures({ limit: 200 });
-  const { data: timeline, error: tlError, isLoading: tlLoading } = useTimeline(effectiveRun);
+  const { data: seriesFile, error: seriesError, isLoading } = useMarketSeries();
+  const { data: distributionsFile } = useDistributions();
+  const { data: summaryFile } = useSummary();
+  const { data: provenance } = useProvenance();
+  const { data: extra } = useLandingExtra();
 
-  const klineRows = useMemo(
-    () =>
-      (coverage?.datasets ?? []).filter(
-        (d) => d.stream === "klines" && !d.dataset_id.includes("holdout")
-      ),
-    [coverage]
+  const series = seriesFile?.series.find((entry) => entry.symbol === symbol);
+  const distribution = distributionsFile?.items.find(
+    (item) => item.symbol === symbol && item.partition === "development"
   );
+  const development = summaryFile?.items.filter((item) => item.partition === "development") ?? [];
+  const symbols = seriesFile?.series.map((entry) => entry.symbol) ?? ["BTCUSDT", "ETHUSDT"];
 
-  const covColumns: Column<DatasetCoverage>[] = [
+  const barsTotal = development.reduce((total, item) => total + item.bars, 0);
+  const coverage = development.length
+    ? development.reduce((total, item) => total + item.coverage_pct, 0) / development.length
+    : null;
+  const span = development[0]
+    ? `${development[0].start.slice(0, 7)} — ${development[0].end.slice(0, 7)}`
+    : "—";
+
+  const s = t.sections.datosEda;
+  const ms = extra?.market_structure;
+  const days = intl.startsWith("es")
+    ? ["L", "M", "X", "J", "V", "S", "D"]
+    : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  const provColumns: Column<ProvenanceDataset>[] = [
     {
       key: "id",
-      header: "Dataset",
+      header: t.eda.colDataset,
       render: (d) => <span className="font-mono text-xs">{d.dataset_id}</span>,
     },
     {
-      key: "class",
-      header: "Autenticidad",
+      key: "partition",
+      header: t.eda.colPartition,
       render: (d) => (
-        <Badge tone={d.classification === "REAL_HISTORICAL" ? "positive" : "warn"}>
-          {d.classification}
+        <Badge tone={d.partition === "development" ? "positive" : "warn"}>
+          {d.partition === "development" ? t.eda.partitionDev : t.eda.partitionHoldout}
         </Badge>
       ),
     },
-    { key: "sym", header: "Símbolo", render: (d) => `${d.symbol ?? "—"} ${d.timeframe ?? ""}` },
-    { key: "rows", header: "Filas", align: "right", render: (d) => fmtInt(d.row_count) },
-    { key: "min", header: "Desde", render: (d) => fmtDate(d.min_timestamp) },
-    { key: "max", header: "Hasta", render: (d) => fmtDate(d.max_timestamp) },
+    { key: "rows", header: t.eda.colRows, align: "right", render: (d) => fmtInt(d.rows) },
     {
-      key: "hold",
-      header: "Holdout",
-      align: "center",
-      render: (d) =>
-        d.crosses_holdout ? (
-          <Badge tone="negative">cruza</Badge>
-        ) : (
-          <Badge tone="positive">solo dev</Badge>
-        ),
+      key: "span",
+      header: t.eda.colSpan,
+      render: (d) => `${d.start.slice(0, 10)} → ${d.end.slice(0, 10)}`,
+    },
+    {
+      key: "sha",
+      header: t.eda.colSha,
+      render: (d) => (
+        <span className="font-mono text-xs text-muted">{d.sha256?.slice(0, 16) ?? "—"}…</span>
+      ),
     },
   ];
-
-  const s = es.sections.datosEda;
 
   return (
     <div className="space-y-6">
       <SectionIntro title={s.title} subtitle={s.subtitle} questions={s} />
-      <PartialNotice>{es.warnings.devPartitionOnly}</PartialNotice>
+      <PartialNotice>{t.warnings.devPartitionOnly}</PartialNotice>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Holdout desde" value={edaSummary?.holdout_start?.slice(0, 10) ?? "—"} />
-        <StatCard label="Periodo desarrollo" value={edaSummary?.development_period ?? "—"} />
-        <StatCard label="Figuras EDA" value={fmtInt(edaSummary?.n_figures)} />
-        <StatCard label="Hallazgos clave" value={fmtInt(edaSummary?.n_key_findings)} />
+        <StatCard label={t.eda.statBars} value={barsTotal ? fmtInt(barsTotal) : "—"} />
+        <StatCard
+          label={t.eda.statCoverage}
+          value={coverage == null ? "—" : `${coverage.toFixed(2)}%`}
+        />
+        <StatCard label={t.eda.statSpan} value={span} />
+        <StatCard
+          label={t.eda.statDatasets}
+          value={provenance ? fmtInt(provenance.datasets.length) : "—"}
+        />
       </div>
 
       <Card>
-        <CardHeader
-          title="Cobertura y autenticidad"
-          subtitle={`Holdout: ${coverage?.holdout_start?.slice(0, 10) ?? "—"}`}
-        />
-        {covLoading ? (
-          <Skeleton className="h-48" />
-        ) : covError ? (
-          <ErrorState title="Sin cobertura" detail={covError.message} />
-        ) : klineRows.length === 0 ? (
-          <EmptyState title="Sin datasets" />
-        ) : (
-          <DataTable columns={covColumns} rows={klineRows} rowKey={(d) => d.dataset_id} dense />
-        )}
-      </Card>
-
-      <Card>
-        <CardHeader title={es.timeline.title} subtitle="Seleccione un run para ver particiones" />
-        <RunPicker selected={effectiveRun} />
-        {tlLoading ? (
-          <Skeleton className="mt-4 h-48" />
-        ) : tlError ? (
-          <div className="mt-4">
-            <ErrorState title="Sin cronología" detail={tlError.message} />
-          </div>
-        ) : timeline ? (
-          <div className="mt-4">
-            <TimelineChart data={timeline} />
-          </div>
-        ) : (
-          <EmptyState title={es.common.selectRun} />
-        )}
-      </Card>
-
-      <Card>
-        <CardHeader
-          title={es.common.keyFindings}
-          subtitle={`${keyFigures?.items.length ?? 0} figuras destacadas`}
-        />
-        {keyFigures && keyFigures.items.length > 0 ? (
-          <FigureGallery figures={keyFigures.items} />
-        ) : (
-          <EmptyState title="Sin hallazgos clave indexados" />
-        )}
-        <div className="mt-4">
-          <a href="#galeria-completa" className="text-sm text-accent hover:underline">
-            {es.common.viewAll} ↓
-          </a>
-        </div>
-      </Card>
-
-      <div id="galeria-completa">
-        <Card>
-          <CardHeader
-            title={es.common.fullGallery}
-            subtitle={`${allFigures?.items.length ?? 0} figuras · temas: ${edaSummary?.themes.join(", ") ?? "—"}`}
+        <CardHeader title={t.eda.provenanceTitle} subtitle={t.eda.provenanceSubtitle} />
+        {provenance ? (
+          <DataTable
+            columns={provColumns}
+            rows={provenance.datasets}
+            rowKey={(d) => d.dataset_id}
+            dense
           />
-          {allFigures && allFigures.items.length > 0 ? (
-            <FigureGallery figures={allFigures.items} />
-          ) : (
-            <EmptyState title="Sin figuras EDA" />
-          )}
-        </Card>
+        ) : (
+          <Skeleton className="h-40" />
+        )}
+      </Card>
+
+      {/* Asset selector for the per-symbol charts. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div
+          role="tablist"
+          aria-label={t.explorer.pickAsset}
+          className="inline-flex rounded-md border border-border bg-surface p-1"
+        >
+          {symbols.map((entry) => (
+            <button
+              key={entry}
+              type="button"
+              role="tab"
+              aria-selected={entry === symbol}
+              onClick={() => setSymbol(entry)}
+              className={cn(
+                "rounded px-4 py-1.5 text-sm font-medium transition-colors",
+                entry === symbol ? "bg-[var(--accent)] text-white" : "text-muted hover:text-fg"
+              )}
+            >
+              {baseAsset(entry)}
+            </button>
+          ))}
+        </div>
+        <span className="font-mono text-xs text-muted">
+          {symbol} · {seriesFile?.timeframe ?? "1h"}
+        </span>
       </div>
+
+      {seriesError && <ErrorState title={t.explorer.loadError} detail={seriesError.message} />}
+      {isLoading && !seriesError && <Skeleton className="h-72" />}
+
+      {series && (
+        <>
+          <Card>
+            <CardHeader
+              title={`${t.eda.priceTitle} · ${baseAsset(symbol)}`}
+              subtitle={t.eda.priceSubtitle}
+            />
+            <EdaPriceChart series={series} />
+            <ChartReading what={t.eda.priceWhat} why={t.eda.priceWhy} />
+          </Card>
+
+          <Card>
+            <CardHeader
+              title={t.eda.volTitle}
+              subtitle={`${t.eda.volSubtitlePrefix} ${seriesFile?.volatility_window_days ?? 30} ${t.eda.volSubtitleSuffix}`}
+            />
+            <EdaVolatilityChart series={series} />
+            <ChartReading what={t.eda.volWhat} why={t.eda.volWhy} />
+          </Card>
+        </>
+      )}
+
+      {distribution && (
+        <Card>
+          <CardHeader title={t.eda.distTitle} subtitle={t.eda.distSubtitle} />
+          <div className="lg:grid lg:grid-cols-[1.6fr_1fr] lg:gap-8">
+            <div className="min-w-0">
+              <EdaDistributionChart item={distribution} />
+            </div>
+            <div className="mt-6 lg:mt-0">
+              <EdaSigmaTable item={distribution} />
+            </div>
+          </div>
+          <ChartReading what={t.eda.distWhat} why={t.eda.distWhy} />
+        </Card>
+      )}
+
+      {ms && (
+        <>
+          <Card>
+            <CardHeader title={t.eda.seasonTitle} subtitle="BTC · 2020–2025 · UTC" />
+            <EdaSeasonalityHeatmap cells={ms.seasonality} days={days} />
+            <ChartReading what={t.eda.seasonWhat} why={t.eda.seasonWhy} />
+          </Card>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader
+                title={t.eda.uwTitle}
+                subtitle={`max ${fmtPercent(ms.underwater_stats.max_drawdown, 0)} · ${fmtPercent(
+                  ms.underwater_stats.share_below_peak,
+                  1
+                )}`}
+              />
+              <EdaUnderwaterChart points={ms.underwater} />
+              <ChartReading what={t.eda.uwWhat} why={t.eda.uwWhy} />
+            </Card>
+            <Card>
+              <CardHeader
+                title={t.eda.fundingTitle}
+                subtitle={`${fmtInt(ms.funding_stats.n_events)} · ${fmtPercent(
+                  ms.funding_stats.share_positive,
+                  1
+                )} > 0`}
+              />
+              <EdaFundingChart points={ms.funding} />
+              <ChartReading
+                what={t.eda.fundingWhat}
+                why={t.eda.fundingWhy.replace(
+                  "{pct}",
+                  fmtPercent(ms.funding_stats.annualised_mean, 1)
+                )}
+              />
+            </Card>
+          </div>
+        </>
+      )}
+
+      <EdaFigureAnnex />
 
       <HowToRead>
-        <p>{es.glossary.pilot.definition}</p>
-        <p>{es.glossary.holdout.definition}</p>
+        <p>{t.glossary.pilot.definition}</p>
+        <p>{t.glossary.holdout.definition}</p>
       </HowToRead>
 
       <InterpretationBox tone="info">{s.queConcluirAnswer}</InterpretationBox>
@@ -165,34 +256,10 @@ function DatosEdaInner() {
   );
 }
 
-function FigureGallery({ figures }: { figures: EdaFigureModel[] }) {
-  return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      {figures.map((fig) => (
-        <figure key={fig.figure_id} className="rounded-md border border-border bg-surface-2 p-3">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            <Badge tone={fig.is_key_finding ? "accent" : "neutral"}>{fig.theme_label_es}</Badge>
-            {fig.is_key_finding && <Badge tone="positive">clave</Badge>}
-          </div>
-          <figcaption className="mb-2 text-sm font-medium">{fig.title_es}</figcaption>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`${API_BASE}/eda/figures/${fig.figure_id}`}
-            alt={fig.title_es}
-            className="w-full rounded border border-border bg-bg"
-            loading="lazy"
-          />
-          <p className="mt-2 text-xs text-muted">{fig.finding_es}</p>
-          <p className="mt-1 text-xs text-muted">{fig.interpretation_es}</p>
-        </figure>
-      ))}
-    </div>
-  );
-}
-
 export default function DatosEdaPage() {
+  const t = useI18n();
   return (
-    <PageShell title={es.sections.datosEda.title}>
+    <PageShell title={t.sections.datosEda.title}>
       <Suspense fallback={<Skeleton className="h-72" />}>
         <DatosEdaInner />
       </Suspense>

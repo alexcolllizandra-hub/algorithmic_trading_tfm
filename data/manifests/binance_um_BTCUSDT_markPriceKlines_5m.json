@@ -12,7 +12,7 @@
   "relative_path": "data/validated/BTCUSDT/markPrice_5m.parquet",
   "data_sha256": "8e094718da4a90b818b94c0c36f51e5de560c683989e4fe0dcdfcd2e4254fc8c",
   "code_version": "0.1.0",
-  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
-  "generated_at": "2026-07-30T11:18:42.722113Z",
+  "git_commit": "b3dc8b735af72f2f12221f2be7e3b3d45d50c210",
+  "generated_at": "2026-08-20T06:29:39.185515Z",
   "notes": "Mark-price klines at the base timeframe (auxiliary)."
 }

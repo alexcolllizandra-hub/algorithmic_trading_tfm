@@ -12,7 +12,7 @@
   "relative_path": "data/validated/BTCUSDT/fundingRate.parquet",
   "data_sha256": "a85942930e58a2d1ab7efd77b15e16c163384d610cc51e5997a7b5c3f99137c4",
   "code_version": "0.1.0",
-  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
-  "generated_at": "2026-07-30T11:18:46.001240Z",
+  "git_commit": "b3dc8b735af72f2f12221f2be7e3b3d45d50c210",
+  "generated_at": "2026-08-20T06:31:28.528981Z",
   "notes": "Funding-rate observations (8h nominal interval)."
 }

@@ -1,8 +1,8 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import type { TimelineFold, TimelineResponse } from "@/lib/api-types";
 import { fmtDate } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
 
 const COLORS = {
   development: "#3b82f6",
@@ -78,6 +78,7 @@ function foldSegments(
 }
 
 export function TimelineChart({ data }: { data: TimelineResponse }) {
+  const t = useI18n();
   const holdoutStart = parseTs(data.holdout_start);
   const devStart = parseTs(data.development_start);
   const devEnd = parseTs(data.development_end) ?? holdoutStart;
@@ -110,7 +111,7 @@ export function TimelineChart({ data }: { data: TimelineResponse }) {
         className="w-full min-w-[640px]"
       >
         <text x={0} y={14} className="fill-fg text-[11px] font-medium">
-          {es.timeline.title}
+          {t.timeline.title}
         </text>
         <text x={0} y={26} className="fill-muted text-[9px]">
           {fmtDate(data.development_start)} — holdout {fmtDate(data.holdout_start)}
@@ -131,22 +132,22 @@ export function TimelineChart({ data }: { data: TimelineResponse }) {
               x={devX}
               w={devW}
               color={COLORS.development}
-              label={es.timeline.development}
-              title={`${es.timeline.development}: ${fmtDate(data.development_start)} → ${fmtDate(data.development_end)}`}
+              label={t.timeline.development}
+              title={`${t.timeline.development}: ${fmtDate(data.development_start)} → ${fmtDate(data.development_end)}`}
             />
             <Span
               x={pilotX}
               w={pilotW}
               color={COLORS.pilot}
-              label={es.timeline.pilotUsed}
-              title={`${es.timeline.pilotUsed}: ${fmtDate(data.pilot_used_start)} → ${fmtDate(data.pilot_used_end)} (${data.pilot_used_pct_of_dev ?? "—"}% dev)`}
+              label={t.timeline.pilotUsed}
+              title={`${t.timeline.pilotUsed}: ${fmtDate(data.pilot_used_start)} → ${fmtDate(data.pilot_used_end)} (${data.pilot_used_pct_of_dev ?? "—"}% dev)`}
             />
             <Span
               x={holdoutX}
               w={holdoutW}
               color={COLORS.holdout}
-              label={es.timeline.holdout}
-              title={`${es.timeline.holdout}: desde ${fmtDate(data.holdout_start)}`}
+              label={t.timeline.holdout}
+              title={`${t.timeline.holdout}: desde ${fmtDate(data.holdout_start)}`}
             />
           </g>
         </g>
@@ -164,23 +165,23 @@ export function TimelineChart({ data }: { data: TimelineResponse }) {
                   x={seg.train[0]}
                   w={seg.train[1]}
                   color={COLORS.train}
-                  label={es.timeline.train}
-                  title={`${es.timeline.train}: ${fmtDate(fold.train_start)} → ${fmtDate(fold.train_end)}`}
+                  label={t.timeline.train}
+                  title={`${t.timeline.train}: ${fmtDate(fold.train_start)} → ${fmtDate(fold.train_end)}`}
                   offsetX={0}
                 />
                 <Span
                   x={seg.val[0]}
                   w={seg.val[1]}
                   color={COLORS.validation}
-                  label={es.timeline.validation}
-                  title={`${es.timeline.validation}: ${fmtDate(fold.val_start)} → ${fmtDate(fold.val_end)}`}
+                  label={t.timeline.validation}
+                  title={`${t.timeline.validation}: ${fmtDate(fold.val_start)} → ${fmtDate(fold.val_end)}`}
                 />
                 <Span
                   x={seg.test[0]}
                   w={seg.test[1]}
                   color={COLORS.test}
-                  label={es.timeline.test}
-                  title={`${es.timeline.test}: ${fmtDate(fold.test_start)} → ${fmtDate(fold.test_end)} · purge ${fold.purge_bars ?? 0} · embargo ${fold.embargo_bars ?? 0}`}
+                  label={t.timeline.test}
+                  title={`${t.timeline.test}: ${fmtDate(fold.test_start)} → ${fmtDate(fold.test_end)} · purge ${fold.purge_bars ?? 0} · embargo ${fold.embargo_bars ?? 0}`}
                 />
               </g>
             </g>
@@ -189,12 +190,12 @@ export function TimelineChart({ data }: { data: TimelineResponse }) {
 
         <g transform={`translate(0, ${foldBaseY + data.folds.length * foldRowHeight + 8})`}>
           {[
-            [es.timeline.development, COLORS.development],
-            [es.timeline.pilotUsed, COLORS.pilot],
-            [es.timeline.train, COLORS.train],
-            [es.timeline.validation, COLORS.validation],
-            [es.timeline.test, COLORS.test],
-            [es.timeline.holdout, COLORS.holdout],
+            [t.timeline.development, COLORS.development],
+            [t.timeline.pilotUsed, COLORS.pilot],
+            [t.timeline.train, COLORS.train],
+            [t.timeline.validation, COLORS.validation],
+            [t.timeline.test, COLORS.test],
+            [t.timeline.holdout, COLORS.holdout],
           ].map(([label, color], i) => (
             <g key={String(label)} transform={`translate(${i * 120}, 0)`}>
               <rect width={10} height={10} fill={color as string} rx={1} />

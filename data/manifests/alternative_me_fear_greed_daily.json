@@ -1,0 +1,18 @@
+{
+  "dataset_id": "alternative_me_fear_greed_daily",
+  "source": "alternative.me",
+  "exchange": "external",
+  "market_type": "na",
+  "symbol": "CRYPTO",
+  "stream": "fearGreed",
+  "timeframe": "1d",
+  "period_start": "2018-02-01T00:00:00Z",
+  "period_end": "2026-08-26T00:00:00Z",
+  "row_count": 3125,
+  "relative_path": "data/external/fear_greed.parquet",
+  "data_sha256": "15a283000c2a3ce1a980e57b3aab7b2bf39880ccf3b3fa562d680d44a11c9520",
+  "code_version": "0.1.0",
+  "git_commit": "a946ca7533c980046d2f3749bd512256fa22cbda",
+  "generated_at": "2026-08-26T16:03:08.513084Z",
+  "notes": "Daily Crypto Fear & Greed index, full public history. Point-in-time caveat: served by a live API; historical methodology changes are not versioned by the provider. Descriptive annex only."
+}

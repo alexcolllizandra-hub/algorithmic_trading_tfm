@@ -1,9 +1,12 @@
 "use client";
 
+import { LocaleSwitch } from "@/components/layout/LocaleSwitch";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { useI18n } from "@/lib/i18n";
 import { useHealth } from "@/lib/hooks";
 
 export function Topbar({ title }: { title: string }) {
+  const t = useI18n();
   const { data, error } = useHealth();
   const online = !error && data?.status === "ok";
 
@@ -16,9 +19,10 @@ export function Topbar({ title }: { title: string }) {
             className={`h-2 w-2 rounded-full ${online ? "bg-positive" : "bg-negative"}`}
             aria-hidden
           />
-          API {online ? "en línea" : "desconectada"}
-          {data ? ` \u00B7 ${data.runs_available} runs` : ""}
+          {online ? t.app.apiOnline : t.app.apiOffline}
+          {data ? ` \u00B7 ${data.runs_available} ${t.app.runs}` : ""}
         </span>
+        <LocaleSwitch />
         <ThemeToggle />
       </div>
     </header>

@@ -1,0 +1,31 @@
+{
+  "notebook": "03_backtesting_and_walk_forward",
+  "analysis_id": "t08_guards_fail_closed",
+  "caption": "Deliberate violations of the holdout and funding contracts; every guard raises.",
+  "period": "2020-01-01 00:00:00+00:00 .. 2025-12-31 23:00:00+00:00 (development, holdout excluded)",
+  "datasets": {
+    "binance_um_BTCUSDT_klines_1h_development": "49250896a17b27d54fdbf6e915aa7d3eeb0d542ce1f8f0e5b6423d755faff38f",
+    "binance_um_BTCUSDT_fundingRate": "a85942930e58a2d1ab7efd77b15e16c163384d610cc51e5997a7b5c3f99137c4",
+    "binance_um_ETHUSDT_klines_1h_development": "8c2b03db26c673e81451c88e0a112401dbdd4e3b585c8d7f1d3447ae445e6917",
+    "binance_um_ETHUSDT_fundingRate": "8168dc2f700469095a5157056a90ba8028629ce3728d1d44b948c62935e3e71c"
+  },
+  "config": {
+    "seed": 42,
+    "experiment_version": "0.1.0",
+    "primary_timeframe": "1h",
+    "fee_bps_per_side": 4.0,
+    "slippage_bps_per_side": 1.0,
+    "days_per_year": 365,
+    "holdout_start": "2026-01-01T00:00:00+00:00"
+  },
+  "generated_at": "2026-08-15T10:17:55.866271+00:00",
+  "code_commit": "739416e39bf9406f9d0bf0b0a02e997e563d3b86",
+  "output_path": "reports/tables/backtest/t08_guards_fail_closed.md",
+  "kind": "table",
+  "n_rows": 3,
+  "columns": [
+    "guard",
+    "raised",
+    "error"
+  ]
+}

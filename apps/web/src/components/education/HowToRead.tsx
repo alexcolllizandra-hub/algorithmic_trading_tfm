@@ -3,10 +3,11 @@
 import { useState } from "react";
 
 import { Card } from "@/components/ui/Card";
-import { es } from "@/lib/i18n/es";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/cn";
 
 export function HowToRead({ children, title }: { children: React.ReactNode; title?: string }) {
+  const t = useI18n();
   const [open, setOpen] = useState(false);
 
   return (
@@ -17,8 +18,8 @@ export function HowToRead({ children, title }: { children: React.ReactNode; titl
         className="flex w-full items-center justify-between gap-3 text-left"
         aria-expanded={open}
       >
-        <span className="text-sm font-medium text-fg">{title ?? es.common.howToRead}</span>
-        <span className="text-xs text-accent">{open ? es.common.collapse : es.common.expand}</span>
+        <span className="text-sm font-medium text-fg">{title ?? t.common.howToRead}</span>
+        <span className="text-xs text-accent">{open ? t.common.collapse : t.common.expand}</span>
       </button>
       <div
         className={cn(

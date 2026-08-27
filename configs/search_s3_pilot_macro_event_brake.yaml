@@ -1,0 +1,44 @@
+# =====================================================================
+# GATE S3 DEVELOPMENT PILOT -- family: macro_event_brake
+#
+# Pre-specified in docs/methodology/strategy_catalogue_s3.md (ADR 0019),
+# frozen BEFORE this pilot was executed.
+#
+# Purpose: technical screen of the S3 family on development data at a small
+# budget before the full 2x10x15 study. DEVELOPMENT-PERIOD EVIDENCE ONLY;
+# not a promotion decision. Pilot Sharpe is never quoted as evidence.
+#
+# Held fixed (same screen contract as S1-B):
+#   * BTCUSDT, 1h primary timeframe
+#   * the full development walk-forward geometry from experiment.yaml
+#   * costs, execution timing, fitness and annualisation from experiment.yaml
+#   * base seed 42
+#   * effective_budget = 25, spent exactly by BOTH Random Search and the GA
+#
+# The frozen holdout [2026-01-01, 2026-07-01) is never loaded.
+# =====================================================================
+
+experiment_config: configs/experiment.yaml
+data_contract: configs/data_contract.yaml
+
+family: macro_event_brake
+algorithm: comparison
+symbol: BTCUSDT
+timeframe: "1h"
+seed: 42
+regime_model: threshold
+
+require_funding: true
+synthetic: false
+label: s3_pilot_macro_event_brake_DEV_ONLY_not_holdout
+
+effective_budget: 25
+
+ga:
+  population_size: 10
+  # Safety cap only: execution stops as soon as effective_budget is reached.
+  max_generations: 200
+  crossover_rate: 0.7
+  mutation_rate: 0.2
+  elitism: 1
+  tournament_size: 3

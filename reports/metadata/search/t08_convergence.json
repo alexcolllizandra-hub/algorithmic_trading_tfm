@@ -1,0 +1,34 @@
+{
+  "notebook": "04_strategy_search_and_overfitting",
+  "analysis_id": "t08_convergence",
+  "caption": "Mean best-so-far validation fitness at fractions of the evaluation budget.",
+  "period": "development walk-forward test slices (no holdout row enters this notebook)",
+  "datasets": {},
+  "config": {
+    "study_root": "artifacts\\runs\\r3_full_budget100_ga21",
+    "families": [
+      "BTC_ETH_confirmation",
+      "breakout",
+      "funding",
+      "mean_reversion",
+      "volatility_breakout"
+    ],
+    "engines": [
+      "random_search",
+      "genetic_algorithm"
+    ],
+    "experiment_version": "0.1.0"
+  },
+  "generated_at": "2026-08-16T11:50:54.564830+00:00",
+  "code_commit": "739416e39bf9406f9d0bf0b0a02e997e563d3b86",
+  "output_path": "reports/tables/search/t08_convergence.md",
+  "kind": "table",
+  "n_rows": 8,
+  "columns": [
+    "engine",
+    "budget_fraction",
+    "evaluations",
+    "mean_best_fitness",
+    "pct_of_final"
+  ]
+}

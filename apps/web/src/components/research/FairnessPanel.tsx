@@ -6,7 +6,7 @@ import { DataTable, type Column } from "@/components/ui/Table";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/States";
 import type { ValidityCheck, ValidityWarning } from "@/lib/api-types";
 import { fmtInt } from "@/lib/format";
-import { es } from "@/lib/i18n/es";
+import { useI18n, type Dictionary } from "@/lib/i18n";
 import { useValidity } from "@/lib/hooks";
 
 const STATUS_TONE: Record<ValidityCheck["status"], "positive" | "warn" | "negative"> = {
@@ -15,11 +15,11 @@ const STATUS_TONE: Record<ValidityCheck["status"], "positive" | "warn" | "negati
   fail: "negative",
 };
 
-const STATUS_LABEL: Record<ValidityCheck["status"], string> = {
-  pass: es.validity.statusPass,
-  warn: es.validity.statusWarn,
-  fail: es.validity.statusFail,
-};
+const statusLabel = (t: Dictionary): Record<ValidityCheck["status"], string> => ({
+  pass: t.validity.statusPass,
+  warn: t.validity.statusWarn,
+  fail: t.validity.statusFail,
+});
 
 const SEV_TONE: Record<ValidityWarning["severity"], "accent" | "warn" | "negative"> = {
   info: "accent",
@@ -28,6 +28,8 @@ const SEV_TONE: Record<ValidityWarning["severity"], "accent" | "warn" | "negativ
 };
 
 export function FairnessPanel({ runId }: { runId: string | null }) {
+  const t = useI18n();
+  const STATUS_LABEL = statusLabel(t);
   const { data, error, isLoading } = useValidity(runId);
 
   const checkColumns: Column<ValidityCheck>[] = [
@@ -44,7 +46,7 @@ export function FairnessPanel({ runId }: { runId: string | null }) {
     },
   ];
 
-  if (!runId) return <EmptyState title={es.common.selectRun} />;
+  if (!runId) return <EmptyState title={t.common.selectRun} />;
   if (isLoading) return <Skeleton className="h-48" />;
   if (error) return <ErrorState title="No se pudo cargar validez" detail={error.message} />;
   if (!data) return <EmptyState title="Sin datos de validez" />;
@@ -53,12 +55,12 @@ export function FairnessPanel({ runId }: { runId: string | null }) {
     <div className="space-y-4">
       <Card>
         <CardHeader
-          title={es.validity.title}
-          subtitle={es.validity.subtitle}
+          title={t.validity.title}
+          subtitle={t.validity.subtitle}
           right={
             data.equal_effective_evaluations != null ? (
               <Badge tone={data.equal_effective_evaluations ? "positive" : "negative"}>
-                {es.validity.equalEvaluations}: {data.equal_effective_evaluations ? "sí" : "no"}
+                {t.validity.equalEvaluations}: {data.equal_effective_evaluations ? "sí" : "no"}
               </Badge>
             ) : undefined
           }

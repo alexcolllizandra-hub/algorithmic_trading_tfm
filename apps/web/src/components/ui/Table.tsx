@@ -13,11 +13,16 @@ export function DataTable<T>({
   rows,
   rowKey,
   dense,
+  onRowClick,
+  isRowSelected,
 }: {
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T, i: number) => string;
   dense?: boolean;
+  /** Makes rows activatable by click and by keyboard. */
+  onRowClick?: (row: T) => void;
+  isRowSelected?: (row: T) => boolean;
 }) {
   return (
     <div className="overflow-x-auto rounded-card border border-border">
@@ -46,7 +51,24 @@ export function DataTable<T>({
           {rows.map((row, i) => (
             <tr
               key={rowKey(row, i)}
-              className="border-b border-border/60 last:border-0 hover:bg-surface-2/60"
+              className={cn(
+                "border-b border-border/60 last:border-0 hover:bg-surface-2/60",
+                onRowClick && "cursor-pointer",
+                isRowSelected?.(row) && "bg-accent/10 hover:bg-accent/15"
+              )}
+              aria-selected={isRowSelected ? isRowSelected(row) : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+              onKeyDown={
+                onRowClick
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onRowClick(row);
+                      }
+                    }
+                  : undefined
+              }
             >
               {columns.map((c) => (
                 <td

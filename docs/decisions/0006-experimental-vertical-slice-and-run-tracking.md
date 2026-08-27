@@ -3,6 +3,12 @@
 - Status: Accepted
 - Date: 2026-08-03
 
+> **Nota de estado añadida el 2026-08-16 — el cuerpo del ADR no se modifica.**
+> La consecuencia «the frozen holdout remains untouched» describe el estado del
+> 2026-08-03 y el comportamiento por defecto del cargador, que sigue siendo el
+> descrito. La partición se abrió una vez el 2026-08-13 por la ruta explícita de
+> Fase H; véase [holdout_audit_status.md](../methodology/holdout_audit_status.md).
+
 ## Context
 
 Chapter 5 needs an executable, auditable pipeline built as small verified

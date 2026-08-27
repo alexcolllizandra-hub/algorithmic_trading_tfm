@@ -9,8 +9,9 @@ import { RunPicker, useSelectedRun } from "@/components/RunPicker";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState, ErrorState, PartialNotice, Skeleton } from "@/components/ui/States";
+import { useI18n } from "@/lib/i18n";
+import { useRb } from "@/lib/i18n/runBrowser";
 import { API_BASE } from "@/lib/api";
-import { es } from "@/lib/i18n/es";
 import { useArtifacts, useHealth } from "@/lib/hooks";
 
 type Tab = "artifacts" | "system";
@@ -25,6 +26,8 @@ function JsonBlock({ value }: { value: unknown }) {
 }
 
 function ArtifactsTab() {
+  const rb = useRb();
+  const t = useI18n();
   const runId = useSelectedRun();
   const { data, error, isLoading } = useArtifacts(runId);
 
@@ -36,18 +39,18 @@ function ArtifactsTab() {
     <div className="space-y-6">
       <RunPicker selected={runId} />
       {!runId ? (
-        <EmptyState title={es.common.selectRun} />
+        <EmptyState title={t.common.selectRun} />
       ) : isLoading ? (
         <Skeleton className="h-72" />
       ) : error ? (
-        <ErrorState title="Sin artefactos" detail={error.message} />
+        <ErrorState title={rb.diagNoArtifacts} detail={error.message} />
       ) : !data ? (
-        <EmptyState title="Sin bundle de artefactos" />
+        <EmptyState title={rb.diagNoBundle} />
       ) : (
         <>
           {data.warnings.length > 0 && (
             <Card>
-              <CardHeader title="Advertencias" />
+              <CardHeader title={rb.diagWarnings} />
               <ul className="list-inside list-disc space-y-1 text-sm text-warn">
                 {data.warnings.map((w, i) => (
                   <li key={i}>{w}</li>
@@ -57,44 +60,44 @@ function ArtifactsTab() {
           )}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
-              <CardHeader title="Manifiestos de datasets" />
+              <CardHeader title={rb.diagDatasetManifests} />
               <JsonBlock value={data.dataset_manifests} />
             </Card>
             <Card>
-              <CardHeader title="Manifiesto de features" />
+              <CardHeader title={rb.diagFeatureManifest} />
               <JsonBlock value={data.feature_manifest} />
             </Card>
             <Card>
-              <CardHeader title="Espacio de búsqueda" />
+              <CardHeader title={rb.diagSearchSpace} />
               <JsonBlock value={data.search_space} />
             </Card>
             <Card>
-              <CardHeader title="Objetivo" />
+              <CardHeader title={rb.diagObjective} />
               <JsonBlock value={data.objective} />
             </Card>
             <Card>
-              <CardHeader title="Entorno" />
+              <CardHeader title={rb.diagEnvironment} />
               <JsonBlock value={data.environment} />
             </Card>
             <Card>
-              <CardHeader title="Estado git" />
+              <CardHeader title={rb.diagGitState} />
               <JsonBlock value={data.git_state} />
             </Card>
           </div>
           <Card>
             <CardHeader
-              title="Candidatos fallidos"
+              title={rb.diagFailedCandidates}
               right={<Badge tone={failedTotal ? "warn" : "positive"}>{failedTotal}</Badge>}
             />
             {failedTotal === 0 ? (
-              <EmptyState title="Sin candidatos fallidos" />
+              <EmptyState title={rb.diagNoFailedCandidates} />
             ) : (
               <JsonBlock value={data.failed_candidates} />
             )}
           </Card>
           <Card>
             <CardHeader
-              title="Archivos"
+              title={rb.diagFiles}
               subtitle={`${data.files.length} en el directorio del run`}
             />
             <div className="flex flex-wrap gap-2">
@@ -145,10 +148,11 @@ const COMPONENTS: { name: string; status: Status; note: string }[] = [
   { name: "API cuantitativa (FastAPI)", status: "implemented", note: "v1 solo lectura" },
   { name: "Plataforma web (esta UI)", status: "implemented", note: "Next.js + TypeScript" },
   { name: "Triple-barrier y meta-labeling", status: "planned", note: "fase futura" },
-  { name: "Evaluación holdout final", status: "unavailable", note: "bloqueada" },
+  { name: "Evaluación holdout final", status: "unavailable", note: "lectura retenida" },
 ];
 
 function SystemTab() {
+  const t = useI18n();
   const { data, error } = useHealth();
   const online = !error && data?.status === "ok";
 
@@ -162,7 +166,7 @@ function SystemTab() {
               <dt className="text-muted">API cuantitativa</dt>
               <dd>
                 <Badge tone={online ? "positive" : "negative"}>
-                  {online ? "en línea" : "desconectada"}
+                  {online ? t.app.apiOnline : t.app.apiOffline}
                 </Badge>
               </dd>
             </div>
@@ -212,10 +216,11 @@ function SystemTab() {
 }
 
 function DiagnosticoInner() {
+  const t = useI18n();
   const params = useSearchParams();
   const router = useRouter();
   const tab = (params.get("tab") as Tab) || "artifacts";
-  const s = es.sections.diagnostico;
+  const s = t.sections.diagnostico;
 
   const setTab = (t: Tab) => {
     const sp = new URLSearchParams(params.toString());
@@ -251,8 +256,9 @@ function DiagnosticoInner() {
 }
 
 export default function DiagnosticoPage() {
+  const t = useI18n();
   return (
-    <PageShell title={es.sections.diagnostico.title}>
+    <PageShell title={t.sections.diagnostico.title}>
       <Suspense fallback={<Skeleton className="h-72" />}>
         <DiagnosticoInner />
       </Suspense>

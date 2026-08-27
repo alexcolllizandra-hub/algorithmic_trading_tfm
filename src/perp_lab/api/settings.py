@@ -24,6 +24,8 @@ class ApiSettings:
     max_page_size: int
     eda_figures_dir: Path
     eda_metadata_dir: Path
+    study_dashboard_path: Path
+    holdout_audited: bool
     environment: str
 
     @property
@@ -57,5 +59,18 @@ def get_settings() -> ApiSettings:
         eda_metadata_dir=Path(
             os.environ.get("PERP_LAB_EDA_METADATA_DIR", "reports/metadata/eda")
         ).resolve(),
+        study_dashboard_path=Path(
+            os.environ.get(
+                "PERP_LAB_STUDY_DASHBOARD",
+                "reports/study_closure/study_dashboard.json",
+            )
+        ).resolve(),
+        # Publishing the holdout reading requires this exact token, not a
+        # truthy value. "1", "true" or "yes" are the kind of thing that gets set
+        # by accident while debugging something else; a sentence naming the
+        # audit does not.
+        holdout_audited=(
+            os.environ.get("PERP_LAB_HOLDOUT_PUBLICATION", "") == "AUDITED_OPEN_FINAL_HOLDOUT"
+        ),
         environment=os.environ.get("PERP_LAB_ENV", "development"),
     )

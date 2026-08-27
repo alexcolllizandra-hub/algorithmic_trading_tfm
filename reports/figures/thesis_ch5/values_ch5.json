@@ -1,0 +1,327 @@
+{
+  "values": {
+    "zero_vol_months_btc": {
+      "2021-03": 11,
+      "2022-05": 12,
+      "2023-09": 3,
+      "2023-11": 19,
+      "2024-10": 16,
+      "2025-01": 2,
+      "2025-08": 3
+    },
+    "zero_vol_months_eth": {
+      "2021-03": 11,
+      "2022-05": 12,
+      "2023-09": 3,
+      "2024-10": 16,
+      "2025-01": 2,
+      "2025-08": 3
+    },
+    "t_fit_df": {
+      "5m": 1.99,
+      "15m": 1.99,
+      "1h": 1.96
+    },
+    "t_fit_df_eth_1h": 2.14,
+    "kurtosis_by_horizon_btc": {
+      "5": 170.7,
+      "15": 131.8,
+      "30": 59.5,
+      "60": 57.1
+    },
+    "kurtosis_by_horizon_eth": {
+      "5": 594.8,
+      "15": 69.2,
+      "30": 35.6,
+      "60": 32.5
+    },
+    "rolling_vol_min_max_btc": [
+      0.222,
+      1.885
+    ],
+    "rolling_vol_factor_btc": 8.5,
+    "intraday_peak_hours_btc": [
+      13,
+      14,
+      15
+    ],
+    "intraday_quiet_hours_btc": [
+      4,
+      5,
+      6
+    ],
+    "weekend_vol_vs_weekday_pct": -30.5,
+    "weekend_volume_vs_weekday_pct": -40.4,
+    "funding_acf_lags_above_band": 60,
+    "funding_acf_lag1": 0.796,
+    "funding_conditional": {
+      "BTCUSDT": {
+        "top_decile_mean_bps": -5.0,
+        "top_decile_ci_bps": [
+          -21.8,
+          11.4
+        ],
+        "bottom_decile_mean_bps": 25.2,
+        "bottom_decile_ci_bps": [
+          10.8,
+          37.6
+        ],
+        "horizon_hours": 8
+      },
+      "ETHUSDT": {
+        "top_decile_mean_bps": 7.3,
+        "top_decile_ci_bps": [
+          -15.2,
+          29.6
+        ],
+        "bottom_decile_mean_bps": 10.3,
+        "bottom_decile_ci_bps": [
+          -7.3,
+          28.0
+        ],
+        "horizon_hours": 8
+      }
+    },
+    "btc_eth_corr_full_1h": 0.839,
+    "btc_eth_rolling_corr_band": [
+      0.71,
+      0.92
+    ],
+    "btc_eth_max_offzero_crosscorr": 0.018,
+    "feature_pairs_above_09": 2,
+    "feature_pairs_list": [
+      "sma_24 ~ sma_96 (0.999)",
+      "price_dist_sma_48 ~ zscore_48 (0.941)"
+    ],
+    "pca_components_90pct": 8,
+    "pca_first3_share_pct": 56.2,
+    "n_features": 14,
+    "hill_alpha_btc": 2.88,
+    "hill_se_btc": 0.09,
+    "hill_alpha_eth": 3.06,
+    "hill_se_eth": 0.09,
+    "hill_tail_fraction_pct": 2.0,
+    "vr_btc": {
+      "2": {
+        "vr": 0.983,
+        "z": -1.2
+      },
+      "4": {
+        "vr": 0.959,
+        "z": -1.49
+      },
+      "8": {
+        "vr": 0.934,
+        "z": -1.59
+      },
+      "16": {
+        "vr": 0.939,
+        "z": -1.09
+      },
+      "24": {
+        "vr": 0.955,
+        "z": -0.67
+      },
+      "48": {
+        "vr": 0.92,
+        "z": -0.9
+      }
+    },
+    "hurst_global_btc": 0.548,
+    "vr_eth": {
+      "2": {
+        "vr": 0.992,
+        "z": -0.64
+      },
+      "4": {
+        "vr": 0.971,
+        "z": -1.35
+      },
+      "8": {
+        "vr": 0.947,
+        "z": -1.59
+      },
+      "16": {
+        "vr": 0.966,
+        "z": -0.74
+      },
+      "24": {
+        "vr": 0.983,
+        "z": -0.31
+      },
+      "48": {
+        "vr": 0.966,
+        "z": -0.46
+      }
+    },
+    "hurst_global_eth": 0.545,
+    "rolling_hurst_range_btc": [
+      0.516,
+      0.607
+    ],
+    "rolling_hurst_range_eth": [
+      0.513,
+      0.596
+    ],
+    "volume_absret_spearman_btc": 0.528,
+    "volume_absret_spearman_eth": 0.462,
+    "mi_excluded_level_features": [
+      "atr_14",
+      "sma_24",
+      "sma_96"
+    ],
+    "mi_range_nats": [
+      0.0,
+      0.1193
+    ],
+    "mi_top_features": [
+      "rvol_96",
+      "range_norm",
+      "price_dist_sma_48",
+      "momentum_12"
+    ],
+    "mi_above_floor_h1": 9,
+    "exc_kurtosis_1h_btc": 57.1,
+    "skew_1h_btc": -1.03,
+    "exc_kurtosis_1h_eth": 32.5,
+    "skew_1h_eth": -1.01,
+    "lb_returns_p_btc": 2.8520479643315916e-25,
+    "adf_price_p_btc": 0.3874,
+    "lb_returns_p_eth": 7.719651301875438e-23,
+    "adf_price_p_eth": 0.0447,
+    "hurst_table": {
+      "BTCUSDT": 0.548,
+      "ETHUSDT": 0.545
+    },
+    "regime_table": [
+      {
+        "regime": "covid_crash",
+        "start": "2020-01-01",
+        "end": "2020-04-01",
+        "n_bars": 2183,
+        "btc_ann_return": -0.4523059640498358,
+        "btc_ann_vol": 1.1464464132002874,
+        "btc_exc_kurtosis": 94.01238596391129,
+        "eth_ann_return": 0.11635755340352086,
+        "eth_ann_vol": 1.3123975553804186,
+        "eth_exc_kurtosis": 69.6238067436268,
+        "btc_eth_corr": 0.9027346681808801
+      },
+      {
+        "regime": "expansion_2020_21",
+        "start": "2020-04-01",
+        "end": "2021-12-01",
+        "n_bars": 14616,
+        "btc_ann_return": 1.309688220039016,
+        "btc_ann_vol": 0.7572342619235435,
+        "btc_exc_kurtosis": 15.706555821121931,
+        "eth_ann_return": 2.12960163286935,
+        "eth_ann_vol": 0.9818097417530248,
+        "eth_exc_kurtosis": 11.582839923988052,
+        "btc_eth_corr": 0.8197896467623956
+      },
+      {
+        "regime": "contraction_2022",
+        "start": "2021-12-01",
+        "end": "2023-01-01",
+        "n_bars": 9504,
+        "btc_ann_return": -1.140142019138143,
+        "btc_ann_vol": 0.6375752403928493,
+        "btc_exc_kurtosis": 11.054238564525136,
+        "eth_ann_return": -1.2478360857042339,
+        "eth_ann_vol": 0.8500930244820997,
+        "eth_exc_kurtosis": 10.382612302307589,
+        "btc_eth_corr": 0.891708093913781
+      },
+      {
+        "regime": "recovery_2023",
+        "start": "2023-01-01",
+        "end": "2024-01-01",
+        "n_bars": 8760,
+        "btc_ann_return": 0.9394814242751437,
+        "btc_ann_vol": 0.42764201828424925,
+        "btc_exc_kurtosis": 26.519201479706776,
+        "eth_ann_return": 0.6467963513081418,
+        "eth_ann_vol": 0.4662669639460838,
+        "eth_exc_kurtosis": 22.214200224465337,
+        "btc_eth_corr": 0.8602367266159467
+      },
+      {
+        "regime": "institutional_2024_25",
+        "start": "2024-01-01",
+        "end": "2026-01-01",
+        "n_bars": 17544,
+        "btc_ann_return": 0.3633805186207759,
+        "btc_ann_vol": 0.4867492634577852,
+        "btc_exc_kurtosis": 9.679133701751956,
+        "eth_ann_return": 0.1312372272260574,
+        "eth_ann_vol": 0.6847983475189634,
+        "eth_exc_kurtosis": 16.774860852009244,
+        "btc_eth_corr": 0.7982904252042585
+      }
+    ],
+    "leverage_effect_btc": -0.04,
+    "leverage_effect_eth": -0.049,
+    "top10_loss_vs_gain_btc": {
+      "mean_loss_pct": 11.32,
+      "mean_gain_pct": 9.31,
+      "max_loss_pct": 20.71,
+      "max_gain_pct": 15.08
+    },
+    "top10_loss_vs_gain_eth": {
+      "mean_loss_pct": 13.31,
+      "mean_gain_pct": 9.35,
+      "max_loss_pct": 24.46,
+      "max_gain_pct": 14.62
+    },
+    "engle_granger": [
+      {
+        "window": "full_sample",
+        "pvalue": 0.8745901138587848,
+        "n": 52608.0
+      },
+      {
+        "window": "covid_crash",
+        "pvalue": 0.8722900186752987,
+        "n": 2184.0
+      },
+      {
+        "window": "expansion_2020_21",
+        "pvalue": 0.7464716936984054,
+        "n": 14616.0
+      },
+      {
+        "window": "contraction_2022",
+        "pvalue": 0.651339703550074,
+        "n": 9504.0
+      },
+      {
+        "window": "recovery_2023",
+        "pvalue": 0.3071030074919937,
+        "n": 8760.0
+      },
+      {
+        "window": "institutional_2024_25",
+        "pvalue": 0.5722021810215161,
+        "n": 17544.0
+      }
+    ],
+    "labels_btc": {
+      "n_events": 52569.0,
+      "share_positive": 0.496,
+      "share_negative": 0.504,
+      "share_zero": 0.0,
+      "share_meta_positive": 0.496,
+      "share_upper": 0.43,
+      "share_lower": 0.423,
+      "share_vertical": 0.146,
+      "median_holding_bars": 9.0,
+      "mean_holding_bars": 10.843
+    }
+  },
+  "tables": {
+    "table_5_1": "| Symbol | Timeframe | n | Mean (bps) | Std (bps) | Skew | Exc. kurtosis | Min (%) | Max (%) |\n|---|---|---|---|---|---|---|---|---|\n| BTCUSDT | 5m | 631,295 | 0.040 | 20.62 | -0.55 | 170.7 | -11.05 | 14.92 |\n| BTCUSDT | 15m | 210,431 | 0.119 | 34.59 | 0.24 | 131.8 | -13.45 | 21.26 |\n| BTCUSDT | 1h | 52,607 | 0.476 | 67.30 | -1.03 | 57.1 | -20.71 | 15.08 |\n| ETHUSDT | 5m | 631,295 | 0.050 | 26.94 | -1.71 | 594.8 | -32.27 | 27.01 |\n| ETHUSDT | 15m | 210,431 | 0.149 | 44.57 | -0.07 | 69.2 | -14.04 | 21.04 |\n| ETHUSDT | 1h | 52,607 | 0.597 | 86.97 | -1.01 | 32.5 | -24.46 | 14.62 |",
+    "table_5_2": "| Test | Series | BTC | ETH | Reading |\n|---|---|---|---|---|\n| Jarque–Bera | returns | 7.16e+06 (p < 1e-16) | 2.32e+06 (p < 1e-16) | normality rejected |\n| Ljung–Box (24) | returns | p = < 1e-16 | p = < 1e-16 | rejects — but the underlying ACF is economically negligible (lag-1 ≈ −0.02) |\n| Ljung–Box (24) | squared returns | p < 1e-16 | p < 1e-16 | strong volatility clustering |\n| ARCH-LM (12) | returns | p < 1e-16 | p < 1e-16 | conditional heteroskedasticity |\n| ADF | log price | p = 0.387 | p = 0.045 | unit root kept (ETH borderline at 5%) |\n| ADF | returns | p < 1e-16 | p < 1e-16 | returns stationary |\n| KPSS | log price | p = 0.010 | p = 0.010 | stationarity rejected on prices |\n| KPSS | returns | p = 0.100 | p = 0.084 | stationarity kept on returns |\n| Hurst (R/S) | returns | 0.548 | 0.545 | close to memoryless 0.5 |",
+    "table_5_3": "| Regime | Window | Bars | BTC ann. ret | BTC ann. vol | BTC exc. kurt | ETH ann. vol | BTC–ETH corr |\n|---|---|---|---|---|---|---|---|\n| covid_crash | 2020-01-01 → 2020-04-01 | 2,183 | -45% | 115% | 94.0 | 131% | 0.903 |\n| expansion_2020_21 | 2020-04-01 → 2021-12-01 | 14,616 | +131% | 76% | 15.7 | 98% | 0.820 |\n| contraction_2022 | 2021-12-01 → 2023-01-01 | 9,504 | -114% | 64% | 11.1 | 85% | 0.892 |\n| recovery_2023 | 2023-01-01 → 2024-01-01 | 8,760 | +94% | 43% | 26.5 | 47% | 0.860 |\n| institutional_2024_25 | 2024-01-01 → 2026-01-01 | 17,544 | +36% | 49% | 9.7 | 68% | 0.798 |"
+  }
+}

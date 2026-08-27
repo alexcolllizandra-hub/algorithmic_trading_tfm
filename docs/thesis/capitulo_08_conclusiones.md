@@ -51,7 +51,7 @@ activos, frecuencia y batería de criterios.
 | **Gate R3** — promoción familiar | ADR 0015; thesis_report | **CLOSED_NEGATIVE**, **0/5** |
 | **volatility_breakout / BTC** | thesis_report; ADR 0015 | **Señal parcial no robusta** (6/10 C1); **no** estrategia aprobada |
 | **Gate R4** | ADR 0015; phase_gates § R4 | **SKIPPED** — conforme al protocolo |
-| **Holdout** | ADR 0003; thesis_report `reporter_holdout_accessed: false` | **Permanece cerrado** — sin candidato congelado |
+| **Holdout** | ADR 0003; `final_holdout.json`; [holdout_audit_status.md](../methodology/holdout_audit_status.md) | **Abierto una vez (2026-08-13) sobre una familia ya rechazada**; lectura retenida por auditoría, partición consumida. Ninguna conclusión depende de ella |
 
 ---
 

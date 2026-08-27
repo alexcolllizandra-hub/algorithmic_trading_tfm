@@ -1,0 +1,33 @@
+{
+  "notebook": "07_monte_carlo_nula",
+  "analysis_id": "t05_cuenta_fondeada",
+  "caption": "Published prop-firm rules (mapped 2026-08-19, sources in code) applied to bootstrap paths of the median seed and to coin flips with the same timing and costs.",
+  "period": "development walk-forward out-of-sample; holdout never loaded",
+  "datasets": {
+    "artifacts/runs/r3_full_budget100_ga21/volatility_breakout/study_robustness.json": "b44ba6ab2fc21b7094d12159d18b4bfad0900cb078239d9279a5f96926d1dd85"
+  },
+  "config": {
+    "seed": 42,
+    "code_commit_resolved": "0399be8651e12c1da24149f4b573d4ef15e1c711",
+    "data_contract_cutoff": "2026-07-01",
+    "family": "volatility_breakout (REJECTED)",
+    "symbol": "BTCUSDT",
+    "engine": "random_search",
+    "n_units": 10
+  },
+  "generated_at": "2026-08-27T10:51:48.926706+00:00",
+  "code_commit": "0399be8651e12c1da24149f4b573d4ef15e1c711",
+  "output_path": "reports/tables/montecarlo/t05_cuenta_fondeada.md",
+  "kind": "table",
+  "n_rows": 4,
+  "columns": [
+    "firm",
+    "arm",
+    "pass_phase1",
+    "pass_both",
+    "profit_target",
+    "max_total_drawdown",
+    "max_daily_loss",
+    "source"
+  ]
+}

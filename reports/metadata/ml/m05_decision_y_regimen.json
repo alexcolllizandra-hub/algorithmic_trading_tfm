@@ -1,0 +1,33 @@
+{
+  "notebook": "06_meta_etiquetado_supervisado",
+  "analysis_id": "m05_decision_y_regimen",
+  "caption": "Share of signals accepted per fold (a) and events against acceptances by volatility regime (b).",
+  "period": "development walk-forward out-of-sample; holdout never loaded",
+  "datasets": {
+    "reports/meta_labeling_real/meta_labeling_real.json": "5e28d0fe8df464322d5313b95a6f933048dcd33859cb6469499d0c92dcb17e7a"
+  },
+  "config": {
+    "seed": null,
+    "study_seed": 42,
+    "code_commit_resolved": "538846f1990eeca2d72f8755bb6ad13f955be99f",
+    "data_contract_cutoff": "2026-07-01",
+    "contract_label": "INFRAESTRUCTURA/EXPLORATORIO (seccion 5; ADR 0017)",
+    "family": "crt_htf_range_reversal",
+    "symbol": "BTCUSDT",
+    "n_events": 1172,
+    "models": [
+      "logistic_regression",
+      "random_forest",
+      "lightgbm"
+    ]
+  },
+  "generated_at": "2026-08-25T17:40:04.418149+00:00",
+  "code_commit": "538846f1990eeca2d72f8755bb6ad13f955be99f",
+  "output_path": "reports/figures/ml/m05_decision_y_regimen.png",
+  "kind": "figure",
+  "dpi": 300,
+  "formats": [
+    "png",
+    "pdf"
+  ]
+}

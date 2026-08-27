@@ -1,0 +1,22 @@
+{
+  "config": "configs\\search_pilot_momentum.yaml",
+  "family": "momentum",
+  "symbol": "BTCUSDT",
+  "n_folds": 15,
+  "candidates_per_fold": 12,
+  "superseded_protocol": {
+    "name": "pooled_across_folds_contaminated",
+    "unique_evaluations": 12,
+    "validation_backtests": 180,
+    "seconds": 1.114
+  },
+  "current_protocol": {
+    "name": "independent_search_per_outer_fold",
+    "unique_evaluations": 180,
+    "validation_backtests": 180,
+    "seconds": 1.309
+  },
+  "backtest_ratio_new_over_old": 1.0,
+  "wall_clock_ratio_new_over_old": 1.1751,
+  "note": "Equal backtest counts at the same per-fold budget. Any wall-clock gap is overhead (evaluator setup, per-fold caches, strategy construction), not extra backtesting work."
+}

@@ -48,7 +48,9 @@ def _jsonable(value: ParamValue) -> Any:
     if isinstance(value, bool | int | str) or value is None:
         return value
     if isinstance(value, float):
-        # Round to keep canonical hashes stable across trivial float noise.
+        # 10 decimals: far finer than any parameter this study tunes, yet coarse
+        # enough that a value reconstructed through repair or JSON hashes to the
+        # same identity as the original.
         return round(value, 10)
     return str(value)
 
@@ -120,7 +122,8 @@ class IntParam(Param):
             return grid[0]
         cur = self.repair(value)
         idx = grid.index(cur) if cur in grid else 0
-        # Creep to an adjacent grid point (deterministic given rng).
+        # Creep by one or two grid points rather than jumping anywhere in range:
+        # global exploration is sampling's job, mutation's is local refinement.
         delta = int(rng.integers(1, min(3, len(grid))))
         sign = 1 if rng.random() < 0.5 else -1
         new_idx = min(max(idx + sign * delta, 0), len(grid) - 1)
@@ -173,6 +176,10 @@ class FloatParam(Param):
 
     def mutate(self, value: ParamValue, rng: np.random.Generator) -> ParamValue:
         cur = self.repair(value)
+        # Gaussian step of 10% of the range (of the log range when log-scaled, so
+        # the perturbation is multiplicative where the parameter is). Wide enough
+        # to escape a local optimum over a few generations, narrow enough that
+        # mutation stays distinguishable from resampling.
         if self.log:
             lo, hi = math.log(self.low), math.log(self.high)
             scale = 0.1 * (hi - lo)
@@ -215,6 +222,8 @@ class CategoricalParam(Param):
     def mutate(self, value: ParamValue, rng: np.random.Generator) -> ParamValue:
         if len(self.choices) == 1:
             return self.choices[0]
+        # Excluding the current value guarantees mutation actually changes the
+        # genotype; a no-op mutation would silently waste the mutation rate.
         cur = self.repair(value)
         others = [c for c in self.choices if c != cur]
         return others[int(rng.integers(0, len(others)))]
@@ -315,6 +324,11 @@ class SearchSpace:
         return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
     def candidate_hash(self, values: Mapping[str, ParamValue]) -> str:
+        # SHA-1 truncated to 16 hex chars (64 bits). This is an identity key for
+        # de-duplication, not a security primitive; 64 bits leaves collision risk
+        # negligible against the millions of candidates a study evaluates. The
+        # family and space version are inside the digest so the same parameter
+        # values under a changed space cannot silently reuse an old identity.
         digest = hashlib.sha1(f"{self.family}|{self.version}|{self.canonical(values)}".encode())
         return f"{self.family}-{digest.hexdigest()[:16]}"
 
@@ -326,6 +340,10 @@ class SearchSpace:
         tuple through the same repair, validation and canonical-hash path used by
         the engines. ``None`` means the space contains a continuous parameter or
         is too large to enumerate safely.
+
+        This is the quantity ADR 0014 bounds the search budget by: a budget above
+        the cardinality cannot be spent, and reporting it as if it had been would
+        overstate how much of the space was actually explored.
         """
         grids: list[tuple[ParamValue, ...]] = []
         raw_size = 1
@@ -340,6 +358,9 @@ class SearchSpace:
                 # FloatParam is continuous; future parameter classes are unknown.
                 return None
             raw_size *= len(grid)
+            # Bail out before the product explodes: enumeration below runs full
+            # repair and validation per tuple, so a 1e6 ceiling keeps the worst
+            # case to seconds. Callers treat None as "not finitely enumerable".
             if raw_size > max_raw_combinations:
                 return None
             grids.append(grid)
@@ -381,6 +402,8 @@ def param_distance(
             and isinstance(va, int | float)
             and isinstance(vb, int | float)
         ):
+            # `or 1.0` covers a degenerate single-value range, where any two
+            # values are equal anyway and the numerator is 0.
             span = float(param.high - param.low) or 1.0
             total += min(abs(float(va) - float(vb)) / span, 1.0)
         else:

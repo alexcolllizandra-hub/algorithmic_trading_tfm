@@ -32,6 +32,8 @@ const nextConfig = {
 
       { source: "/analytics", destination: "/experimentos?tab=analytics", permanent: true },
 
+      { source: "/estudio", destination: "/resultados", permanent: true },
+
     ];
 
   },

@@ -12,7 +12,7 @@
   "relative_path": "data/validated/ETHUSDT/markPrice_5m.parquet",
   "data_sha256": "c4f3ac6dcd51eba9dea67d7b845dcfe236792ecb249becfcda26e9880e0c2a9c",
   "code_version": "0.1.0",
-  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
-  "generated_at": "2026-07-30T11:21:31.875299Z",
+  "git_commit": "b3dc8b735af72f2f12221f2be7e3b3d45d50c210",
+  "generated_at": "2026-08-20T06:37:10.729632Z",
   "notes": "Mark-price klines at the base timeframe (auxiliary)."
 }

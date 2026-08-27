@@ -10,9 +10,9 @@
   "period_end": "2025-12-31T23:45:00Z",
   "row_count": 210432,
   "relative_path": "data/processed/ETHUSDT/15m_development.parquet",
-  "data_sha256": "579fc4a24181fe6f741bad1c243852c5aec4436fd3e2d79d55ecf125f08e2cc3",
+  "data_sha256": "1d1869e73551e5b2ed453339d462763d331e878e7eb946292f2f0c211c11c9a8",
   "code_version": "0.1.0",
-  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
-  "generated_at": "2026-07-30T11:18:48.935778Z",
+  "git_commit": "b3dc8b735af72f2f12221f2be7e3b3d45d50c210",
+  "generated_at": "2026-08-20T06:34:25.137068Z",
   "notes": "Built from 5m. Partition=development. Holdout starts 2026-01-01T00:00:00+00:00 and is frozen."
 }

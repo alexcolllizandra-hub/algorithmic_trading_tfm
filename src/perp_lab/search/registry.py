@@ -14,23 +14,41 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 
-from perp_lab.config.experiment import ExperimentConfig
+from perp_lab.config.experiment import CrtIntradayGrid, ExperimentConfig
+from perp_lab.crt.strategies import (
+    CRT_ROUND_TAG,
+    FamilyMechanics,
+    crt_htf_range_reversal,
+    crt_three_candle_model,
+    double_sweep_reversal,
+    failed_breakout_reversal,
+    opening_range_breakout_retest,
+    pdh_reclaim_short,
+    pdl_reclaim_long,
+    session_liquidity_sweep,
+    session_range_rotation,
+)
 from perp_lab.features.spec import FeatureItemLike
 from perp_lab.search.space import (
     BoolParam,
     CategoricalParam,
+    Param,
     ParamValue,
     SearchSpace,
 )
 from perp_lab.strategies.base import Strategy
 from perp_lab.strategies.breakout import Breakout
 from perp_lab.strategies.cross_asset import CrossAssetConfirmation
+from perp_lab.strategies.flow_price_divergence import FlowPriceDivergence
 from perp_lab.strategies.funding import FundingTilt
 from perp_lab.strategies.funding_reversal import FundingReversal
+from perp_lab.strategies.illiquidity_reversion import IlliquidityReversion
 from perp_lab.strategies.intraday_seasonality import IntradaySeasonality
+from perp_lab.strategies.macro_event_brake import MacroEventBrake
 from perp_lab.strategies.mean_reversion import MeanReversion
 from perp_lab.strategies.momentum import MomentumCrossover
 from perp_lab.strategies.mtf_trend_consensus import MultiHorizonTrendConsensus
+from perp_lab.strategies.taker_flow_extreme import TakerFlowExtreme
 from perp_lab.strategies.volatility_breakout import VolatilityBreakout
 from perp_lab.strategies.xasset_spread_reversion import CrossAssetSpreadReversion
 
@@ -56,7 +74,48 @@ S1_FAMILIES: tuple[str, ...] = (
     "xasset_spread_reversion",
 )
 
-FAMILIES: tuple[str, ...] = (*R3_CLOSED_FAMILIES, *S1_FAMILIES)
+# Round CRT_INTRADAY_V1: the Candle Range Theory batch, pre-specified as a
+# separate round. Registered here so both engines can reach it; deliberately not
+# added to R2 or R3, whose family sets are closed.
+CRT_INTRADAY_V1_FAMILIES: tuple[str, ...] = (
+    "crt_htf_range_reversal",
+    "pdl_reclaim_long",
+    "pdh_reclaim_short",
+    "session_liquidity_sweep",
+    "session_range_rotation",
+    "opening_range_breakout_retest",
+    "failed_breakout_reversal",
+    "double_sweep_reversal",
+    "crt_three_candle_model",
+)
+
+# Gate S2 batch, pre-specified and frozen before any S2 result was observed.
+# Every member reads the taker aggressor side, which no earlier family uses.
+S2_FAMILIES: tuple[str, ...] = (
+    "taker_flow_extreme",
+    "illiquidity_reversion",
+    "flow_price_divergence",
+)
+
+# Gate S3 batch, pre-specified and frozen before any S3 result was observed
+# (ADR 0019, docs/methodology/strategy_catalogue_s3.md).
+S3_FAMILIES: tuple[str, ...] = ("macro_event_brake",)
+
+ROUND_TAGS: dict[str, str] = {
+    **dict.fromkeys(R3_CLOSED_FAMILIES, "R3"),
+    **dict.fromkeys(S1_FAMILIES, "S1"),
+    **dict.fromkeys(S2_FAMILIES, "S2"),
+    **dict.fromkeys(CRT_INTRADAY_V1_FAMILIES, CRT_ROUND_TAG),
+    **dict.fromkeys(S3_FAMILIES, "S3"),
+}
+
+FAMILIES: tuple[str, ...] = (
+    *R3_CLOSED_FAMILIES,
+    *S1_FAMILIES,
+    *S2_FAMILIES,
+    *CRT_INTRADAY_V1_FAMILIES,
+    *S3_FAMILIES,
+)
 
 
 class _FeatureItem:
@@ -75,6 +134,59 @@ def _regime_gate(values: Mapping[str, ParamValue]) -> tuple[str, ...] | None:
         return None
     gate = values.get("regime_gate")
     return tuple(gate) if isinstance(gate, tuple) else None
+
+
+def _macro_event_brake_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.macro_event_brake
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    params = (
+        CategoricalParam("fast", tuple(fam.fast_ma)),
+        CategoricalParam("slow", tuple(fam.slow_ma)),
+        CategoricalParam("event_set", tuple(fam.event_set)),
+        CategoricalParam("pre_bars", tuple(fam.pre_bars)),
+        CategoricalParam("post_bars", tuple(fam.post_bars)),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    fast_choices = sorted(fam.fast_ma)
+    slow_choices = sorted(fam.slow_ma)
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        fast, slow = int(v["fast"]), int(v["slow"])  # type: ignore[arg-type]
+        if fast >= slow:
+            faster = [f for f in fast_choices if f < slow]
+            if faster:
+                v["fast"] = faster[-1]
+            else:
+                slower = [s for s in slow_choices if s > fast]
+                if slower:
+                    v["slow"] = slower[0]
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        if int(v["fast"]) >= int(v["slow"]):  # type: ignore[arg-type]
+            return False, f"fast ({v['fast']}) must be < slow ({v['slow']})"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return MacroEventBrake(
+            fast=int(v["fast"]),  # type: ignore[arg-type]
+            slow=int(v["slow"]),  # type: ignore[arg-type]
+            event_set=str(v["event_set"]),
+            pre_bars=int(v["pre_bars"]),  # type: ignore[arg-type]
+            post_bars=int(v["post_bars"]),  # type: ignore[arg-type]
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    items: tuple[FeatureItemLike, ...] = tuple(
+        _FeatureItem("sma", window=w) for w in sorted({*fam.fast_ma, *fam.slow_ma})
+    )
+    return SearchSpace("macro_event_brake", SPACE_VERSION, params, build, repair, validate, items)
 
 
 def _momentum_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
@@ -603,8 +715,450 @@ def _xasset_spread_reversion_space(exp: ExperimentConfig, symbol: str) -> Search
     )
 
 
+# --------------------------------------------------------------------------- #
+# Gate S2 batch. Every family below reads the taker aggressor side from the raw
+# klines and therefore declares no feature-engine items: the flow windows are
+# strategy parameters being searched, so materialising one column per candidate
+# window would tie the feature frame to the search space.
+# --------------------------------------------------------------------------- #
+
+
+def _taker_flow_extreme_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.taker_flow_extreme
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    params = (
+        CategoricalParam("flow_window", tuple(fam.flow_window)),
+        CategoricalParam("rank_window", tuple(fam.rank_window)),
+        CategoricalParam("extreme_pct", tuple(fam.extreme_pct)),
+        CategoricalParam("holding_bars", tuple(fam.holding_bars)),
+        CategoricalParam("response", tuple(fam.response)),
+        CategoricalParam("min_abs_imbalance", tuple(fam.min_abs_imbalance)),
+        CategoricalParam("flow_lag", tuple(fam.flow_lag)),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        rank = int(v["rank_window"])  # type: ignore[arg-type]
+        holding = int(v["holding_bars"])  # type: ignore[arg-type]
+        flow = int(v["flow_window"])  # type: ignore[arg-type]
+        if holding >= rank:
+            return False, (
+                f"holding_bars ({holding}) must be shorter than rank_window ({rank}); "
+                "otherwise one episode spans the distribution it is ranked against"
+            )
+        if flow >= rank:
+            return False, f"flow_window ({flow}) must be shorter than rank_window ({rank})"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return TakerFlowExtreme(
+            flow_window=int(v["flow_window"]),  # type: ignore[arg-type]
+            rank_window=int(v["rank_window"]),  # type: ignore[arg-type]
+            extreme_pct=float(v["extreme_pct"]),  # type: ignore[arg-type]
+            holding_bars=int(v["holding_bars"]),  # type: ignore[arg-type]
+            response=str(v["response"]),
+            flow_lag=int(v["flow_lag"]),  # type: ignore[arg-type]
+            min_abs_imbalance=float(v["min_abs_imbalance"]),  # type: ignore[arg-type]
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    return SearchSpace("taker_flow_extreme", SPACE_VERSION, params, build, repair, validate, ())
+
+
+def _illiquidity_reversion_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.illiquidity_reversion
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    params = (
+        CategoricalParam("impact_window", tuple(fam.impact_window)),
+        CategoricalParam("rank_window", tuple(fam.rank_window)),
+        CategoricalParam("entry_pct", tuple(fam.entry_pct)),
+        CategoricalParam("exit_pct", tuple(fam.exit_pct)),
+        CategoricalParam("max_holding_bars", tuple(fam.max_holding_bars)),
+        CategoricalParam("min_abs_move", tuple(fam.min_abs_move)),
+        CategoricalParam("flow_lag", tuple(fam.flow_lag)),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    exit_choices = sorted(fam.exit_pct)
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        entry, exit_ = float(v["entry_pct"]), float(v["exit_pct"])  # type: ignore[arg-type]
+        if exit_ >= entry:
+            smaller = [e for e in exit_choices if e < entry]
+            if smaller:
+                v["exit_pct"] = smaller[-1]
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        if float(v["exit_pct"]) >= float(v["entry_pct"]):  # type: ignore[arg-type]
+            return False, "exit_pct must be < entry_pct"
+        window = int(v["impact_window"])  # type: ignore[arg-type]
+        rank = int(v["rank_window"])  # type: ignore[arg-type]
+        if window >= rank:
+            return False, f"impact_window ({window}) must be shorter than rank_window ({rank})"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return IlliquidityReversion(
+            impact_window=int(v["impact_window"]),  # type: ignore[arg-type]
+            rank_window=int(v["rank_window"]),  # type: ignore[arg-type]
+            entry_pct=float(v["entry_pct"]),  # type: ignore[arg-type]
+            exit_pct=float(v["exit_pct"]),  # type: ignore[arg-type]
+            max_holding_bars=int(v["max_holding_bars"]),  # type: ignore[arg-type]
+            flow_lag=int(v["flow_lag"]),  # type: ignore[arg-type]
+            min_abs_move=float(v["min_abs_move"]),  # type: ignore[arg-type]
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    return SearchSpace("illiquidity_reversion", SPACE_VERSION, params, build, repair, validate, ())
+
+
+def _flow_price_divergence_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    fam = exp.strategies.families.flow_price_divergence
+    directions = exp.strategies.allowed_directions
+    gates = exp.strategies.volatility_filter.regime_gate_options
+
+    params = (
+        CategoricalParam("window", tuple(fam.window)),
+        CategoricalParam("rank_window", tuple(fam.rank_window)),
+        CategoricalParam("flow_pct", tuple(fam.flow_pct)),
+        CategoricalParam("move_pct", tuple(fam.move_pct)),
+        CategoricalParam("holding_bars", tuple(fam.holding_bars)),
+        CategoricalParam("response", tuple(fam.response)),
+        CategoricalParam("flow_lag", tuple(fam.flow_lag)),
+        CategoricalParam("direction", tuple(directions)),
+        BoolParam("use_regime_gate"),
+        CategoricalParam("regime_gate", tuple(gates), active_when=("use_regime_gate", True)),
+    )
+
+    def repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+        return v
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        rank = int(v["rank_window"])  # type: ignore[arg-type]
+        holding = int(v["holding_bars"])  # type: ignore[arg-type]
+        window = int(v["window"])  # type: ignore[arg-type]
+        if holding >= rank:
+            return False, f"holding_bars ({holding}) must be shorter than rank_window ({rank})"
+        if window >= rank:
+            return False, f"window ({window}) must be shorter than rank_window ({rank})"
+        return True, None
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return FlowPriceDivergence(
+            window=int(v["window"]),  # type: ignore[arg-type]
+            rank_window=int(v["rank_window"]),  # type: ignore[arg-type]
+            flow_pct=float(v["flow_pct"]),  # type: ignore[arg-type]
+            move_pct=float(v["move_pct"]),  # type: ignore[arg-type]
+            holding_bars=int(v["holding_bars"]),  # type: ignore[arg-type]
+            response=str(v["response"]),
+            flow_lag=int(v["flow_lag"]),  # type: ignore[arg-type]
+            direction=str(v["direction"]),
+            regime_gate=_regime_gate(v),
+        )
+
+    return SearchSpace("flow_price_divergence", SPACE_VERSION, params, build, repair, validate, ())
+
+
+# Round CRT_INTRADAY_V1: nine families, one engine. Each space is the shared grid
+# plus the one or two dimensions that actually distinguish the family, because
+# every extra configuration is paid for in the multiple-testing correction.
+
+
+def _crt_mechanics(exp: ExperimentConfig) -> FamilyMechanics:
+    mech = exp.strategies.families.crt_intraday.mechanics
+    return FamilyMechanics(
+        stop_buffer_bps=mech.stop_buffer_bps,
+        stop_atr_multiple=mech.stop_atr_multiple,
+        max_wait_bars=mech.max_wait_bars,
+        reclaim_within_bars=mech.reclaim_within_bars,
+        reclaim_confirmation_closes=mech.reclaim_confirmation_closes,
+        acceptance_closes=mech.acceptance_closes,
+        acceptance_bps=mech.acceptance_bps,
+        retest_tolerance_bps=mech.retest_tolerance_bps,
+        max_bars_active=mech.max_bars_active,
+        displacement_atr=mech.displacement_atr,
+        cost_bps_per_side=exp.costs.fee_bps_per_side + exp.costs.slippage.baseline_bps,
+        breakeven_after_first_target=mech.breakeven_after_first_target,
+        atr_window=mech.atr_window,
+    )
+
+
+def _crt_shared_params(
+    grid: CrtIntradayGrid,
+    *,
+    directions: tuple[str, ...] | None,
+    include_sweep: bool = True,
+    target_plans: tuple[str, ...] | None = None,
+) -> tuple[Param, ...]:
+    params: list[Param] = []
+    if include_sweep:
+        params.append(CategoricalParam("sweep_bps", tuple(grid.sweep_bps)))
+    params.extend(
+        (
+            CategoricalParam("stop_kind", tuple(grid.stop_kind)),
+            CategoricalParam("target_plan", tuple(target_plans or grid.target_plan)),
+            CategoricalParam("time_stop_bars", tuple(grid.time_stop_bars)),
+            CategoricalParam("min_net_reward_risk", tuple(grid.min_net_reward_risk)),
+        )
+    )
+    if directions is not None:
+        params.append(CategoricalParam("direction", tuple(directions)))
+    return tuple(params)
+
+
+def _crt_shared_kwargs(v: Mapping[str, ParamValue]) -> dict[str, ParamValue]:
+    shared: dict[str, ParamValue] = {
+        "stop_kind": str(v["stop_kind"]),
+        "target_plan": str(v["target_plan"]),
+        "time_stop_bars": int(v["time_stop_bars"]),  # type: ignore[arg-type]
+        "min_net_reward_risk": float(v["min_net_reward_risk"]),  # type: ignore[arg-type]
+    }
+    if "sweep_bps" in v:
+        shared["sweep_bps"] = float(v["sweep_bps"])  # type: ignore[arg-type]
+    if "direction" in v:
+        shared["direction"] = str(v["direction"])
+    return shared
+
+
+def _no_repair(v: dict[str, ParamValue]) -> dict[str, ParamValue]:
+    return v
+
+
+def _always_valid(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+    return True, None
+
+
+def _crt_htf_range_reversal_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.htf_range_reversal
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("candle_timeframe", tuple(fam.candle_timeframe)),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return crt_htf_range_reversal(
+            candle_timeframe=str(v["candle_timeframe"]),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "crt_htf_range_reversal", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
+def _crt_previous_day_space(exp: ExperimentConfig, family: str) -> SearchSpace:
+    """PDL long and PDH short share one space; only the fixed side differs."""
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.previous_day_reclaim
+    mechanics = _crt_mechanics(exp)
+    builder = pdl_reclaim_long if family == "pdl_reclaim_long" else pdh_reclaim_short
+    params = (
+        *_crt_shared_params(crt.grid, directions=None),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+        CategoricalParam("min_sweep_bps", tuple(fam.min_sweep_bps)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return builder(
+            entry_rule=str(v["entry_rule"]),
+            min_sweep_bps=float(v["min_sweep_bps"]),  # type: ignore[arg-type]
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),
+        )
+
+    return SearchSpace(family, SPACE_VERSION, params, build, _no_repair, _always_valid, ())
+
+
+def _crt_session_liquidity_sweep_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.session_liquidity_sweep
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("session_pair", tuple(fam.session_pairs)),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        pair = v["session_pair"]
+        assert isinstance(pair, tuple)
+        return session_liquidity_sweep(
+            swept_session=str(pair[0]),
+            trading_session=str(pair[1]),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    def validate(v: Mapping[str, ParamValue]) -> tuple[bool, str | None]:
+        pair = v["session_pair"]
+        if not isinstance(pair, tuple) or len(pair) != 2 or pair[0] == pair[1]:
+            return False, "a session cannot sweep its own range"
+        return True, None
+
+    return SearchSpace(
+        "session_liquidity_sweep", SPACE_VERSION, params, build, _no_repair, validate, ()
+    )
+
+
+def _crt_session_range_rotation_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.session_range_rotation
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("session", tuple(fam.session)),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return session_range_rotation(
+            session=str(v["session"]),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "session_range_rotation", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
+def _crt_opening_range_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.opening_range_breakout_retest
+    mechanics = _crt_mechanics(exp)
+    # No sweep depth: a continuation setup is defined by a close beyond the
+    # level, not by how far the wick went.
+    params = (
+        *_crt_shared_params(
+            crt.grid,
+            directions=exp.strategies.allowed_directions,
+            include_sweep=False,
+            target_plans=tuple(fam.target_plan),
+        ),
+        CategoricalParam("minutes", tuple(fam.minutes)),
+        CategoricalParam("session", tuple(fam.session)),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return opening_range_breakout_retest(
+            minutes=int(v["minutes"]),  # type: ignore[arg-type]
+            session=str(v["session"]),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "opening_range_breakout_retest", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
+def _crt_failed_breakout_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.failed_breakout_reversal
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("reference_kind", tuple(fam.reference_kind)),
+        CategoricalParam(
+            "candle_timeframe",
+            tuple(fam.candle_timeframe),
+            active_when=("reference_kind", "previous_candle"),
+        ),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return failed_breakout_reversal(
+            reference_kind=str(v["reference_kind"]),
+            candle_timeframe=str(v.get("candle_timeframe", fam.candle_timeframe[0])),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "failed_breakout_reversal", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
+def _crt_double_sweep_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.double_sweep_reversal
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("reference_kind", tuple(fam.reference_kind)),
+        CategoricalParam(
+            "candle_timeframe",
+            tuple(fam.candle_timeframe),
+            active_when=("reference_kind", "previous_candle"),
+        ),
+        CategoricalParam("entry_rule", tuple(fam.entry_rule)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return double_sweep_reversal(
+            reference_kind=str(v["reference_kind"]),
+            candle_timeframe=str(v.get("candle_timeframe", fam.candle_timeframe[0])),
+            entry_rule=str(v["entry_rule"]),
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "double_sweep_reversal", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
+def _crt_three_candle_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
+    crt = exp.strategies.families.crt_intraday
+    fam = crt.three_candle_model
+    mechanics = _crt_mechanics(exp)
+    params = (
+        *_crt_shared_params(crt.grid, directions=exp.strategies.allowed_directions),
+        CategoricalParam("candle_timeframe", tuple(fam.candle_timeframe)),
+        CategoricalParam("displacement_atr", tuple(fam.displacement_atr)),
+    )
+
+    def build(v: Mapping[str, ParamValue]) -> Strategy:
+        return crt_three_candle_model(
+            candle_timeframe=str(v["candle_timeframe"]),
+            displacement_atr=float(v["displacement_atr"]),  # type: ignore[arg-type]
+            mechanics=mechanics,
+            **_crt_shared_kwargs(v),  # type: ignore[arg-type]
+        )
+
+    return SearchSpace(
+        "crt_three_candle_model", SPACE_VERSION, params, build, _no_repair, _always_valid, ()
+    )
+
+
 _BUILDERS: dict[str, Callable[[ExperimentConfig, str], SearchSpace]] = {
     "momentum": _momentum_space,
+    "macro_event_brake": _macro_event_brake_space,
     "breakout": _breakout_space,
     "mean_reversion": _mean_reversion_space,
     "volatility_breakout": _volatility_breakout_space,
@@ -614,6 +1168,18 @@ _BUILDERS: dict[str, Callable[[ExperimentConfig, str], SearchSpace]] = {
     "funding_reversal": _funding_reversal_space,
     "intraday_seasonality": _intraday_seasonality_space,
     "xasset_spread_reversion": _xasset_spread_reversion_space,
+    "taker_flow_extreme": _taker_flow_extreme_space,
+    "illiquidity_reversion": _illiquidity_reversion_space,
+    "flow_price_divergence": _flow_price_divergence_space,
+    "crt_htf_range_reversal": _crt_htf_range_reversal_space,
+    "pdl_reclaim_long": lambda exp, _symbol: _crt_previous_day_space(exp, "pdl_reclaim_long"),
+    "pdh_reclaim_short": lambda exp, _symbol: _crt_previous_day_space(exp, "pdh_reclaim_short"),
+    "session_liquidity_sweep": _crt_session_liquidity_sweep_space,
+    "session_range_rotation": _crt_session_range_rotation_space,
+    "opening_range_breakout_retest": _crt_opening_range_space,
+    "failed_breakout_reversal": _crt_failed_breakout_space,
+    "double_sweep_reversal": _crt_double_sweep_space,
+    "crt_three_candle_model": _crt_three_candle_space,
 }
 
 

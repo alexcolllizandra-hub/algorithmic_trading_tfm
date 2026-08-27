@@ -15,6 +15,10 @@ Convenciones:
 - Las cifras empíricas citan su artefacto o ADR de origen.
 - Las afirmaciones **documentales** (p. ej. estado histórico del holdout durante
   R3) se distinguen de las **reporter_verified** del extracto R3.
-- El holdout `[2026-01-01, 2026-07-01)` permanece cerrado en todo este trabajo.
+- Ninguna cifra de estos capítulos procede del holdout `[2026-01-01, 2026-07-01)`:
+  el arco R1–R4 se resolvió íntegramente en la partición de desarrollo. La
+  partición se abrió una vez el 2026-08-13, fuera de ese arco, sobre una familia
+  ya rechazada; su lectura está retenida y la partición queda consumida. Véase
+  [holdout_audit_status.md](../methodology/holdout_audit_status.md).
 
 Preguntas de investigación de referencia: [experimental_design.md §1](../methodology/experimental_design.md).

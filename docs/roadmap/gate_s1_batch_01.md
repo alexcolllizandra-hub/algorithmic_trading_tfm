@@ -1,5 +1,11 @@
 # Gate S1 — Batch 01 (frozen pre-specification)
 
+> **Nota de estado (2026-08-19) — este documento está congelado y no se edita.**
+> Toda mención a «holdout untouched» describe el estado en su fecha de
+> congelación (2026-08-11). La partición se abrió el 2026-08-13 y está
+> consumida; véase
+> [holdout_audit_status.md](../methodology/holdout_audit_status.md).
+
 **Version:** 1.0 · **Frozen:** 2026-08-11 · **Status:** S1-A passed; S1-B and
 S1-C **not started**
 

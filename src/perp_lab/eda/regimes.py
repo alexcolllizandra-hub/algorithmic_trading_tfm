@@ -8,7 +8,11 @@ the modelling phase will use causal, past-only regime features instead.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
+import numpy as np
 import polars as pl
+from scipy import stats as sstats
 
 
 def tag_trend_volatility_regimes(
@@ -246,3 +250,78 @@ def regime_context(
     return (
         df.group_by(regime_col).agg(pl.len().alias("count"), *aggs).sort("count", descending=True)
     )
+
+
+# --------------------------------------------------------------------------- #
+# Date-defined market regimes (Chapter 5, Figure 5.6 and Table 5.3).
+#
+# These windows are fixed BY DATE in code — not fitted to the data — so that
+# any later chapter that conditions on "the 2022 contraction" refers to exactly
+# the same bars. Boundaries follow the market narrative the thesis text uses:
+# the COVID crash, the 2020-21 expansion, the 2022 contraction with its credit
+# failures, the 2023 recovery and the progressively institutionalised 2024-25
+# market. End dates are exclusive.
+# --------------------------------------------------------------------------- #
+MARKET_REGIMES: tuple[tuple[str, str, str], ...] = (
+    ("covid_crash", "2020-01-01", "2020-04-01"),
+    ("expansion_2020_21", "2020-04-01", "2021-12-01"),
+    ("contraction_2022", "2021-12-01", "2023-01-01"),
+    ("recovery_2023", "2023-01-01", "2024-01-01"),
+    ("institutional_2024_25", "2024-01-01", "2026-01-01"),
+)
+
+
+def market_regime_windows() -> pl.DataFrame:
+    """The frozen date windows as a frame (name, start, end — end exclusive)."""
+    return pl.DataFrame(
+        {
+            "regime": [r[0] for r in MARKET_REGIMES],
+            "start": [datetime.fromisoformat(r[1]).replace(tzinfo=UTC) for r in MARKET_REGIMES],
+            "end": [datetime.fromisoformat(r[2]).replace(tzinfo=UTC) for r in MARKET_REGIMES],
+        }
+    )
+
+
+def market_regime_stats(
+    btc: pl.DataFrame,
+    eth: pl.DataFrame,
+    *,
+    col: str = "log_return",
+    time_col: str = "open_time",
+    bars_per_year: int = 8760,
+) -> pl.DataFrame:
+    """Conditional statistics per date-defined regime (Table 5.3).
+
+    Annualised mean and volatility, excess kurtosis and the BTC-ETH return
+    correlation, computed on exactly the bars inside each frozen window.
+    """
+    joined = (
+        btc.select(pl.col(time_col), pl.col(col).alias("r_btc"))
+        .join(eth.select(pl.col(time_col), pl.col(col).alias("r_eth")), on=time_col, how="inner")
+        .drop_nulls()
+    )
+    rows = []
+    for name, start_s, end_s in MARKET_REGIMES:
+        start = datetime.fromisoformat(start_s).replace(tzinfo=UTC)
+        end = datetime.fromisoformat(end_s).replace(tzinfo=UTC)
+        sub = joined.filter((pl.col(time_col) >= start) & (pl.col(time_col) < end))
+        if sub.height < 100:
+            continue
+        r_btc = sub["r_btc"].to_numpy()
+        r_eth = sub["r_eth"].to_numpy()
+        rows.append(
+            {
+                "regime": name,
+                "start": start_s,
+                "end": end_s,
+                "n_bars": sub.height,
+                "btc_ann_return": float(np.mean(r_btc) * bars_per_year),
+                "btc_ann_vol": float(np.std(r_btc, ddof=1) * np.sqrt(bars_per_year)),
+                "btc_exc_kurtosis": float(sstats.kurtosis(r_btc, fisher=True, bias=False)),
+                "eth_ann_return": float(np.mean(r_eth) * bars_per_year),
+                "eth_ann_vol": float(np.std(r_eth, ddof=1) * np.sqrt(bars_per_year)),
+                "eth_exc_kurtosis": float(sstats.kurtosis(r_eth, fisher=True, bias=False)),
+                "btc_eth_corr": float(np.corrcoef(r_btc, r_eth)[0, 1]),
+            }
+        )
+    return pl.DataFrame(rows)

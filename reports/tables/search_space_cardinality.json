@@ -1,0 +1,49 @@
+{
+  "experiment_config": "configs\\experiment.yaml",
+  "symbol": "BTCUSDT",
+  "spaces": [
+    {
+      "family": "momentum",
+      "finite": true,
+      "raw_cartesian_size": 1152,
+      "valid_raw_after_repair": 1152,
+      "cardinality": 540
+    },
+    {
+      "family": "breakout",
+      "finite": true,
+      "raw_cartesian_size": 162,
+      "valid_raw_after_repair": 162,
+      "cardinality": 108
+    },
+    {
+      "family": "mean_reversion",
+      "finite": true,
+      "raw_cartesian_size": 648,
+      "valid_raw_after_repair": 648,
+      "cardinality": 432
+    },
+    {
+      "family": "volatility_breakout",
+      "finite": true,
+      "raw_cartesian_size": 17496,
+      "valid_raw_after_repair": 17496,
+      "cardinality": 7776
+    },
+    {
+      "family": "funding",
+      "finite": true,
+      "raw_cartesian_size": 1944,
+      "valid_raw_after_repair": 1944,
+      "cardinality": 1296
+    },
+    {
+      "family": "BTC_ETH_confirmation",
+      "finite": true,
+      "raw_cartesian_size": 11664,
+      "valid_raw_after_repair": 11664,
+      "cardinality": 7776
+    }
+  ],
+  "smallest_finite_cardinality": 108
+}

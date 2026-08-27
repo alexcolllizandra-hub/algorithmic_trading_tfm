@@ -28,6 +28,9 @@ dependencies = [
     "rich>=13.9",
     "tqdm>=4.66",
     "scikit-learn>=1.5",
+    "sqlalchemy>=2",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",
 ]
 
 [project.optional-dependencies]
@@ -54,6 +57,14 @@ dev = [
     "streamlit>=1.40",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
+]
+ml = [
+    "lightgbm>=4.5",
+    "numba>=0.60",
+    "shap>=0.46",
+]
+dl = [
+    "torch>=2.13.0",
 ]
 
 [project.scripts]

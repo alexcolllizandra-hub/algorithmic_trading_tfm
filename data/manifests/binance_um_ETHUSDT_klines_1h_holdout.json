@@ -12,7 +12,7 @@
   "relative_path": "data/processed/ETHUSDT/1h_holdout.parquet",
   "data_sha256": "abf6cb54e289ed37bf404fc6ffd14ef1a917b4ea941c4f27969774ef8ae9194d",
   "code_version": "0.1.0",
-  "git_commit": "feefebf83999f68304a1152f66900e76ed565612",
-  "generated_at": "2026-07-30T11:18:49.055671Z",
+  "git_commit": "b3dc8b735af72f2f12221f2be7e3b3d45d50c210",
+  "generated_at": "2026-08-20T06:34:25.245060Z",
   "notes": "Built from 5m. Partition=holdout. Holdout starts 2026-01-01T00:00:00+00:00 and is frozen."
 }

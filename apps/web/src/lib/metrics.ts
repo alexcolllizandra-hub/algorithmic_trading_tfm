@@ -26,6 +26,17 @@ export const METRIC_HELP: Record<string, string> = {
   embargo_bars: "Extra bars held out after a split to prevent short-horizon leakage.",
   funding:
     "Perpetual-futures funding payment applied to the position, signed by side. Never silently set to zero.",
+  p_value:
+    "Bootstrap probability of seeing a mean return at least this good if the strategy had no edge. Small is evidence; it is not corrected for having tested many families.",
+  holm_adjusted_p:
+    "p-value after Holm-Bonferroni control of the family-wise error rate across every family tested. This is the number that decides the verdict.",
+  bh_adjusted_p:
+    "p-value after Benjamini-Hochberg control of the false discovery rate: more permissive than Holm, still applied to the whole study.",
+  pbo: "Probability of Backtest Overfitting: how often the configuration that ranks best in one partition falls below the median in the complementary one. Around 0.5 is what pure noise produces.",
+  deflated_sharpe:
+    "Observed Sharpe discounted by what the best of N trials would produce by chance. The trial count is an assumption, so it is reported for several counting rules.",
+  n_configurations_evaluated:
+    "Total backtests actually run to produce the reported families. Every one of them is a chance to be lucky.",
 };
 
 export function metricHelp(key: string): string | undefined {

@@ -107,8 +107,13 @@ def worktree_state(repo_root: str | Path = ".") -> dict[str, Any]:
     state: dict[str, Any] = dict(git_state(root))
     state["worktree_dirty_any_file"] = state.pop("dirty", None)
 
-    # Tracked modifications, staged and unstaged, in one canonical diff.
-    diff = _git(["diff", "HEAD", "--"], root) or ""
+    # Tracked modifications, staged and unstaged, in one canonical diff --
+    # restricted to RELEVANT_DIRS, the same scope the untracked scan uses. The
+    # unscoped version of this call cost the CRT round three interruptions and
+    # ~23 discarded compute units on 2026-08-17: edits to apps/web and to docs
+    # outside the methodology contract flipped the fingerprint of a running
+    # study whose executed code had not changed. See ADR 0018.
+    diff = _git(["diff", "HEAD", "--", *RELEVANT_DIRS], root) or ""
     has_diff = bool(diff.strip())
     state["diff_sha256"] = _sha256_text(diff) if has_diff else None
     state["diff_bytes"] = len(diff.encode("utf-8"))

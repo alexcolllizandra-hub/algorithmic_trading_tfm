@@ -34,7 +34,7 @@ class QualityReport(BaseModel):
 
 
 def find_duplicates(df: pl.DataFrame, time_col: str = "open_time") -> pl.DataFrame:
-    """Return the timestamps that appear more than once."""
+    """Duplicated timestamps with their occurrence count, as ``count``."""
     return (
         df.group_by(time_col)
         .len()
@@ -97,6 +97,10 @@ def check_ohlc_consistency(df: pl.DataFrame) -> pl.DataFrame:
 
 def flag_extreme_returns(
     df: pl.DataFrame,
+    # 10 sigma, not the usual 3: crypto returns are fat-tailed enough that a
+    # conventional threshold would flag thousands of genuine moves. The bar is
+    # set where a hit is far more likely to be a feed error than a real market
+    # event. 96 bars is 8 hours on the 5m base timeframe.
     sigma: float = 10.0,
     window: int = 96,
     time_col: str = "open_time",
@@ -114,6 +118,8 @@ def flag_extreme_returns(
             pl.col("log_return").abs()
             > sigma * pl.col("log_return").rolling_std(window_size=window, min_samples=window // 2)
         )
+        # Nulls are the warm-up rows and the first bar, where no rolling std
+        # exists yet. Treating them as "not extreme" keeps the row count intact.
         .fill_null(False)
         .alias("extreme")
     )

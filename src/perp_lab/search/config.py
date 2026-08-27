@@ -13,9 +13,10 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from perp_lab.config.experiment import ga_unique_evaluations
+from perp_lab.search.registry import FAMILIES as REGISTERED_FAMILIES
 
 
 class _Strict(BaseModel):
@@ -28,6 +29,10 @@ class GASettings(_Strict):
     # spent; a fixed generation count would consume a seed-dependent number of
     # unique evaluations and make the units of a multi-seed study incomparable.
     max_generations: int = Field(default=100, ge=1)
+    # Conventional GA defaults, deliberately left untuned. Tuning them would be a
+    # second search layered on the first, and its selection bias would not be
+    # captured by the study's test count -- the GA is here as a comparison engine,
+    # not as a subject of optimisation itself.
     crossover_rate: float = Field(default=0.7, ge=0, le=1)
     mutation_rate: float = Field(default=0.2, ge=0, le=1)
     elitism: int = Field(default=1, ge=0)
@@ -80,20 +85,36 @@ class SearchRunConfig(_Strict):
 
     experiment_config: Path = Path("configs/experiment.yaml")
     data_contract: Path = Path("configs/data_contract.yaml")
-    # The R2/R3 families are closed; they remain here so historical configs stay
-    # loadable and reproducible, not because they may be searched again.
-    family: Literal[
-        "momentum",
-        "breakout",
-        "mean_reversion",
-        "volatility_breakout",
-        "funding",
-        "BTC_ETH_confirmation",
-        "mtf_trend_consensus",
-        "funding_reversal",
-        "intraday_seasonality",
-        "xasset_spread_reversion",
-    ]
+    # Validated against the registry rather than restated as a literal here.
+    #
+    # This field used to carry its own hand-written list, which silently drifted:
+    # the CRT round was registered in `search/registry.py` and reachable by both
+    # engines, yet every CRT config failed validation because this copy had never
+    # been updated. Duplicating the vocabulary was the defect; the missing names
+    # were only its symptom. `tests/unit/test_search_config_families.py` fails if
+    # the two ever diverge again.
+    #
+    # The R2/R3 families remain registered — and therefore accepted — so historical
+    # configs stay loadable and reproducible, not because they may be searched again.
+    family: str
+
+    @field_validator("family")
+    @classmethod
+    def _family_must_be_registered(cls, value: str) -> str:
+        """Reject any family the registry cannot build.
+
+        Membership is checked against `registry.FAMILIES`, which is the single
+        source of truth for what both engines can reach. Validation stays as
+        strict as the old literal: an unregistered name fails before any data is
+        loaded, rather than surfacing as a `KeyError` deep inside a search.
+        """
+        if value not in REGISTERED_FAMILIES:
+            raise ValueError(
+                f"Unknown strategy family {value!r}. Registered families are: "
+                f"{', '.join(REGISTERED_FAMILIES)}."
+            )
+        return value
+
     algorithm: Literal["random_search", "genetic_algorithm", "comparison"] = "comparison"
     symbol: str = "BTCUSDT"
     timeframe: str = "1h"
@@ -106,7 +127,9 @@ class SearchRunConfig(_Strict):
     max_folds: int | None = Field(default=None, ge=1)
     # The fixed number of unique, valid, non-cached objective evaluations EVERY
     # engine must spend. Declared in configuration, never inferred from whatever
-    # one engine happened to consume.
+    # one engine happened to consume. ADR 0014 records the corollary: a budget
+    # above the space's finite cardinality cannot be spent, and the shortfall is
+    # reported rather than papered over.
     effective_budget: int = Field(default=2000, ge=1)
     ga: GASettings = GASettings()
     walk_forward_override: WalkForwardOverride | None = None

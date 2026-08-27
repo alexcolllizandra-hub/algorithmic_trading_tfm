@@ -7,6 +7,10 @@ fair-budget definition as Random Search: the budget caps the number of unique
 objective evaluations. Elites and duplicate offspring reuse cached fitness and
 never consume additional evaluations, guaranteeing the GA cannot obtain more
 objective evaluations than Random Search.
+
+The engine comparison this serves is specified in ADR 0009; ADR 0014 records why
+a budget can exceed what a finite space can supply, which is the case the
+termination reasons below distinguish.
 """
 
 from __future__ import annotations
@@ -28,12 +32,16 @@ _MAX_STALLED_GENERATIONS = 5
 
 
 def _fitness(candidate: Candidate) -> float:
+    # -inf, so failed and unevaluated candidates lose every tournament without
+    # needing a special case in selection.
     if candidate.status != CandidateStatus.EVALUATED or candidate.fitness is None:
         return float("-inf")
     return candidate.fitness
 
 
 def _tournament(rng: np.random.Generator, population: list[Candidate], size: int) -> Candidate:
+    # Sampling with replacement: a contender may appear twice in one tournament.
+    # That keeps selection pressure independent of population size.
     idx = rng.integers(0, len(population), size=min(size, len(population)))
     contenders = [population[int(i)] for i in idx]
     return max(contenders, key=_fitness)
@@ -46,6 +54,9 @@ def _crossover(
     rng: np.random.Generator,
     rate: float,
 ) -> dict[str, ParamValue]:
+    # Uniform crossover: each gene is drawn independently from either parent with
+    # equal probability. Chosen over single-point because the parameter vector has
+    # no meaningful ordering, so no locus is more natural to cut at than another.
     child = dict(a)
     if rng.random() < rate:
         for name in space.param_names():
@@ -121,7 +132,8 @@ def run_genetic_algorithm(
             return None
         return Candidate.create(space, values, seed=seed, step=step, parent_ids=parents)
 
-    # -- Generation 0: deterministic unique initial population -------------- #
+    # Generation 0 is sampled to be unique by construction, so the GA and Random
+    # Search start from populations of the same effective size.
     population: list[Candidate] = []
     pop_hashes: set[str] = set()
     attempts = 0
@@ -159,7 +171,6 @@ def run_genetic_algorithm(
 
     record_generation(0, population)
 
-    # -- Evolution loop (budget-driven) ------------------------------------- #
     gen = 0
     stalled_generations = 0
     random_immigrants = 0
@@ -199,7 +210,9 @@ def run_genetic_algorithm(
                 }
             )
 
-        # If the budget ran out mid-fill, keep the population size stable with elites.
+        # If the budget ran out mid-fill, pad with elites so population_size stays
+        # constant across generations. The repeats are deliberate and cost nothing:
+        # cached fitness means they never consume an objective evaluation.
         while len(next_pop) < population_size and ranked:
             next_pop.append(ranked[len(next_pop) % len(ranked)])
         population = next_pop

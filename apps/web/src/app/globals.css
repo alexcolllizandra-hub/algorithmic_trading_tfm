@@ -85,3 +85,43 @@ body {
   background-color: rgb(var(--border));
   border-radius: 6px;
 }
+
+.landing {
+  --bg: 13 17 23;
+  --surface: 19 24 33;
+  --surface-2: 26 33 45;
+  --border: 33 42 56;
+  --fg: 230 237 243;
+  --muted: 139 152 169;
+  --accent: 45 212 191;
+  --accent-2: 56 189 248;
+  --accent-fg: 13 17 23;
+  --positive: 52 211 153;
+  --negative: 248 113 113;
+  --warn: 251 191 36;
+
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg));
+}
+
+.grid-backdrop {
+  background-image:
+    linear-gradient(to right, rgb(var(--border) / 0.45) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--border) / 0.45) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 75%);
+}
+
+.text-gradient {
+  background-image: linear-gradient(100deg, rgb(var(--fg)), rgb(var(--accent)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.rule-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}

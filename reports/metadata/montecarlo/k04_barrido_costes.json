@@ -1,0 +1,27 @@
+{
+  "notebook": "07_monte_carlo_nula",
+  "analysis_id": "k04_barrido_costes",
+  "caption": "Total return of the median seed re-charging fee and slippage at multiples of the cost actually paid, positions untouched.",
+  "period": "development walk-forward out-of-sample; holdout never loaded",
+  "datasets": {
+    "artifacts/runs/r3_full_budget100_ga21/volatility_breakout/study_robustness.json": "b44ba6ab2fc21b7094d12159d18b4bfad0900cb078239d9279a5f96926d1dd85"
+  },
+  "config": {
+    "seed": 42,
+    "code_commit_resolved": "0399be8651e12c1da24149f4b573d4ef15e1c711",
+    "data_contract_cutoff": "2026-07-01",
+    "family": "volatility_breakout (REJECTED)",
+    "symbol": "BTCUSDT",
+    "engine": "random_search",
+    "n_units": 10
+  },
+  "generated_at": "2026-08-27T10:51:43.313597+00:00",
+  "code_commit": "0399be8651e12c1da24149f4b573d4ef15e1c711",
+  "output_path": "reports/figures/montecarlo/k04_barrido_costes.png",
+  "kind": "figure",
+  "dpi": 300,
+  "formats": [
+    "png",
+    "pdf"
+  ]
+}

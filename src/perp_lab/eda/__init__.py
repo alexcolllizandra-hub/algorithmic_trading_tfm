@@ -14,6 +14,7 @@ from perp_lab.eda.bootstrap import (
     vol_stat,
 )
 from perp_lab.eda.calendar import monthly_returns, monthly_volatility, to_year_month_matrix
+from perp_lab.eda.cointegration import engle_granger, engle_granger_by_regime
 from perp_lab.eda.correlation import (
     block_bootstrap_corr_ci,
     correlation_by_sign,
@@ -24,7 +25,22 @@ from perp_lab.eda.correlation import (
 )
 from perp_lab.eda.coverage import dataset_quality_row, longest_gap, monthly_coverage
 from perp_lab.eda.datasets import DataLake, LoadedDataset, assert_no_holdout, utc
-from perp_lab.eda.dependence import autocorrelation, ljung_box_pvalue
+from perp_lab.eda.dependence import (
+    autocorrelation,
+    hurst_rs,
+    leverage_effect,
+    ljung_box_pvalue,
+    rolling_hurst,
+    variance_ratio,
+    variance_ratio_profile,
+)
+from perp_lab.eda.distributions import (
+    fit_student_t,
+    hill_by_k,
+    hill_tail_index,
+    kurtosis_by_aggregation,
+    survival_function,
+)
 from perp_lab.eda.drawdown import (
     add_drawdown,
     drawdown_episodes,
@@ -38,6 +54,13 @@ from perp_lab.eda.events import (
     market_stress_index,
 )
 from perp_lab.eda.extremes import coexceedance_rate, rank_extreme_events
+from perp_lab.eda.features import (
+    feature_correlation_matrix,
+    high_correlation_pairs,
+    label_summary,
+    mutual_information_by_horizon,
+    pca_scree,
+)
 from perp_lab.eda.funding import (
     attach_funding,
     basis_summary,
@@ -57,6 +80,9 @@ from perp_lab.eda.regime_tests import (
     regime_medians_ci,
 )
 from perp_lab.eda.regimes import (
+    MARKET_REGIMES,
+    market_regime_stats,
+    market_regime_windows,
     regime_context,
     regime_duration_summary,
     regime_duration_table,
@@ -106,6 +132,7 @@ from perp_lab.eda.volatility import (
 
 __all__ = [
     "CRYPTO_MARKET_EVENTS",
+    "MARKET_REGIMES",
     "DataLake",
     "LoadedDataset",
     "add_drawdown",
@@ -133,21 +160,34 @@ __all__ = [
     "dataset_quality_row",
     "drawdown_episodes",
     "dunn_posthoc",
+    "engle_granger",
+    "engle_granger_by_regime",
+    "feature_correlation_matrix",
+    "fit_student_t",
     "funding_autocorr",
     "funding_dynamics",
     "funding_future_return_relation",
     "funding_sign_runs",
     "funding_summary",
     "garman_klass_volatility",
+    "high_correlation_pairs",
+    "hill_by_k",
+    "hill_tail_index",
     "historical_var_es",
+    "hurst_rs",
     "kpss_test",
     "kruskal_regime",
+    "kurtosis_by_aggregation",
+    "label_summary",
+    "leverage_effect",
     "liquidity_summary",
     "ljung_box",
     "ljung_box_pvalue",
     "longest_gap",
     "mark_price_basis",
     "market_events_frame",
+    "market_regime_stats",
+    "market_regime_windows",
     "market_stress_index",
     "max_drawdown",
     "mean_stat",
@@ -156,9 +196,11 @@ __all__ = [
     "monthly_returns",
     "monthly_volatility",
     "moving_block_bootstrap",
+    "mutual_information_by_horizon",
     "normal_vs_stress_correlation",
     "order_flow_summary",
     "parkinson_volatility",
+    "pca_scree",
     "peak_lag",
     "rank_extreme_events",
     "realized_volatility",
@@ -174,6 +216,7 @@ __all__ = [
     "regime_transition_matrix_full",
     "return_stats",
     "rolling_correlation",
+    "rolling_hurst",
     "rolling_moments",
     "rolling_tail_dependence",
     "rolling_volatility",
@@ -185,6 +228,7 @@ __all__ = [
     "spearman_correlation",
     "static_correlation",
     "stationarity_report",
+    "survival_function",
     "tag_activity_regime",
     "tag_trend_volatility_regimes",
     "tail_asymmetry",
@@ -194,6 +238,8 @@ __all__ = [
     "top_drawdowns",
     "underwater_fraction",
     "utc",
+    "variance_ratio",
+    "variance_ratio_profile",
     "vol_stat",
     "zero_return_fraction",
 ]

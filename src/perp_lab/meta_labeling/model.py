@@ -21,10 +21,12 @@ exceeds p".
 Backends
 --------
 ``logistic_regression`` and ``random_forest`` come from scikit-learn, a declared
-dependency. ``lightgbm`` and the SHAP explanations are imported lazily: they are
-pre-registered in ``experiment.yaml`` but are not installed in this environment,
-so :func:`build_classifier` raises an explicit, actionable error instead of
-silently substituting another model.
+dependency, so the layer works on a plain ``uv sync --extra dev``. ``lightgbm``
+and the SHAP explanations live in the optional ``ml`` extra
+(``uv sync --extra ml``) and are imported lazily. When the extra is absent
+:func:`build_classifier` raises an explicit, actionable error rather than
+silently substituting another model, so a run can never report LightGBM results
+that a random forest actually produced.
 """
 
 from __future__ import annotations
@@ -395,7 +397,8 @@ def shap_feature_importance(
     if matrix.shape[1] != len(feature_names):
         raise ValueError("feature_names must name every feature column.")
     explainer = shap.Explainer(model.predict_proba, matrix)
-    values = np.asarray(explainer(matrix).values, dtype=float)
+    explanation = cast(Any, explainer(matrix))
+    values = np.asarray(explanation.values, dtype=float)
     if values.ndim == 3:
         values = values[:, :, -1]
     importance = np.abs(values).mean(axis=0)

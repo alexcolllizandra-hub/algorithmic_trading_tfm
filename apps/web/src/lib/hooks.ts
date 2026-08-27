@@ -21,6 +21,10 @@ import type {
   RunListResponse,
   RunValidityResponse,
   SearchAnalyticsResponse,
+  StudyFamilyDetail,
+  StudyHoldoutResponse,
+  StudyRegimesResponse,
+  StudySummaryResponse,
   TimelineResponse,
   TradesResponse,
 } from "@/lib/api-types";
@@ -131,4 +135,25 @@ export function useEdaFigures(params: { key_only?: boolean; theme?: string; limi
 
 export function useMethodology() {
   return useSWR<MethodologyResponse>("/methodology/features", fetcher, opts);
+}
+
+export function useStudySummary() {
+  return useSWR<StudySummaryResponse>("/study/summary", fetcher, opts);
+}
+
+/** Family detail; `key` is `family|SYMBOL` and must be percent-encoded. */
+export function useStudyFamily(key: string | null) {
+  return useSWR<StudyFamilyDetail>(
+    key ? `/study/families/${encodeURIComponent(key)}` : null,
+    fetcher,
+    opts
+  );
+}
+
+export function useStudyRegimes() {
+  return useSWR<StudyRegimesResponse>("/study/regimes", fetcher, opts);
+}
+
+export function useStudyHoldout() {
+  return useSWR<StudyHoldoutResponse>("/study/holdout", fetcher, opts);
 }
