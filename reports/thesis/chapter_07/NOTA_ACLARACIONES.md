@@ -106,3 +106,40 @@ está en cada `run_identity.json`):
 El cierre de 13 familias se generó en el commit `232bc372`
 (`study_dashboard.json → study.source_commit`). Este paquete se exporta desde
 el commit `aaef166322135fe0ad5d24a1564c8d1f5ab5cd61` de `main`.
+
+## 5. La duda de `i06_convergence`, cerrada: qué contaba el eje y verificación de paridad
+
+**Causa exacta (código).** Las trazas de convergencia no registran lo mismo
+en los dos motores:
+
+- Random Search añade un punto a la traza **solo tras una evaluación única
+  que consume presupuesto** (`src/perp_lab/search/random_search.py:61-82`:
+  los duplicados e inválidos hacen `continue` antes del append). Longitud de
+  traza = presupuesto = 100 por pliegue, exacto.
+- El GA añade un punto **en cada llamada a `evaluate()`, incluidas las
+  re-presentaciones cacheadas** de candidatos ya evaluados
+  (`src/perp_lab/search/genetic_algorithm.py:113-123`: `was_cached →
+  counters.cached`, y la traza se alarga igualmente). Élites y miembros de
+  población re-presentados cada generación no consumen presupuesto (el caché
+  por `candidate_id` los resuelve) pero sí alargan la traza: 289-690 entradas
+  por pliegue en el run muestreado, y más en otros.
+
+La figura (builder del notebook 04, `build_search_notebook.py` sección 8)
+promedia ambas trazas sobre un eje rotulado "unique evaluations spent within
+a fold" y rellena hasta la traza más larga — de ahí los >900. **El rótulo es
+incorrecto para la curva del GA** (su eje real son llamadas de evaluación,
+no evaluaciones únicas); no hubo exceso de presupuesto.
+
+**Verificación de paridad independiente de la figura** (script efímero sobre
+los parquets, 2026-08-28): en los **320 runs** de los estudios completos
+(R2, R3, CRT v1, S3), las 640 tablas de candidatos (motor × run) contienen
+**exactamente `presupuesto` filas por pliegue** (300 en R2, 100 en el resto)
+**con `candidate_id` únicos dentro del pliegue**, en las 9.600 celdas
+motor×run×pliegue. Cero violaciones. La paridad RS/GA sobre candidatos
+únicos queda verificada al nivel del artefacto, no de la figura.
+
+**Acción sobre la figura**: `i06` sigue excluida del capítulo 7 y no debe
+citarse con su rótulo actual; la corrección del builder (truncar/reindexar
+la traza del GA a evaluaciones únicas o re-rotular el eje) queda apuntada en
+`CORRECCIONES_CAP4_CAP6.md` como cambio post-entrega, porque regenerar el
+notebook 04 no altera ninguna inferencia pero sí huellas de artefactos.

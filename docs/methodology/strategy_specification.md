@@ -121,3 +121,27 @@ Only candidates that (i) satisfy the constraints and (ii) show positive net OOS
 performance on a majority of folds proceed to the robustness battery
 (`validation_protocol.md`). The frozen holdout is evaluated **once**, after all
 selection and robustness analysis is complete, for the final reported numbers.
+
+---
+
+## As-executed status note (added 2026-08-28; the v0.1 text above is preserved unchanged)
+
+This file is the pre-implementation specification (v0.1, `specification
+only`). Two of its shared conventions were superseded by the implemented
+search spaces that the confirmatory rounds actually froze (registry space
+v1.1.0, ADR 0014 cardinalities, run identities recorded per study):
+
+- **Position sizing**: the volatility-target option was never implemented in
+  the engine; every executed round ran fixed-fraction 1.0 as emitted by the
+  strategy. `risk.max_position_leverage` is not consumed by the backtester;
+  `max_leverage` exists only as a provisional fitness constraint.
+- **Shared exits (ATR stop-loss / take-profit / max holding)**: not part of
+  any executed family's parameter space. The only price stop among non-CRT
+  families is volatility_breakout's `volatility_stop` exit mode; CRT
+  families carry their own trade-management engine; several S1/S2 families
+  use pure time exits.
+
+The executed contracts are the per-round pre-registrations (ADR 0012 SS5 /
+0013 for R2, ADR 0014, strategy_catalogue_s1.md, gate_s2_batch_01.md,
+crt_intraday.md, strategy_catalogue_s3.md + ADR 0019); this note exists so
+the v0.1 conventions are not cited as executed protocol.

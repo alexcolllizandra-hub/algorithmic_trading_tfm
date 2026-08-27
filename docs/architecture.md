@@ -61,7 +61,7 @@ for `N`.
 | `features/` | 🟡 | **Causal feature engine.** Build past-only, explicitly shifted feature frames from validated bars + aux streams. Enforces availability timestamps and leakage checks. See `methodology/feature_catalogue.md`. |
 | `strategies/` | 🟡 | **Strategy representation + baselines.** Encode momentum/breakout/mean-reversion as parameterised rule objects producing entry/exit/direction signals; shared parameter space for RS and GA. |
 | `labeling/` | 🟡 | **Triple-barrier + meta-labeling targets.** Compute upper/lower/vertical barrier outcomes and event-level meta-labels (trade profitable after costs?). |
-| `backtesting/` | 🟡 | **Cost-aware, next-bar backtester.** Fees, slippage, funding, position sizing, leverage/exposure limits, missing-price handling; produces trade and equity series and metrics. |
+| `backtesting/` | 🟡 | **Cost-aware, next-bar backtester.** Fees, slippage, funding and missing-price handling; produces trade and equity series and metrics. Positions are taken as emitted by the strategy (fixed fraction 1.0): the engine implements no position sizing, leverage/exposure limits or stops — the `risk:`/`position_sizing` config blocks are provisional and not consumed. |
 | `validation/` (walk-forward) | 🟡 | **Temporal validation.** Expanding walk-forward fold generator with purging and embargo derived from the max label horizon / holding period. (May live in `validation/` or a new `splits`/`cv` submodule.) |
 | `search/` | 🟡 | **Strategy discovery.** Random Search and Genetic Algorithm over the shared space with a common evaluation harness and equal budget. |
 | `models/` | 🟡 | **Meta-labeling models.** Logistic Regression, Random Forest, LightGBM with probability calibration and validation-only threshold tuning. |

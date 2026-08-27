@@ -1,5 +1,29 @@
 # Chapter 7 — hypotheses and rules of every executed family (code-verified)
 
+**Provenance notice — pre-registration vs retrospective reconstruction.**
+This document is a retrospective reconstruction (2026-08-28) of what was
+executed, verified against code and artifacts. It explains the rounds; it
+does not by itself prove that any hypothesis was fixed before running. That
+proof rests on the frozen documents and run identities, which are:
+
+- *Frozen before execution*: ADR 0012 §5 + ADR 0013 (R2 rebaseline prereg),
+  ADR 0014 (budget rule), `strategy_catalogue_s1.md` (frozen 2026-08-11),
+  `gate_s2_batch_01.md` (frozen 2026-08-11), `crt_intraday.md` (round
+  registered before execution; §6bis pre-declares that no CRT family can be
+  promoted), `strategy_catalogue_s3.md` + ADR 0019 (S3 prereg, N := N+1).
+  `strategy_specification.md` v0.1 predates all code but two of its shared
+  conventions (vol-target sizing, shared ATR exits) were superseded by the
+  implemented spaces — see its as-executed status note.
+- *No standalone prereg exists* for the five R3 families' hypotheses: for
+  volatility_breakout, funding and BTC_ETH_confirmation the hypothesis text
+  lives in the module docstrings. Those docstrings are part of the code
+  committed at the study commit (`aac33577`, recorded in each run identity),
+  which precedes the confirmatory execution — but the thesis must cite them
+  as code-embedded hypotheses at the frozen commit, not as an independent
+  pre-registration document.
+- *Retrospective* (this package): this file, the gate summaries, the
+  inventory and the reconciliation notes.
+
 Every statement below was checked against the code, configs and pre-registration
 documents cited; nothing is taken from memory. Canonical family names are the
 exact strings in `src/perp_lab/search/registry.py` (`FAMILIES`, lines 60–118).
