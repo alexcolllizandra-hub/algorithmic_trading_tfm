@@ -1,0 +1,18 @@
+{
+  "dataset_id": "us_macro_events_2020_2025",
+  "source": "bls.gov + federalreserve.gov (curated CSV in configs/altdata)",
+  "exchange": "external",
+  "market_type": "na",
+  "symbol": "US",
+  "stream": "macroEvents",
+  "timeframe": null,
+  "period_start": "2020-01-14T13:30:00Z",
+  "period_end": "2025-12-18T13:30:00Z",
+  "row_count": 120,
+  "relative_path": "data/external/us_macro_events.parquet",
+  "data_sha256": "e7835e2c4209f3f0d15aaa6d5e11dae41ed35457c16ad0deab190a97580b34ad",
+  "code_version": "0.1.0",
+  "git_commit": "a946ca7533c980046d2f3749bd512256fa22cbda",
+  "generated_at": "2026-08-26T16:03:08.570093Z",
+  "notes": "71 CPI releases (08:30 ET; Oct-2025 reference month not published due to the federal shutdown) and 49 FOMC decisions (14:00 ET statements; the two March-2020 emergency actions carry their actual announcement times). Descriptive annex only."
+}

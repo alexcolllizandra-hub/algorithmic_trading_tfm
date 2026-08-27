@@ -8,15 +8,15 @@
   },
   "config": {
     "seed": 42,
-    "code_commit_resolved": "76cb40a53791fa323eca4632c8ffcc07a90a830a",
+    "code_commit_resolved": "538846f1990eeca2d72f8755bb6ad13f955be99f",
     "data_contract_cutoff": "2026-07-01",
     "family": "volatility_breakout (REJECTED)",
     "symbol": "BTCUSDT",
     "engine": "random_search",
     "n_units": 10
   },
-  "generated_at": "2026-08-19T21:19:27.563495+00:00",
-  "code_commit": "76cb40a53791fa323eca4632c8ffcc07a90a830a",
+  "generated_at": "2026-08-25T17:40:53.912919+00:00",
+  "code_commit": "538846f1990eeca2d72f8755bb6ad13f955be99f",
   "output_path": "reports/figures/montecarlo/k05_cuenta_fondeada.png",
   "kind": "figure",
   "dpi": 300,
