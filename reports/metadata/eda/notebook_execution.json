@@ -1,11 +1,18 @@
 {
-  "generated_at": "2026-08-26T17:26:47.421503+00:00",
+  "generated_at": "2026-08-27T17:14:34.586994+00:00",
   "results": [
     {
-      "notebook": "01_comprehensive_exploratory_data_analysis.ipynb",
+      "notebook": "05_study_closure_and_multiple_testing.ipynb",
       "status": "ok",
-      "started_at": "2026-08-26T17:16:30.978715+00:00",
-      "elapsed_s": 616.3,
+      "started_at": "2026-08-27T17:14:10.895622+00:00",
+      "elapsed_s": 18.5,
+      "error": ""
+    },
+    {
+      "notebook": "08_sintesis.ipynb",
+      "status": "ok",
+      "started_at": "2026-08-27T17:14:29.428105+00:00",
+      "elapsed_s": 5.2,
       "error": ""
     }
   ]

@@ -69,6 +69,11 @@ blocks 24/168/720, 500 resamples; the C2 gate reads block_168).
 
 | File | Shows | Why chapter 7 |
 |---|---|---|
+| `j05_crt_round.png/.pdf` | CRT_INTRADAY_V1: criteria heat map (BTC) + per-seed annualised Sharpe of the concatenated OOS series, both assets; 0/18 cells promoted | Post-closure round verdict (notebook 05 §8; regenerate: `build_results_notebook.py` + `run_notebooks.py 05`) |
+| `j06_overlay_and_dl.png/.pdf` | Gate S3 seed distribution vs its R2 carrier (BTC −0.71→−0.99, ETH −0.49→−0.68, not seed-paired by design) + volforecast QLIKE with DM p-values | Post-closure rounds verdict |
+| `t10_crt_cells.md/.csv` | Seeds passing each criterion per CRT family×asset cell | Per-round result |
+| `t11_s3_overlay.md/.csv` | S3 vs carrier seed-distribution summary (test-fold Sharpe, RS) | Per-round result |
+| `t12_volforecast.md/.csv` | OOS QLIKE/MSE of naive, HAR, LSTM per asset | Annex result |
 | `j01_promotion_criteria.png` | C1–C6 pass counts per family×asset cell | It is the per-round verdict, not the method |
 | `j04_regime_conditioned.png` | Regime-conditioned re-evaluation of the top cells | Results comparison |
 | `i04_rs_vs_ga.png` | Paired RS vs GA outcomes | Engine comparison (results) |

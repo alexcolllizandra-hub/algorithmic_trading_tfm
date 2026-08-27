@@ -6,6 +6,13 @@ budget 100/fold/engine, RS confirmatory; same contract as R3).
 Study-level Holm/BH/DSR/PBO for this round: NOT COMPUTED (the 13-family
 closure predates CRT and was not extended).
 
+"Mean OOS Sharpe (RS)" is the **test-fold Sharpe** (per seed: mean across the
+15 test folds; then averaged across seeds), the same aggregation
+`multi_seed_analysis.json` reports. It is NOT the Sharpe of the concatenated
+OOS series shown per seed in figure `j05_crt_round` panel (b), which weighs
+every bar equally and therefore differs numerically (see
+`METRICAS_DEFINICIONES.md`, section 3).
+
 | Family | Symbol | C1 seeds+ | C2 CI>0 | C3 2x costs | C4 >B&H | Promoted | Mean OOS Sharpe (RS) |
 |---|---|---|---|---|---|---|---|
 | crt_htf_range_reversal | BTC | 3/10 | 0/10 | 0/10 | 0/10 | NO | -0.329 |

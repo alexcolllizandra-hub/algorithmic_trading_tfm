@@ -40,6 +40,14 @@ averaging fold Sharpes (which would overweight short folds), at the cost of
 mixing fold-specific parameterizations into one series. Both variants appear
 in the closure tables; the thesis must state which one each number is.
 
+A third variant appears in the multi-seed artifacts and the CRT/S3 gate
+summaries: the **test-fold Sharpe** (`multi_seed_analysis.json`, metric
+`test_sharpe`) — per seed, the mean of the 15 annualised fold-test Sharpes;
+summaries then average across seeds. It weighs folds equally rather than
+bars, so it differs numerically from the concatenated variant (e.g.
+`pdl_reclaim_long` BTC: +0.163 test-fold mean vs ≈+0.45 concatenated). Never
+compare numbers across variants without saying which one each is.
+
 ## 4. Family p-value (raw, before corrections)
 
 `_bootstrap_p_value` in `study_closure.py`: one-sided stationary-bootstrap

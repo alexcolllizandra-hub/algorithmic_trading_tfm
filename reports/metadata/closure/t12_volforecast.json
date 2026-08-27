@@ -1,7 +1,7 @@
 {
   "notebook": "05_study_closure_and_multiple_testing",
-  "analysis_id": "t02_promotion_criteria",
-  "caption": "Pre-registered promotion criteria: seeds passing each criterion per family-asset cell.",
+  "analysis_id": "t12_volforecast",
+  "caption": "Volatility-forecasting annex: out-of-sample QLIKE and MSE of naive, HAR and LSTM forecasts of 24h-ahead log realized variance, walk-forward over the development period.",
   "period": "development walk-forward out-of-sample; holdout NOT published",
   "datasets": {
     "reports/study_closure/study_dashboard.json": "bdbd51becfe3f071e7eb68ebe8bae8691b4d6f80e67fcaf4542395f70914e313",
@@ -25,19 +25,16 @@
     "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
     "holdout_publication": "AUDIT_PENDING"
   },
-  "generated_at": "2026-08-27T17:15:24.724378+00:00",
+  "generated_at": "2026-08-27T17:15:37.784126+00:00",
   "code_commit": "4e55a9ecc5e48993306c5ebd23ce754ec5623e5e",
-  "output_path": "reports/tables/closure/t02_promotion_criteria.md",
+  "output_path": "reports/tables/closure/t12_volforecast.md",
   "kind": "table",
-  "n_rows": 60,
+  "n_rows": 6,
   "columns": [
-    "family",
     "symbol",
-    "criterion",
-    "key",
-    "passed",
-    "of",
-    "required",
-    "met"
+    "model",
+    "qlike",
+    "mse_log_rv",
+    "r2_oos_vs_naive"
   ]
 }

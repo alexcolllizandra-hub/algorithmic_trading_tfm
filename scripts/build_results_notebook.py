@@ -77,6 +77,12 @@ Three diagnostics that had no obligation to agree, agree:
 A PBO near 0.5 is the signature of a search operating on noise: the winner in
 one half of the data is no likelier than chance to win in the other.
 
+Two confirmatory rounds ran *after* this closure froze its denominator --
+nine intraday liquidity families (CRT_INTRADAY_V1) and a news-driven overlay
+(Gate S3) -- plus a deep-learning volatility annex. Section 8 reads their
+closed artifacts: **all of them reproduce the negative** under the same
+protocol, on universes deliberately kept separate from the thirteen above.
+
 **What is deliberately not published here.** The frozen holdout was opened
 once and its reading exists on disk. It does not appear in this notebook: the
 repository records that opening as `HOLDOUT_LOCKED` pending a provenance
@@ -90,7 +96,8 @@ not depend on that number.
 - **Q3.** Does any survive Holm-Bonferroni or Benjamini-Hochberg?
 - **Q4.** How likely is the best family to be a statistical artefact?
 - **Q5.** Does conditioning on regime rescue anything that failed unconditionally?
-- **Q6.** What can and cannot be concluded from a negative of this shape?
+- **Q6.** Do the post-closure confirmatory rounds (CRT, S3, DL annex) change the verdict?
+- **Q7.** What can and cannot be concluded from a negative of this shape?
 """
 )
 
@@ -137,11 +144,18 @@ NB_CONTRACT = {
         "reports/study_closure/study_dashboard.json",
         "reports/study_closure/study_level_multiple_testing.json",
         "reports/study_closure/regime_conditioned.json",
+        # Post-closure confirmatory rounds (section 8): closed artifacts only.
+        "artifacts/runs/crt_v1_budget100/crt_v1_execution.json",
+        "artifacts/runs/multiseed_20260826T165028Z_0d3a92/study_robustness.json",
+        "artifacts/runs/multiseed_20260826T165028Z_0d3a92/multi_seed_analysis.json",
+        "artifacts/runs/multiseed_momentum_r2_clean_v2/multi_seed_analysis.json",
+        "artifacts/volforecast/results.json",
     ],
     "outputs": {
         "figures": ["j01_promotion_criteria", "j02_multiple_testing",
-                     "j03_deflated_sharpe_pbo", "j04_regime_conditioned"],
-        "tables": [f"t0{i}" for i in range(1, 10)],
+                     "j03_deflated_sharpe_pbo", "j04_regime_conditioned",
+                     "j05_crt_round", "j06_overlay_and_dl"],
+        "tables": [f"t0{i}" for i in range(1, 10)] + ["t10", "t11", "t12"],
         "dirs": ["reports/figures/closure", "reports/tables/closure"],
     },
     # This notebook draws no samples: it reads closed artifacts. Declared so
@@ -828,11 +842,325 @@ print("\nNo holdout metric is computed, displayed or exported by this notebook."
 )
 
 # --------------------------------------------------------------------------- #
+# Post-closure confirmatory rounds
+# --------------------------------------------------------------------------- #
+md(
+    r"""
+## 8. Confirmatory rounds outside the closure — `INFERENTIAL — closed`
+
+The closure above froze its denominator on 2026-08-13. Three blocks of work
+ran **after** that freeze, each under a frozen pre-registration of its own,
+and none of them belongs to the thirteen-family universe:
+
+1. **CRT_INTRADAY_V1** -- nine intraday liquidity families (previous-day-level
+   reclaims, session sweeps, opening-range patterns), run at full study scale:
+   2 assets x 10 seeds x 15 folds, budget 100 per fold per engine, roughly
+   540,000 valid configurations.
+2. **Gate S3** -- `macro_event_brake`, a news-driven overlay that suspends the
+   R2 momentum carrier around scheduled US macro releases (CPI, FOMC, NFP),
+   motivated by the event-study evidence in notebook 01: volatility multiplies
+   by 2.5-3.2x around those releases.
+3. **A deep-learning volatility annex** -- HAR versus LSTM for 24h-ahead
+   realized volatility, with the decision rule frozen before running.
+
+The bookkeeping rule stated in the master inventory applies here: the
+study-level corrections of sections 4-5 (Holm/BH, DSR, PBO) were computed
+over the thirteen-family universe **only** and were *not* recomputed over
+these rounds. What each round carries instead is its own per-cell
+pre-registered verdict (the same C1-C6 promotion criteria), read below from
+the closed artifacts. Merging the universes post hoc would require re-running
+the corrections over a declared 23-family matrix -- deliberately not done, and
+recorded as such.
+"""
+)
+
+code(
+    r"""
+# --- CRT_INTRADAY_V1: nine families, read from their closed artifacts --------
+CRT_ROOT = Path("artifacts/runs/crt_v1_budget100")
+CRT_EXEC = json.loads((CRT_ROOT / "crt_v1_execution.json").read_text(encoding="utf-8"))
+CRT_FAMILIES = list(CRT_EXEC["frozen_order"])
+
+crt_rows, crt_seed_rows = [], []
+for fam in CRT_FAMILIES:
+    rob = json.loads((CRT_ROOT / fam / "study_robustness.json").read_text(encoding="utf-8"))
+    promo = rob["r3_promotion"]
+    for sym, blk in promo["by_symbol"].items():
+        row = {"family": fam, "symbol": sym, "verdict": promo["verdict"]}
+        for crit, d in blk["promotion"].items():
+            row[crit] = int(d["n_pass"])
+        row["criteria_met"] = int(sum(1 for d in blk["promotion"].values() if d["pass"]))
+        crt_rows.append(row)
+    for key, run in rob["per_run"].items():
+        sym, seed_s, engine = key.split("|")
+        if engine != "random_search":
+            continue
+        crt_seed_rows.append({
+            "family": fam, "symbol": sym,
+            "seed": int(seed_s.removeprefix("seed=")),
+            "sharpe": float(run["strategy"]["sharpe"]),
+            "total_return": float(run["strategy"]["total_return"]),
+        })
+
+CRT_CELLS = pl.DataFrame(crt_rows).sort("family", "symbol")
+CRT_SEEDS = pl.DataFrame(crt_seed_rows)
+save_table(CRT_CELLS, "t10_crt_cells", ctx,
+           caption="CRT_INTRADAY_V1: seeds passing each pre-registered criterion per "
+                   "family-asset cell (10 seeds; majority 6/10 required). Round outside "
+                   "the 13-family closure.")
+display(CRT_CELLS)
+
+n_promoted = int((CRT_CELLS["verdict"] == "PROMOTED").sum())
+print(f"\nRound          : {CRT_EXEC['round']} (budget "
+      f"{CRT_EXEC['effective_budget_per_fold_and_engine']}/fold/engine, "
+      f"{CRT_EXEC['n_seeds']} seeds, primary engine {CRT_EXEC['primary_engine']})")
+print(f"Cells promoted : {n_promoted} / {CRT_CELLS.height}")
+best_cell = (CRT_SEEDS.group_by("family", "symbol", maintain_order=True)
+             .agg(pl.col("sharpe").mean().alias("mean_sharpe"),
+                  (pl.col("sharpe") > 0).sum().alias("seeds_positive"))
+             .sort("mean_sharpe", descending=True))
+print("\nMost favourable cells by mean RS Sharpe (annualised, concatenated OOS):")
+display(best_cell.head(4))
+"""
+)
+
+code(
+    r"""
+# --- J05: the CRT round in one figure ----------------------------------------
+fig, (axA, axB) = plt.subplots(1, 2, figsize=(13.6, 5.8),
+                               gridspec_kw={"width_ratios": [1.15, 1.0]})
+
+crit_keys = ["positive_total_return", "bootstrap_sharpe_ci_excludes_zero",
+             "survives_double_costs", "beats_buy_and_hold",
+             "survives_drop_top_trades", "not_confined_to_one_fold"]
+crit_labels = ["positive\nnet return", "bootstrap CI\nexcludes 0",
+               "survives\n2x costs", "beats\nbuy & hold",
+               "survives drop\ntop trades", "not confined\nto one fold"]
+btc = CRT_CELLS.filter(pl.col("symbol") == DASH["primary_symbol"]).sort("family")
+fams_c = btc["family"].to_list()
+Mc = np.array([[row[k] / 10 for k in crit_keys] for row in btc.iter_rows(named=True)])
+im = axA.imshow(Mc, cmap="RdYlGn", vmin=0, vmax=1, aspect="auto")
+for i in range(len(fams_c)):
+    for j in range(len(crit_keys)):
+        axA.text(j, i, f"{round(Mc[i, j] * 10)}/10", ha="center", va="center",
+                 fontsize=8, color="black")
+axA.set_xticks(range(len(crit_keys)))
+axA.set_xticklabels(crit_labels, fontsize=8)
+axA.set_yticks(range(len(fams_c)))
+axA.set_yticklabels(fams_c, fontsize=8.5)
+axA.grid(visible=False)
+axA.set_title(f"(a) Promotion criteria, {DASH['primary_symbol']} - 0/18 cells promoted")
+
+fams_sorted = best_cell.filter(pl.col("symbol") == DASH["primary_symbol"])["family"].to_list()
+colors = {"BTCUSDT": "#0072B2", "ETHUSDT": "#D55E00"}
+for k, sym in enumerate(["BTCUSDT", "ETHUSDT"]):
+    for i, fam in enumerate(fams_sorted):
+        vals = CRT_SEEDS.filter(
+            (pl.col("family") == fam) & (pl.col("symbol") == sym))["sharpe"].to_numpy()
+        xx_ = np.full(vals.size, i) + (-0.17 if k == 0 else 0.17)
+        axB.scatter(xx_, vals, s=22, alpha=0.75, color=colors[sym],
+                    label=sym if i == 0 else None)
+axB.axhline(0, color="black", lw=1.4)
+axB.set_xticks(range(len(fams_sorted)))
+axB.set_xticklabels(fams_sorted, rotation=35, ha="right", fontsize=8)
+axB.set_ylabel("annualised Sharpe (concatenated OOS, RS engine)")
+axB.set_title("(b) Per-seed outcomes: dispersion around zero")
+axB.legend(fontsize=8.5, loc="upper right")
+
+fig.suptitle("CRT_INTRADAY_V1: nine liquidity families at full study scale, "
+             "zero promotions", fontsize=12)
+fig.tight_layout()
+show(fig, "j05_crt_round",
+     caption="The CRT intraday round: share of seeds passing each pre-registered "
+             "criterion on the primary asset (a) and per-seed annualised Sharpe of "
+             "the concatenated OOS series for both assets (b).")
+"""
+)
+
+md(
+    r"""
+The heat map repeats the closure's shape on a fresh hypothesis space. The one
+cell worth narrating is `pdl_reclaim_long` on BTC: **all ten seeds end with a
+positive net return** and six of ten survive doubled costs -- and it still
+fails, because zero of ten bootstrap intervals exclude zero and only two of
+ten survive removing the top trades. That combination has a precise meaning:
+whatever profit exists is concentrated in a handful of large trades and is
+statistically indistinguishable from luck. Under pre-registered criteria this
+is exactly the candidate that a looser, post hoc reading would have promoted
+-- and exactly why the criteria were frozen first.
+
+Panel (b) shows the same from the seed level: family medians hug zero, ETH
+sits mostly below it, and the dispersion across seeds within a family is as
+large as the differences between families -- the signature, once again, of
+selection noise rather than structure.
+"""
+)
+
+code(
+    r"""
+# --- Gate S3: the news overlay against its own carrier -----------------------
+# The comparison the frozen spec required reads the test-fold Sharpe summaries
+# in multi_seed_analysis.json (metric: per-seed mean across test folds). The
+# spec itself flags it as NOT seed-paired: the S3 space uses a reduced carrier
+# grid and spends part of the budget on the gate parameters.
+S3_ROB = json.loads(Path(
+    "artifacts/runs/multiseed_20260826T165028Z_0d3a92/study_robustness.json"
+).read_text(encoding="utf-8"))
+S3_MS = json.loads(Path(
+    "artifacts/runs/multiseed_20260826T165028Z_0d3a92/multi_seed_analysis.json"
+).read_text(encoding="utf-8"))
+R2_MS = json.loads(Path(
+    "artifacts/runs/multiseed_momentum_r2_clean_v2/multi_seed_analysis.json"
+).read_text(encoding="utf-8"))
+
+s3_rows = []
+for sym in ("BTCUSDT", "ETHUSDT"):
+    for label, ms in (("R2 momentum (carrier)", R2_MS), ("S3 macro_event_brake", S3_MS)):
+        st = ms["seed_stability"][f"{sym}|random_search"]
+        s3_rows.append({
+            "symbol": sym, "arm": label, "n_seeds": st["n_seeds"],
+            "seeds_positive": st["n_seeds_positive"],
+            "mean_sharpe": st["mean_across_seeds"], "sd_across_seeds": st["sd_across_seeds"],
+            "min": st["min"], "max": st["max"],
+        })
+S3_TBL = pl.DataFrame(s3_rows)
+save_table(S3_TBL, "t11_s3_overlay", ctx,
+           caption="Gate S3 macro_event_brake vs its R2 momentum carrier: seed "
+                   "distribution of the test-fold Sharpe (RS engine, 10 seeds each). "
+                   "Not seed-paired (reduced carrier grid; budget shared with the gate "
+                   "parameters). Round outside the 13-family closure; N := N+1.")
+display(S3_TBL)
+
+s3_promo = S3_ROB["r3_promotion"]
+print(f"\nS3 verdict : {s3_promo['verdict']}")
+for sym in ("BTCUSDT", "ETHUSDT"):
+    car = S3_TBL.filter((pl.col("symbol") == sym) & (pl.col("arm").str.contains("carrier")))
+    ovl = S3_TBL.filter((pl.col("symbol") == sym) & (pl.col("arm").str.contains("S3")))
+    shift = float(ovl["mean_sharpe"][0]) - float(car["mean_sharpe"][0])
+    print(f"  {sym}: carrier {float(car['mean_sharpe'][0]):+.2f} -> "
+          f"overlay {float(ovl['mean_sharpe'][0]):+.2f}  (shift {shift:+.2f}; "
+          f"overlay seeds positive {int(ovl['seeds_positive'][0])}/10)")
+"""
+)
+
+code(
+    r"""
+# --- Volatility-forecasting annex: HAR vs LSTM under a frozen rule -----------
+VF = json.loads(Path("artifacts/volforecast/results.json").read_text(encoding="utf-8"))
+vf_rows = []
+for sym in ("BTCUSDT", "ETHUSDT"):
+    blk = VF[sym]
+    for label, key in (("naive (random walk)", "naive"), ("HAR", "har"),
+                       ("LSTM (mean of 3 seeds)", "lstm_mean_of_seeds")):
+        m = blk[key]
+        vf_rows.append({"symbol": sym, "model": label,
+                        "qlike": float(m["qlike"]),
+                        "mse_log_rv": float(m["mse_log_rv"]),
+                        "r2_oos_vs_naive": float(m["r2_oos_vs_naive"])})
+VF_TBL = pl.DataFrame(vf_rows)
+save_table(VF_TBL, "t12_volforecast", ctx,
+           caption="Volatility-forecasting annex: out-of-sample QLIKE and MSE of naive, "
+                   "HAR and LSTM forecasts of 24h-ahead log realized variance, walk-forward "
+                   "over the development period.")
+display(VF_TBL)
+
+for sym in ("BTCUSDT", "ETHUSDT"):
+    dm = VF[sym]["dm_har_vs_lstm_mean"]
+    print(f"{sym}: Diebold-Mariano HAR vs LSTM  stat {dm['dm_stat']:+.3f}, "
+          f"p = {dm['p_value']:.3f} (frozen rule: adopt LSTM only if p < 0.05)")
+"""
+)
+
+code(
+    r"""
+# --- J06: overlay and DL annex in one figure ---------------------------------
+fig, (axA, axB) = plt.subplots(1, 2, figsize=(13.2, 5.4))
+
+arm_colors = {"R2 momentum (carrier)": "#0072B2", "S3 macro_event_brake": "#D62728"}
+positions, ticklabels = [], []
+for i, sym in enumerate(["BTCUSDT", "ETHUSDT"]):
+    for j, arm in enumerate(arm_colors):
+        row = S3_TBL.filter((pl.col("symbol") == sym) & (pl.col("arm") == arm))
+        x = i * 1.0 + (j - 0.5) * 0.34
+        mean, sd = float(row["mean_sharpe"][0]), float(row["sd_across_seeds"][0])
+        lo, hi = float(row["min"][0]), float(row["max"][0])
+        axA.plot([x, x], [lo, hi], color=arm_colors[arm], lw=1.4, alpha=0.6)
+        axA.errorbar([x], [mean], yerr=[[sd], [sd]], fmt="o", ms=8, capsize=5,
+                     color=arm_colors[arm], lw=2.2,
+                     label=arm if i == 0 else None)
+    positions.append(i * 1.0)
+    ticklabels.append(sym)
+axA.axhline(0, color="black", lw=1.2)
+axA.set_xticks(positions)
+axA.set_xticklabels(ticklabels)
+axA.set_ylabel("test-fold Sharpe (per-seed mean; dot = seed mean, bar = +-1 sd,\nline = min-max over 10 seeds)")
+axA.set_title("(a) Gate S3: the news brake shifts the whole seed\ndistribution below its carrier")
+axA.legend(fontsize=8.5, loc="upper right", frameon=True, framealpha=0.95)
+axA.grid(axis="x", visible=False)
+
+syms = ["BTCUSDT", "ETHUSDT"]
+models = ["naive (random walk)", "HAR", "LSTM (mean of 3 seeds)"]
+mcolors = ["#999999", "#0072B2", "#D55E00"]
+xx = np.arange(len(syms))
+for j, (mlabel, mc) in enumerate(zip(models, mcolors, strict=True)):
+    vals = [float(VF_TBL.filter((pl.col("symbol") == s) & (pl.col("model") == mlabel))
+                  ["qlike"][0]) for s in syms]
+    axB.bar(xx + (j - 1) * 0.26, vals, width=0.24, color=mc, label=mlabel)
+for i, sym in enumerate(syms):
+    dm = VF[sym]["dm_har_vs_lstm_mean"]
+    axB.text(i, 0.03, f"DM p = {dm['p_value']:.2f}", ha="center", fontsize=9,
+             fontweight="bold")
+axB.set_xticks(xx)
+axB.set_xticklabels(syms)
+axB.set_ylabel("QLIKE (lower is better)")
+axB.set_title("(b) DL annex: LSTM edges HAR on QLIKE,\nnever significantly (frozen rule)")
+axB.legend(fontsize=8.5)
+axB.grid(axis="x", visible=False)
+
+fig.suptitle("Beyond price rules: the news overlay and the deep-learning annex "
+             "reproduce the negative", fontsize=12)
+fig.tight_layout()
+show(fig, "j06_overlay_and_dl",
+     caption="Gate S3: seed distribution of the news-brake overlay's test-fold Sharpe "
+             "against its momentum carrier, not seed-paired by design (a), and "
+             "out-of-sample QLIKE of naive, HAR and LSTM volatility forecasts with the "
+             "Diebold-Mariano p-value of HAR vs LSTM (b).")
+"""
+)
+
+md(
+    r"""
+The overlay panel deserves one sentence of context, because its motivation was
+*real*: notebook 01's event study shows volatility multiplying by 2.5-3.2x
+around CPI and FOMC releases, with p < 0.001. The brake acts on exactly that
+fact -- flatten the carrier around scheduled releases -- and the whole seed
+distribution lands *below* the carrier's on both assets (BTC -0.71 to -0.99,
+ETH -0.49 to -0.68, with zero of ten seeds positive in every cell). The spec's
+own caveat applies -- the comparison is not seed-paired, since the S3 space
+uses a reduced carrier grid and spends budget on the gate parameters -- but
+the shift is consistent across assets and engines. The informative reading: a
+true fact about volatility did not convert into a tradable fact about
+*returns*. Event windows concentrate range, and some of that range was payoff
+the momentum carrier had been capturing; removing them also adds turnover at
+10 bps per forced round trip. The round was pre-registered as one additional
+hypothesis (N := N+1) precisely so this outcome could be reported without
+denominator games.
+
+The DL annex ends the same way for the same reason. The LSTM does edge HAR on
+QLIKE for both assets -- and the decision rule, frozen before the run, asked
+for a Diebold-Mariano rejection at 5%, which never arrives (p = 0.09 on BTC,
+0.65 on ETH). Under a rule chosen after seeing these numbers, "LSTM wins"
+would have been publishable; under the frozen one, the econometric baseline
+stands. That, in miniature, is the discipline this whole chapter argues for.
+"""
+)
+
+# --------------------------------------------------------------------------- #
 # Conclusions
 # --------------------------------------------------------------------------- #
 md(
     r"""
-## 8. What a negative of this shape establishes — `DESCRIPTIVE`
+## 9. What a negative of this shape establishes — `DESCRIPTIVE`
 
 The study found nothing. What, exactly, has been learned?
 
@@ -892,6 +1220,16 @@ conclusions = [
               "execution, cost and fold-geometry guards verified and failing closed",
      "scope_limit": "Costs remain provisional (ADR 0005)",
      "would_have_contradicted": "A guard failing open, or the planted leak going undetected"},
+    {"id": "C7",
+     "claim": "The negative replicates beyond the closed universe: intraday liquidity "
+              "families, a news overlay and a DL volatility model all fail their frozen rules",
+     "strength": "Strong",
+     "basis": f"CRT: {n_promoted}/{CRT_CELLS.height} cells promoted over ~540,000 valid "
+              "configurations; S3: 0/10 seeds positive, seed distribution below the "
+              "carrier on both assets; DL: no Diebold-Mariano rejection at 5%",
+     "scope_limit": "Separate universes; study-level corrections not recomputed over them",
+     "would_have_contradicted": "A promoted CRT cell, an overlay above the diagonal, or "
+                                "a significant DM rejection in the LSTM's favour"},
 ]
 CONC = pl.DataFrame(conclusions)
 save_table(CONC, "t09_conclusions", ctx,
@@ -954,7 +1292,8 @@ the open instead of smoothed away.
 | Q3 (corrections) | RQ1 | RQ1's "no", corrected for having looked thirteen times |
 | Q4 (artefact?) | RQ1 + RQ5 | DSR and PBO quantify how much to trust the best result |
 | Q5 (regime) | RQ4 (regime dependence) | direct answer: no conditional rescue |
-| Q6 (scope of the negative) | cross-cutting | fixes what the thesis does and does not claim |
+| Q6 (post-closure rounds) | RQ1 + RQ5 | external replication of the negative on fresh hypothesis spaces |
+| Q7 (scope of the negative) | cross-cutting | fixes what the thesis does and does not claim |
 
 RQ2 (GA vs RS) is answered in notebook 04; RQ3 (meta-labeling), in the
 infrastructure note above and in notebook 06.
@@ -963,12 +1302,13 @@ infrastructure note above and in notebook 06.
 
 **What this notebook leaves behind, and where it goes.** Figures `j01`
 (promotion criteria), `j02` (multiple testing and count sensitivity), `j03`
-(deflated Sharpe and PBO) and `j04` (regime), plus tables `t01`-`t09`, all
-under `reports/{figures,tables}/closure/`. They feed chapter 6 (results: j01,
-j02, t01-t05), chapter 7 (limitations: j02b, t08 and the holdout section) and
-chapter 8 (discussion: j03, j04, t09). Notebook 06 takes the baton: the
-supervised layer on real data, and what separates economic improvement from
-predictive skill.
+(deflated Sharpe and PBO), `j04` (regime), `j05` (the CRT round) and `j06`
+(the S3 overlay and the DL annex), plus tables `t01`-`t12`, all under
+`reports/{figures,tables}/closure/`. They feed chapter 6 (results: j01, j02,
+t01-t05), chapter 7 (extended rounds and limitations: j05, j06, t10-t12, t08
+and the holdout section) and chapter 8 (discussion: j03, j04, t09). Notebook
+06 takes the baton: the supervised layer on real data, and what separates
+economic improvement from predictive skill.
 """
 )
 

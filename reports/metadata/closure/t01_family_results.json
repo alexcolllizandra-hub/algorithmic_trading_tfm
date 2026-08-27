@@ -4,13 +4,18 @@
   "caption": "Every family-asset cell in the study with its economic outcome, raw p-value and both adjusted p-values.",
   "period": "development walk-forward out-of-sample; holdout NOT published",
   "datasets": {
-    "reports/study_closure/study_dashboard.json": "f6776c51b4deb66a6700b797305d5d69b17e7e169b9033f8262c98fdc5ac7b14",
-    "reports/study_closure/study_level_multiple_testing.json": "7d2b235e196d733506292cf190dba92eb2bf00542acc2bd8a6fb88bd777351e3",
-    "reports/study_closure/regime_conditioned.json": "738b51ea638404313f5ec7bc18cd57bc94562ddda498fe72f98613dba6062449"
+    "reports/study_closure/study_dashboard.json": "bdbd51becfe3f071e7eb68ebe8bae8691b4d6f80e67fcaf4542395f70914e313",
+    "reports/study_closure/study_level_multiple_testing.json": "5489799d8ff0f555b536ba3a3ba9cf1cd80ccbef6119aa03fae4c06000c6942d",
+    "reports/study_closure/regime_conditioned.json": "92e40adf94b5371bbc0b0d1bdbdf358e25c548fc09e1f833aa5ac8fb048c2e9e",
+    "artifacts/runs/crt_v1_budget100/crt_v1_execution.json": "0f59c6740ed77f35e3855bff5865b2b827a97fdb8a3d1b58254215e7ff848509",
+    "artifacts/runs/multiseed_20260826T165028Z_0d3a92/study_robustness.json": "706cc45b8ca36ef385bcdb0abf93b2954eaf42c4ceec346fafed9bd5233d3e0b",
+    "artifacts/runs/multiseed_20260826T165028Z_0d3a92/multi_seed_analysis.json": "4d5acc50d5b2f199370b948b289996e3dcb9a2b97c3c62b07139a1a21e09d779",
+    "artifacts/runs/multiseed_momentum_r2_clean_v2/multi_seed_analysis.json": "c74a78ec6754f67585d717ad07f5ccbf6775b09e7c9cc050bd14b2c94e4dbe32",
+    "artifacts/volforecast/results.json": "65eca34d45b3d8cfae1b5ee8a18f86027f579b0ba7208276b7283805ec292bfa"
   },
   "config": {
     "seed": null,
-    "code_commit_resolved": "0399be8651e12c1da24149f4b573d4ef15e1c711",
+    "code_commit_resolved": "4e55a9ecc5e48993306c5ebd23ce754ec5623e5e",
     "data_contract_cutoff": "2026-07-01",
     "holdout_start": "2026-01-01",
     "n_families": 13,
@@ -20,8 +25,8 @@
     "source_commit": "232bc372d4e283c24f8e6a9bab3ade64671841cc",
     "holdout_publication": "AUDIT_PENDING"
   },
-  "generated_at": "2026-08-27T10:50:22.882353+00:00",
-  "code_commit": "0399be8651e12c1da24149f4b573d4ef15e1c711",
+  "generated_at": "2026-08-27T17:15:24.693882+00:00",
+  "code_commit": "4e55a9ecc5e48993306c5ebd23ce754ec5623e5e",
   "output_path": "reports/tables/closure/t01_family_results.md",
   "kind": "table",
   "n_rows": 22,

@@ -1,0 +1,22 @@
+**Table — CRT_INTRADAY_V1: seeds passing each pre-registered criterion per family-asset cell (10 seeds; majority 6/10 required). Round outside the 13-family closure.**
+
+| family | symbol | verdict | positive_total_return | bootstrap_sharpe_ci_excludes_zero | survives_double_costs | beats_buy_and_hold | survives_drop_top_trades | not_confined_to_one_fold | criteria_met |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| crt_htf_range_reversal | BTCUSDT | REJECTED | 3 | 0 | 0 | 0 | 0 | 7 | 1 |
+| crt_htf_range_reversal | ETHUSDT | REJECTED | 1 | 0 | 0 | 4 | 1 | 9 | 1 |
+| crt_three_candle_model | BTCUSDT | REJECTED | 0 | 0 | 0 | 0 | 0 | 10 | 1 |
+| crt_three_candle_model | ETHUSDT | REJECTED | 3 | 0 | 0 | 7 | 0 | 7 | 2 |
+| double_sweep_reversal | BTCUSDT | REJECTED | 5 | 0 | 1 | 0 | 0 | 6 | 1 |
+| double_sweep_reversal | ETHUSDT | REJECTED | 6 | 0 | 2 | 10 | 0 | 8 | 3 |
+| failed_breakout_reversal | BTCUSDT | REJECTED | 6 | 0 | 0 | 0 | 0 | 4 | 1 |
+| failed_breakout_reversal | ETHUSDT | REJECTED | 0 | 0 | 0 | 6 | 0 | 10 | 2 |
+| opening_range_breakout_retest | BTCUSDT | REJECTED | 0 | 0 | 0 | 0 | 0 | 10 | 1 |
+| opening_range_breakout_retest | ETHUSDT | REJECTED | 1 | 0 | 0 | 10 | 0 | 9 | 2 |
+| pdh_reclaim_short | BTCUSDT | REJECTED | 5 | 0 | 2 | 0 | 3 | 9 | 1 |
+| pdh_reclaim_short | ETHUSDT | REJECTED | 0 | 0 | 0 | 3 | 0 | 10 | 1 |
+| pdl_reclaim_long | BTCUSDT | REJECTED | 10 | 0 | 6 | 0 | 2 | 9 | 3 |
+| pdl_reclaim_long | ETHUSDT | REJECTED | 0 | 0 | 0 | 4 | 0 | 10 | 1 |
+| session_liquidity_sweep | BTCUSDT | REJECTED | 3 | 0 | 0 | 0 | 0 | 7 | 1 |
+| session_liquidity_sweep | ETHUSDT | REJECTED | 0 | 0 | 0 | 9 | 0 | 10 | 2 |
+| session_range_rotation | BTCUSDT | REJECTED | 1 | 0 | 1 | 0 | 0 | 9 | 1 |
+| session_range_rotation | ETHUSDT | REJECTED | 0 | 0 | 0 | 10 | 0 | 10 | 2 |

@@ -35,6 +35,9 @@ FIGURES = [
     "search/i05_seed_instability",
     "closure/j02_multiple_testing",
     "closure/j03_deflated_sharpe_pbo",
+    "eda/f27_macro_event_study",
+    "closure/j05_crt_round",
+    "closure/j06_overlay_and_dl",
     "ml/m01_economia_por_fold",
     "ml/m02_habilidad_predictiva",
     "montecarlo/k03_nula_con_la_estrategia_dentro",
@@ -55,10 +58,11 @@ md(
 notebooks 01-07 already established, in the order the argument holds together.
 **On what data?** On their figures, exactly as they were saved -- nothing is
 computed here and there is not a single analysis cell. **What will the reader
-find?** The whole thesis in twelve images: a difficult market, an apparatus
-that does not fool itself, a search that finds noise, and two layers --
-supervised learning and Monte Carlo -- that confirm the verdict from angles
-that had no obligation to agree.
+find?** The whole thesis in fifteen images: a difficult market, an apparatus
+that does not fool itself, a search that finds noise, a verdict that
+replicates on fresh hypothesis spaces -- nine intraday families, a news
+overlay, a deep-learning annex -- and two layers, supervised learning and
+Monte Carlo, that confirm it from angles that had no obligation to agree.
 
 If only ten minutes are available to assess this work, this is the document.
 """
@@ -90,6 +94,9 @@ NB_CONTRACT = {
         "reports/figures/search/i05_seed_instability.png",
         "reports/figures/closure/j02_multiple_testing.png",
         "reports/figures/closure/j03_deflated_sharpe_pbo.png",
+        "reports/figures/eda/f27_macro_event_study.png",
+        "reports/figures/closure/j05_crt_round.png",
+        "reports/figures/closure/j06_overlay_and_dl.png",
         "reports/figures/ml/m01_economia_por_fold.png",
         "reports/figures/ml/m02_habilidad_predictiva.png",
         "reports/figures/montecarlo/k03_nula_con_la_estrategia_dentro.png",
@@ -164,7 +171,29 @@ that. The deflated Sharpe says the best result does not clear what luck already
 promised; the PBO, pinned at 0.5, says picking the in-sample best is a coin
 toss. Three independent diagnostics, one message. *(Notebook 05.)*
 
-## 6. And with supervised learning? It improves without knowing
+## 6. The verdict replicates: nine more families, the news, and deep learning
+
+{fig("eda/f27_macro_event_study")}
+
+{fig("closure/j05_crt_round")}
+
+{fig("closure/j06_overlay_and_dl")}
+
+After the closure froze its denominator, three more attempts ran under frozen
+rules of their own -- and reproduced the negative. Nine intraday liquidity
+families at full study scale: zero of eighteen cells promoted, including one
+(`pdl_reclaim_long` on BTC) that ends positive on all ten seeds and still
+fails, its profit concentrated in a handful of trades no bootstrap interval
+can distinguish from luck. A news brake built on a *true* fact -- volatility
+multiplies by 2.5-3.2x around CPI and FOMC releases, the first image -- that
+shifts its carrier's whole seed distribution downward on both assets, with
+zero of ten seeds positive: a real fact about volatility is not yet a
+tradable fact about returns. And an LSTM that edges the econometric HAR on
+QLIKE for both assets but never earns the pre-registered Diebold-Mariano
+rejection. Each round counted itself before running; none moved the verdict.
+*(Notebooks 01 and 05.)*
+
+## 7. And with supervised learning? It improves without knowing
 
 {fig("ml/m01_economia_por_fold")}
 
@@ -177,7 +206,7 @@ and cutting exposure, not from predicting. An economic improvement is not
 evidence of knowledge, and keeping the two apart is what stops the first being
 published as if it were the second. *(Notebook 06, exploratory contract.)*
 
-## 7. The image that summarises the work
+## 8. The image that summarises the work
 
 {fig("montecarlo/k03_nula_con_la_estrategia_dentro")}
 
@@ -188,7 +217,7 @@ inside the chance band, at percentiles from 0.22 to 0.97 -- exactly the way ten
 draws scatter. The whole of chapter 5's statistics lives in this image.
 *(Notebook 07.)*
 
-## 8. And the warning with a number of its own
+## 9. And the warning with a number of its own
 
 {fig("montecarlo/k05_cuenta_fondeada")}
 
@@ -202,11 +231,12 @@ the platform's simulator exists. *(Notebook 07.)*
 
 ---
 
-## What these twelve images claim, and what they do not
+## What these fifteen images claim, and what they do not
 
-They claim: that within this bounded space -- interpretable rules and their
-meta-labeling layer, two perpetuals, hourly bars, six years, realistic costs --
-a rigorous search finds nothing that survives counting how many times we
+They claim: that within this bounded space -- interpretable rules, intraday
+liquidity patterns, a news overlay, a deep-learning volatility layer and a
+meta-labeling layer, two perpetuals, hourly bars, six years, realistic costs
+-- a rigorous search finds nothing that survives counting how many times we
 looked, and that the measuring instrument was validated before and after with
 planted traps, verified budgets and purpose-built nulls.
 
