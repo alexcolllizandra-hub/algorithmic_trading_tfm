@@ -8,15 +8,15 @@
   },
   "config": {
     "seed": 42,
-    "code_commit_resolved": "538846f1990eeca2d72f8755bb6ad13f955be99f",
+    "code_commit_resolved": "0399be8651e12c1da24149f4b573d4ef15e1c711",
     "data_contract_cutoff": "2026-07-01",
     "family": "volatility_breakout (REJECTED)",
     "symbol": "BTCUSDT",
     "engine": "random_search",
     "n_units": 10
   },
-  "generated_at": "2026-08-25T17:40:44.651976+00:00",
-  "code_commit": "538846f1990eeca2d72f8755bb6ad13f955be99f",
+  "generated_at": "2026-08-27T10:51:42.738677+00:00",
+  "code_commit": "0399be8651e12c1da24149f4b573d4ef15e1c711",
   "output_path": "reports/figures/montecarlo/k03_nula_con_la_estrategia_dentro.png",
   "kind": "figure",
   "dpi": 300,

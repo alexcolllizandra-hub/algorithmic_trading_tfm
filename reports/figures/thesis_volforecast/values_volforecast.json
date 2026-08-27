@@ -1,0 +1,39 @@
+{
+  "per_symbol": {
+    "BTCUSDT": {
+      "har_qlike": 0.5073,
+      "lstm_qlike": 0.4886,
+      "lstm_beats_har_qlike": true,
+      "dm_stat": -1.69,
+      "dm_p": 0.091,
+      "dm_rejects_for_lstm": false,
+      "har_r2_vs_naive": 0.307,
+      "lstm_r2_vs_naive": 0.2896,
+      "lstm_qlike_per_seed": {
+        "42": 0.5073,
+        "43": 0.5109,
+        "44": 0.4745
+      },
+      "n_oos": 32400
+    },
+    "ETHUSDT": {
+      "har_qlike": 0.4693,
+      "lstm_qlike": 0.4277,
+      "lstm_beats_har_qlike": true,
+      "dm_stat": 0.457,
+      "dm_p": 0.6475,
+      "dm_rejects_for_lstm": false,
+      "har_r2_vs_naive": 0.293,
+      "lstm_r2_vs_naive": 0.298,
+      "lstm_qlike_per_seed": {
+        "42": 0.4475,
+        "43": 0.432,
+        "44": 0.4254
+      },
+      "n_oos": 32400
+    }
+  },
+  "rule_lstm_beats_qlike_both_symbols": true,
+  "rule_dm_rejects_for_lstm_any_symbol": false,
+  "verdict_lstm_adds_value": false
+}

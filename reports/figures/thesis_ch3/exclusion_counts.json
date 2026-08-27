@@ -1,0 +1,13 @@
+{
+  "n_folds": 15,
+  "purge_bars_per_fold": 96,
+  "embargo_bars_per_fold": 118,
+  "embargo_position": "removed from the END of the nominal training window (train->val boundary)",
+  "purge_position": "removed from the END of the nominal validation window (val->test boundary)",
+  "bars_excluded_total_embargo": 1770,
+  "bars_excluded_total_purge": 1440,
+  "fold0_train_end_effective": "2021-12-26T02:00:00+00:00",
+  "fold0_nominal_train_end": "2021-12-31T00:00:00+00:00",
+  "last_test_end": "2025-12-10T00:00:00+00:00",
+  "development_days_never_tested_at_the_end": 22
+}
