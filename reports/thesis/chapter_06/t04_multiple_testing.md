@@ -1,0 +1,7 @@
+**Table — Rejections at alpha = 0.05 before and after each multiple-testing correction.**
+
+| correction | n_tests | n_rejected_at_alpha | smallest_p_value |
+| --- | --- | --- | --- |
+| none (raw) | 13 | 0 | 0.3455 |
+| Benjamini-Hochberg (FDR) | 13 | 0 | 0.9965 |
+| Holm-Bonferroni (FWER) | 13 | 0 | 1 |
