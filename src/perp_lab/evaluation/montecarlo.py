@@ -401,7 +401,7 @@ def coin_flip_pass_probability(
     pattern) and flips a fair coin for the DIRECTION of every trade segment,
     re-pricing costs from the flipped turnover at the run's realised cost rate
     and funding from the flipped positions. The evaluation windows start at a
-    random day so paths sample the whole history. This is the honest baseline
+    random day so paths sample the whole history. This is the baseline
     the strategy has to beat: same activity, zero information.
     """
     position = ledger["position"].to_numpy().astype(float)

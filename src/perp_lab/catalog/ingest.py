@@ -91,7 +91,7 @@ REGISTERED_PARQUET_SUFFIXES: tuple[str, ...] = (
 
 
 class IngestError(RuntimeError):
-    """Raised when the source tree cannot be indexed honestly."""
+    """Raised when the source tree cannot be indexed consistently."""
 
 
 @dataclass
@@ -553,7 +553,7 @@ def _ingest_gate_verdicts(
 
     Per-criterion R3 bars live in the thesis report when it is present; every
     other family is recorded as rejected under its gate's pre-registered
-    criterion, which is the honest summary of the closed study.
+    criterion, matching the closure report.
     """
     written = 0
     for family_key, family in families.items():

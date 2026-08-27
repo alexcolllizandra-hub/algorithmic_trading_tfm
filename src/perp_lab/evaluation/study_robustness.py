@@ -438,7 +438,7 @@ def analyse_study_robustness(
     """Per-run robustness for every unit, plus counts across seeds.
 
     Each unit's bootstrap uses its own out-of-sample series only. The aggregate is
-    a tally of how many seeds pass each test, which is the honest way to summarise
+    a tally of how many seeds pass each test, which summarises
     repeated runs on one price history.
     """
     per_run: dict[str, dict[str, Any]] = {}

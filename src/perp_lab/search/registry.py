@@ -446,7 +446,7 @@ def _cross_asset_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:
             f"No reference symbol configured for {target!r} in "
             f"strategies.families.cross_asset.reference_symbol "
             f"(known: {sorted(fam.reference_symbol)}). This family cannot fall back to "
-            "a single-asset strategy; the dependency is the point."
+            "a single-asset strategy; the cross-asset dependency is intended."
         )
 
     params = (

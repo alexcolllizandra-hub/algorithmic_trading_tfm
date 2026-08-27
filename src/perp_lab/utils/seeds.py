@@ -1,12 +1,9 @@
-"""Deterministic seeding for reproducibility.
+"""Deterministic seed derivation.
 
-A multi-seed study needs more than one number. Every stochastic component --
-each search engine, each asset, each fold's regime fit -- must draw from its own
-independent stream, and every stream must be reconstructible from a single
-recorded base seed. Reusing one seed for several components couples them for no
-reason: two engines started from the same RNG state are not "comparable", they
-merely share an arbitrary starting point, and a stream that shifts when an
-unrelated component changes its number of draws is not reproducible.
+A base seed is expanded into independent streams per experimental unit
+(asset, engine, fold, ...) via SeedSequence with a blake2b-hashed spawn key,
+so repeated runs replay identical randomness and distinct units never share
+a stream. The schedule is recorded per run in seed_schedule.json.
 """
 
 from __future__ import annotations

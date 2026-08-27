@@ -105,7 +105,7 @@ FROM read_parquet($files)
 GROUP BY status
 ORDER BY status
 """
-"""How many rows sit under each status — the honest denominator for a coverage claim."""
+"""Row counts per status; denominator for any coverage claim."""
 
 SQL_DESCRIBE = "SELECT * FROM read_parquet($files) LIMIT 0"
 

@@ -4,7 +4,7 @@ Each research gate corrected for multiplicity *inside itself*: R3 across its fiv
 families, S1 across its four, S2 across its three. Nobody ever corrected across
 the gates. But the decision that matters for the thesis -- "of everything we
 tried, did anything work?" -- selects the best family out of all of them, so the
-honest denominator is the whole study, not one batch.
+denominator is the whole study, not one batch.
 
 This module rebuilds that denominator from the persisted artifacts and applies
 the correction once, over every family at once. It recomputes nothing: it reads
@@ -392,7 +392,7 @@ def aligned_matrix(series: dict[str, pl.DataFrame]) -> tuple[list[str], np.ndarr
 def evaluations_examined(units: list[StudyUnit]) -> int:
     """Total strategy configurations actually scored anywhere in the study.
 
-    This is the honest answer to "how many things did you try": every candidate
+    Answers "how many configurations were tried": every candidate
     the searches evaluated, across both engines, all folds, all seeds, both
     assets. It is far larger than the family count and is the denominator the
     deflated Sharpe ratio deserves.

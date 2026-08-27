@@ -1,23 +1,9 @@
-"""Deterministic identity of an experiment run.
+"""Deterministic identity fingerprint for experiment runs.
 
-A commit hash alone does not identify what was executed. Almost every run during
-development happens on a dirty worktree, and "commit abc123 plus some uncommitted
-changes" is not reproducible. This module records the commit *and* a deterministic
-hash of the uncommitted state, so two runs can be proven to have executed the same
-code or proven not to have.
-
-What is hashed, in order of decreasing obviousness:
-
-* the resolved configuration, as it was actually validated (not as it was typed);
-* the methodological contract (the data contract and experiment YAML);
-* the SHA-256 of the development data partitions the run may read;
-* the commit, branch and, when the worktree is dirty, the diff of tracked files
-  plus the contents of untracked files under the directories that can change
-  behaviour: ``src/``, ``tests/``, ``configs/`` and the contract documentation.
-
-Untracked files matter as much as modified ones: a new module under ``src/`` that
-is imported by the run is invisible to ``git diff`` yet changes the result
-completely.
+Hashes the resolved config, the data/experiment contracts, the SHA-256 of the
+readable development partitions, and the git state (commit + diff + untracked
+files under src/, tests/, configs/). Runs on dirty worktrees are common during
+development, so the commit alone is not enough to identify what executed.
 """
 
 from __future__ import annotations

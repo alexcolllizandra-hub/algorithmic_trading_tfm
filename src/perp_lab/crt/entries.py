@@ -186,7 +186,7 @@ def confirmed_pivots(bars: Sequence[Bar], span: int) -> tuple[Pivot, ...]:
 
     ``confirmed_index`` is ``span`` bars after the pivot itself, and consumers
     must filter on it. The pivot price is perfectly well defined at the centre
-    bar; the point is that nobody could have known it there.
+    bar, where it was not yet knowable.
     """
     if span < 1:
         raise EntryError("A swing point needs at least one bar on each side.")

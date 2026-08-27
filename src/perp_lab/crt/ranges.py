@@ -1,10 +1,9 @@
 """Reference ranges and liquidity levels, available only after they are finished.
 
-Every level this module produces carries an ``available_from`` timestamp, and
-that column is the whole point of the module.
+Every level carries an ``available_from`` timestamp; consumers must join on
+it rather than on the calendar day.
 
-The failure it exists to prevent is subtle and extremely easy to write by
-accident. "Yesterday's high" is a single number for the whole of today, so it is
+The failure this prevents is easy to write by accident. "Yesterday's high" is a single number for the whole of today, so it is
 tempting to compute a daily high and broadcast it across the day's bars. Do that
 without shifting and every bar in a day knows the high of the day it is in,
 including bars that occur before the high was set. A strategy built on that

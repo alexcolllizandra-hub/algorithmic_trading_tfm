@@ -5,7 +5,7 @@ conflating them is the standard way a machine-learning layer is talked into a
 strategy it does not deserve.
 
 **Predictive** (:func:`predictive_metrics`) asks whether the probabilities are
-informative and honest. The headline is **PR-AUC**, not ROC-AUC: meta-labels are
+informative and well calibrated. The headline is PR-AUC, not ROC-AUC: meta-labels are
 imbalanced (after costs, most signals are not worth taking) and ROC-AUC is
 dominated by the majority class, so it stays high while precision on the
 minority class collapses. ROC-AUC is reported as a secondary, comparable number.
@@ -40,7 +40,7 @@ _EPSILON = 1e-15
 
 @dataclass(frozen=True)
 class PredictiveMetrics:
-    """How informative and how honest the predicted probabilities are.
+    """Discrimination and calibration of the predicted probabilities.
 
     ``pr_auc_lift`` is PR-AUC divided by the base rate: the factor by which the
     model beats "accept everything". It is the scale-free version of PR-AUC and

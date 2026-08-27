@@ -16,7 +16,7 @@ evidence about the signal.
 **Intrabar order is unknowable.** With one timeframe and no tick data, a bar
 whose range contains both the stop and the target cannot say which came first.
 The policy is therefore fixed at the pessimistic reading — the stop fills —
-*and the trade is flagged*, because the honest number to report is not the
+*and the trade is flagged*, because the number to report is not the
 result but how much of the result rests on an assumption. See
 :func:`ambiguity_metrics`.
 
@@ -102,7 +102,7 @@ class ExitReason(StrEnum):
 class IntrabarPolicy(StrEnum):
     """How a bar containing both the stop and a target is resolved.
 
-    Only one member, and that is the point: with a single timeframe there is no
+    Single member by design: with one timeframe there is no
     defensible optimistic option, so the choice is recorded rather than offered.
     A finer timeframe would justify adding one, and the enum is where it would go.
     """

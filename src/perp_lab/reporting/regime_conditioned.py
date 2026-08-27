@@ -9,7 +9,7 @@ changes no parameter, and promotes nothing.
 **Everything here is a generated hypothesis, not a validated result.** Slicing a
 flat record into regimes is exactly how a researcher manufactures a false
 positive: with enough slices something always looks good. Two safeguards keep
-that honest. The regime labels are causal, so no slice is defined using
+that constraint. The regime labels are causal, so no slice is defined using
 information the strategy could not have had; and the whole block is corrected for
 multiplicity within itself, over every family-by-regime cell at once.
 

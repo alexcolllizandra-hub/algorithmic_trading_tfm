@@ -34,13 +34,13 @@ class ResultStatus(StrEnum):
     """Deliberately not run, because it was inapplicable rather than unfinished."""
 
     NOT_EXECUTED = "NOT_EXECUTED"
-    """Planned and in scope, but never run. An honest gap, not a zero."""
+    """Planned and in scope, but never run; distinct from a zero result."""
 
     NOT_AVAILABLE = "NOT_AVAILABLE"
     """Ran, but this particular figure was not persisted and cannot be recovered."""
 
     HOLDOUT_LOCKED = "HOLDOUT_LOCKED"
-    """Withheld by the holdout protocol. The absence of a metric is the point."""
+    """Withheld by the holdout protocol; no metric is stored by design."""
 
 
 TERMINAL_STATUSES: frozenset[ResultStatus] = frozenset(

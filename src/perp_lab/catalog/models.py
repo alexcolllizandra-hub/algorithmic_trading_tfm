@@ -597,7 +597,7 @@ class HoldoutRegistryEntry(Base, StatusMixin, ProvenanceMixin):
     the dataset and the exact command. It stores no observation, no return and no
     metric from inside the window.
 
-    The default state is the honest one: ``HOLDOUT_LOCKED`` and ``audited =
+    Defaults to ``HOLDOUT_LOCKED`` and ``audited =
     False``. A ``CHECK`` constraint refuses the incoherent claim of an audited
     entry that was never opened.
     """

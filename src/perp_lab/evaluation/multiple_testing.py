@@ -1,10 +1,6 @@
-"""Selection-bias corrections for a search that tried many strategies.
+"""Selection-bias and multiple-testing corrections.
 
-A backtest reports the performance of the *winner* of a search, not of a
-strategy chosen in advance. The more configurations are tried, the higher the
-best in-sample Sharpe ratio will be even when every configuration is worthless,
-so an uncorrected Sharpe ratio is not evidence. This module implements the three
-corrections the Gate S1 contract requires:
+Implements the corrections required by the Gate S1 contract:
 
 * :func:`expected_maximum_sharpe` -- the Sharpe ratio a *null* search of this
   size would be expected to produce by luck alone;

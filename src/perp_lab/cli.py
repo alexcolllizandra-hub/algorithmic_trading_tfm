@@ -232,8 +232,8 @@ def _contract_payload(cfg: Any) -> dict[str, Any]:
 def _development_dataset_hashes(cfg: Any, symbols: tuple[str, ...]) -> dict[str, str]:
     """SHA-256 of the development partitions the study is allowed to read.
 
-    Only development manifests are consulted. Reaching for a holdout manifest to
-    "complete" the record would be exactly the access this project forbids.
+    Only development manifests are consulted; holdout manifests are never read
+    here.
     """
     from perp_lab.config import Paths
 

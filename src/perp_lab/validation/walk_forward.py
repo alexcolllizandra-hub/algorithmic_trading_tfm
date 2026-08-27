@@ -1,12 +1,8 @@
-"""Expanding walk-forward partitioning with purging and embargo (Chapter 5.7).
+"""Expanding walk-forward partitioning with purging and embargo.
 
-Implements the validation geometry accepted in ADR 0008; the holdout boundary it
-refuses to cross is fixed by ADR 0003.
-
-The development period ``[development_start, development_end_exclusive)`` (the
-frozen holdout is *after* ``development_end_exclusive`` and never touched here)
-is cut into chronological folds. Each fold has three **disjoint, time-ordered**
-roles:
+Geometry per ADR 0008; the holdout boundary comes from ADR 0003. The
+development period is cut into chronological folds with three disjoint,
+time-ordered roles:
 
     TRAIN            (fit transforms / strategy behaviour)
       |-- embargo gap
