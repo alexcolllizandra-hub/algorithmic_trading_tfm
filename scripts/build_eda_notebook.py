@@ -8,6 +8,8 @@ figure/table exports and academic interpretation into
 Run with: ``uv run python scripts/build_eda_notebook.py``
 """
 
+# ruff: noqa: RUF001  # typographic characters are intentional in figure text
+
 from __future__ import annotations
 
 import subprocess

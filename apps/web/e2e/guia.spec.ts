@@ -122,7 +122,9 @@ test("6. la aclaración de fine-tuning aparece en pantalla", async ({ page }) =>
 test("7. el panel 13 no publica ninguna métrica del holdout", async ({ page }) => {
   const panel = page.locator('[data-guide-panel="conclusion"]');
   await expect(panel.getByRole("heading", { name: "Holdout final" })).toBeVisible();
-  await expect(panel.getByText("Holdout bloqueado").first()).toBeVisible();
+  await expect(
+    panel.getByText("Holdout abierto una vez: resultado no auditado").first()
+  ).toBeVisible();
   await expect(panel.getByText(/La lectura del holdout queda retenida/)).toBeVisible();
   await expect(panel.getByText(/La ausencia de métricas es deliberada/).first()).toBeVisible();
 

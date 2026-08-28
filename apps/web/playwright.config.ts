@@ -17,6 +17,9 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    // The suite asserts the Spanish copy; without this, Playwright's Chromium
+    // reports en-US and the app's browser-language detection flips it to EN.
+    locale: "es-ES",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   // The app must be built beforehand with NEXT_PUBLIC_API_BASE=/mock-api/v1

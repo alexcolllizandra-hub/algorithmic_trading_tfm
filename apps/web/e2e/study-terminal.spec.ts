@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("1. la cabecera resume el estudio con cifras de la API", async ({ page }) => {
-  await expect(page.locator("h1")).toContainText("Cierre del estudio");
+  await expect(page.locator("h1")).toContainText("Resultados y cierre del estudio");
   await expect(page.getByText("Familias probadas").first()).toBeVisible();
   await expect(page.getByText("Configuraciones evaluadas").first()).toBeVisible();
   await expect(page.getByText("12,345").first()).toBeVisible();
@@ -55,7 +55,9 @@ test("5. el panel de regímenes es exploratorio", async ({ page }) => {
 
 test("6. el holdout aparece bloqueado y sin métricas", async ({ page }) => {
   const card = page.getByRole("heading", { name: "Holdout final" }).locator("../../..");
-  await expect(card.getByText("Holdout bloqueado").first()).toBeVisible();
+  await expect(
+    card.getByText("Holdout abierto una vez: resultado no auditado").first()
+  ).toBeVisible();
   await expect(card.getByText("Ventana reservada", { exact: true })).toBeVisible();
   await expect(card.getByText("Motivo del aislamiento", { exact: true })).toBeVisible();
   await expect(card.getByText(/Auditoría independiente del pipeline/)).toBeVisible();
