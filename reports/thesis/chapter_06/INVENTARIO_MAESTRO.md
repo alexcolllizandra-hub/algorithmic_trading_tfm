@@ -18,7 +18,7 @@ CSV gemelo: `INVENTARIO_MAESTRO.csv`.
 | funding (R3) | ídem | ídem | 100 | 60.000 | ídem | SÍ |
 | BTC_ETH_confirmation (R3) | ídem | ídem | 100 | 60.000 | ídem | SÍ |
 | mtf_trend_consensus (S1-B) | **solo piloto** | **BTC × 1 × 15** | **25** | 750 | run `s1b_pilot_*` + `gate_s1b/s1b_pilot_report.json` | SÍ (nivel piloto) |
-| funding_reversal (S1-B) | solo piloto (señal parcial, p crudo 0,060) | BTC × 1 × 15 | 25 | 750 | ídem | SÍ (nivel piloto) |
+| funding_reversal (S1-B) | solo piloto (p bootstrap RS 0,7455; sin señal parcial — un p=0,060 citado antes no tiene respaldo en artefactos y se retira) | BTC × 1 × 15 | 25 | 750 | ídem | SÍ (nivel piloto) |
 | intraday_seasonality (S1-B) | solo piloto | BTC × 1 × 15 | 25 | 750 | ídem | SÍ (nivel piloto) |
 | xasset_spread_reversion (S1-B) | solo piloto | BTC × 1 × 15 | 25 | 750 | ídem | SÍ (nivel piloto) |
 | taker_flow_extreme (S2-B) | solo piloto | 2 × 3 × 15 | 25 | 4.500 | runs `s2b_pilot_*` + `gate_s2b/` | SÍ (nivel piloto) |

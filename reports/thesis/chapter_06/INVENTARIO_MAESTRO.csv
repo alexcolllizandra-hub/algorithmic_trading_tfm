@@ -6,7 +6,7 @@ volatility_breakout,R3,confirmatoria cerrada (señal parcial),BTC+ETH,10,15,100,
 funding,R3,confirmatoria cerrada,BTC+ETH,10,15,100,60000,artifacts/runs/r3_full_budget100_ga21/funding,SI,estudio completo multi-semilla
 BTC_ETH_confirmation,R3,confirmatoria cerrada,BTC+ETH,10,15,100,60000,artifacts/runs/r3_full_budget100_ga21/btc_eth_confirmation,SI,estudio completo multi-semilla
 mtf_trend_consensus,S1-B,piloto (gate no superado),BTC,1,15,25,750,artifacts/runs/s1b_pilot_* + reports/gate_s1b,SI (nivel piloto),incluida en el universo de 13 con evidencia SOLO de piloto; estudio completo S1-C nunca ejecutado
-funding_reversal,S1-B,piloto (señal parcial p=0.060),BTC,1,15,25,750,artifacts/runs/s1b_pilot_* + reports/gate_s1b,SI (nivel piloto),idem
+funding_reversal,S1-B,piloto (p bootstrap RS 0.7455; sin señal parcial),BTC,1,15,25,750,artifacts/runs/s1b_pilot_* + reports/gate_s1b,SI (nivel piloto),idem; un p=0.060 citado antes no tiene respaldo en artefactos y se retira
 intraday_seasonality,S1-B,piloto (gate no superado),BTC,1,15,25,750,artifacts/runs/s1b_pilot_* + reports/gate_s1b,SI (nivel piloto),idem
 xasset_spread_reversion,S1-B,piloto (gate no superado),BTC,1,15,25,750,artifacts/runs/s1b_pilot_* + reports/gate_s1b,SI (nivel piloto),idem
 taker_flow_extreme,S2-B,piloto (gate no superado),BTC+ETH,3,15,25,4500,artifacts/runs/s2b_pilot_* + reports/gate_s2b,SI (nivel piloto),incluida en el universo de 13 con evidencia de piloto de 3 semillas

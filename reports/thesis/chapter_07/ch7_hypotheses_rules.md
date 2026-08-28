@@ -36,6 +36,16 @@ constraints (`repair()`/`validate()`) live only in `registry.py`
 (`SPACE_VERSION = "1.1.0"`). The search YAMLs (`configs/search_*.yaml`) carry
 the execution contract: family, symbol, seed, budget, GA hyper-parameters.
 
+## Benchmark convention
+
+The buy-and-hold baseline everywhere in this package is the FUNDED
+always-long perp on the strategy's own OOS bars: market return minus the
+ledger's per-bar funding, minus one entry at the 5 bps contract rate
+(`evaluation/baselines.py::_evaluate` — "not given an artificially cheap
+execution"). This is the series behind the `beats_buy_and_hold` criterion and
+the `bh_*` columns; the price-only return is a different, larger number
+(BTC +100.7% vs +52.3%) and is used nowhere.
+
 ## Execution controls actually active (all rounds)
 
 `src/perp_lab/backtesting/engine.py`, `run_backtest` (lines ~149–286):

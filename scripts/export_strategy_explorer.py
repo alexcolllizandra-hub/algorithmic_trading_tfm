@@ -226,7 +226,25 @@ def main() -> int:
                 },
             )
             if "curve" not in asset["buy_and_hold"]:
-                bh_equity = np.cumprod(1.0 + ledger["oo_return"].to_numpy())
+                # Same convention as the tabulated buy_and_hold metrics: the
+                # FUNDED always-long perp (real per-bar funding + one entry at
+                # the 5 bps contract rate; evaluation/baselines.py::_evaluate).
+                # A raw price-only cumprod would disagree with the table by the
+                # whole funding bill (~+48pt on BTC over the OOS window).
+                market = np.nan_to_num(ledger["oo_return"].to_numpy().astype(float))
+                funding = np.nan_to_num(
+                    ledger["funding_rate_in_bar"].to_numpy().astype(float)
+                )
+                bh_net = market - funding
+                bh_net[0] -= 5.0 / 1e4
+                bh_equity = np.cumprod(1.0 + bh_net)
+                table_total = entry["buy_and_hold"]["total_return"]
+                if abs(float(bh_equity[-1]) - (1.0 + table_total)) > 1e-6:
+                    raise AssertionError(
+                        f"{family}/{symbol}: funded B&H curve ends at "
+                        f"{bh_equity[-1]:.8f} but the tabulated total implies "
+                        f"{1.0 + table_total:.8f}"
+                    )
                 asset["buy_and_hold"]["curve"] = decimate(bh_equity)
             asset["_net_sum"] = asset["_net_sum"] + net
             asset["_nets"][seed] = net

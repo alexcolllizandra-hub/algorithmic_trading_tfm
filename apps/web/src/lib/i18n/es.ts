@@ -1010,7 +1010,7 @@ export const es = {
       "Con la media seleccionada, cada métrica es la mediana entre semillas; el rango min–max aparece al pasar el cursor.",
     bestSeed: "Mejor",
     worstSeed: "Peor",
-    benchmarkLine: "Comprar y mantener (misma ventana)",
+    benchmarkLine: "Comprar y mantener con funding (perpetuo, misma ventana)",
     averageLine: "Media de las semillas",
     seedLine: "Semilla {seed}",
     configTitle: "Configuración ganadora por pliegue",

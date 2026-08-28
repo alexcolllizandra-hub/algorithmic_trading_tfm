@@ -4,8 +4,21 @@
 Everything in this folder derives from **closed artifacts only** (no new
 searches, no training, no significance tests, no holdout access). Regenerate
 with `uv run python scripts/build_ch7_results.py` (deterministic: no
-timestamps, no RNG). Chapter 6 owns the method figures (optimism, DSR/PBO,
-RS-vs-GA, multiple testing) — none is repeated here.
+timestamps, no RNG; verified byte-identical across two runs). Chapter 6 owns
+the method figures (optimism, DSR/PBO, RS-vs-GA, multiple testing) — none is
+repeated here.
+
+**Benchmark convention (binding for every equity figure and table).** The
+buy-and-hold columns and curves are the study's FUNDED always-long perp
+baseline: `oo_return − funding_rate_in_bar` per bar, minus one 5 bps entry at
+the contract cost rate (`evaluation/baselines.py::_evaluate`). BTC +52.3%,
+ETH −21.9% over the OOS window; the price-only return (+100.7% / +0.9%) is a
+different quantity and is drawn nowhere. The builder asserts, on every
+regeneration, that each drawn curve's final equity equals its tabulated total
+(44 checks, absolute tolerance 1e-6 on final equity) — a mismatch aborts the
+build. `ch7_ready_to_write.md` is the drafting brief;
+`INFORME_DISCREPANCIAS.md` records the resolved discrepancies (benchmark
+convention, the withdrawn S1-B p=0.06, round-interpretation fixes).
 
 ## Documents
 
@@ -37,6 +50,12 @@ dispersion across seeds, never a confidence interval.
 | `fig_7_4_crt_complementary` | (a) pdl_reclaim_long BTC equity, all 10 seeds (positive yet unpromotable); (b) ETH criteria heat map — complements `j05_crt_round` (chapter 6), which shows BTC | 7.5 |
 | `fig_7_5_s3_seed_distributions` | Gate S3: per-seed test-fold Sharpe of overlay vs carrier, labelled NOT seed-paired (reduced carrier grid, budget shared with gate parameters) | 7.6 |
 | `fig_7_6_rounds_synthesis` | All 16 full-study families: mean and min–max across seeds of the concatenated-OOS annualised Sharpe, colored by round; pilots deliberately excluded (different design) | 7.7 |
+| `fig_7_7_crt_example_illustrative` | ILLUSTRATIVE pdl_reclaim_long mechanics on one real archived trade (first trade, fold 0, seed 891022, RS — fixed selection rule, a losing trade): PDL, sweep, reclaim, next-bar-open entry, engine-recorded exit. Not additional evidence | 7.5 (didactic inset) |
+
+Additional tables/docs: `ch7_activity_veto.csv` (min-trades veto per cell —
+disqualifier, never a seventh criterion; 0/30 triggered),
+`ch7_figure_captions.md` (English captions with engine/assets/seeds/period/
+aggregation per figure), `ch7_ready_to_write.md`, `INFORME_DISCREPANCIAS.md`.
 
 `i06_convergence` is intentionally NOT included: its "unique evaluations"
 axis exceeds the per-fold budget of 100 and remains unexplained; do not cite

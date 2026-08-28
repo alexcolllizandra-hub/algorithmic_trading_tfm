@@ -1013,7 +1013,7 @@ export const en = {
       "With the average selected, each metric is the median across seeds; hover to see the min–max range.",
     bestSeed: "Best",
     worstSeed: "Worst",
-    benchmarkLine: "Buy and hold (same window)",
+    benchmarkLine: "Buy and hold with funding (perp, same window)",
     averageLine: "Average of the seeds",
     seedLine: "Seed {seed}",
     configTitle: "Winning configuration per fold",

@@ -1,4 +1,4 @@
-"""Build the chapter-7 export package (tables + figures) from closed artifacts.
+﻿"""Build the chapter-7 export package (tables + figures) from closed artifacts.
 
 Run with: ``uv run python scripts/build_ch7_results.py``
 
@@ -108,6 +108,7 @@ def _mean_fold_sharpe(run_dir: Path, engine: str) -> tuple[float | None, int]:
 # --------------------------------------------------------------------------- #
 unit_rows: list[dict] = []
 crit_rows: list[dict] = []
+veto_rows: list[dict] = []
 for round_, fam, sdir, budget in STUDIES:
     rob = _read_json(sdir / "study_robustness.json")
     promo = rob.get("r3_promotion")
@@ -128,6 +129,20 @@ for round_, fam, sdir, budget in STUDIES:
                         "verdict": promo["verdict"],
                     }
                 )
+            # The minimum-activity VETO is not a majority criterion: it can only
+            # disqualify (too few OOS trades), never promote. Kept in its own
+            # table so it is never read as a seventh criterion.
+            few = blk["rejections"]["depends_on_few_trades"]
+            veto_rows.append(
+                {
+                    "round": round_,
+                    "family": fam,
+                    "symbol": sym,
+                    "min_trades_required": int(few["min_trades_required"]),
+                    "n_seeds_below_min_trades": int(few["n_seeds_below_min_trades"]),
+                    "veto_triggered": bool(few["triggered"]),
+                }
+            )
     else:
         # R2 predates the r3_promotion block: its robustness artifact carries
         # only the four per-seed counts. The remaining two criteria are "not
@@ -190,6 +205,8 @@ for round_, fam, sdir, budget in STUDIES:
 
 UNITS = pl.DataFrame(unit_rows).sort("round", "family", "symbol", "engine", "seed")
 UNITS.write_csv(OUT / "ch7_results_units.csv")
+VETO = pl.DataFrame(veto_rows).sort("round", "family", "symbol")
+VETO.write_csv(OUT / "ch7_activity_veto.csv")
 CRIT = pl.DataFrame(crit_rows).sort("round", "family", "symbol", "criterion")
 CRIT.write_csv(OUT / "ch7_criteria.csv")
 
@@ -332,7 +349,10 @@ ROUNDS = pl.DataFrame(
             "hypothesis": "Momentum, searched independently per outer fold, survives realistic costs",
             "main_result": "0/10 seeds positive on either asset (RS); mean concatenated Sharpe "
             "negative on both",
-            "closure": "Family rejected under the pre-registered C1-C6 majority rules",
+            "closure": "Family rejected on the FOUR criteria its artifact evaluates (positive "
+            "return, bootstrap CI, double costs, beats funded B&H); drop-top-trades and "
+            "fold-locality were introduced later and are NOT EVALUATED for R2 - absent, "
+            "not failed",
         },
         {
             "round": "R3 (full study, 5 families)",
@@ -345,8 +365,10 @@ ROUNDS = pl.DataFrame(
             "round": "S1-B (pilot: BTC, 1 seed, budget 25)",
             "hypothesis": "Four cheaper structural families are mechanically viable and worth a "
             "full study",
-            "main_result": "All four mechanically viable; no performance case (best raw "
-            "bootstrap p = 0.06 for funding_reversal); RC p = 0.9955, SPA p = 1.0",
+            "main_result": "All four mechanically viable; no performance case: best one-sided "
+            "bootstrap p on the primary engine (RS) is 0.7455 (funding_reversal), BH "
+            "leaves zero rejections; RC p = 0.9955, SPA p = 1.0. (A previously "
+            "circulated p = 0.06 has no verifiable source and was withdrawn.)",
             "closure": "Full S1-C study configs written but NOT executed (human decision "
             "pending); pilots entered the closure as tested hypotheses",
         },
@@ -371,9 +393,12 @@ ROUNDS = pl.DataFrame(
             "round": "S3 (full study, news overlay)",
             "hypothesis": "Suspending the R2 momentum carrier around scheduled US macro "
             "releases improves it (event windows carry 2.5-3.2x volatility)",
-            "main_result": "0/10 seeds positive; seed distribution of test-fold Sharpe shifts "
-            "BELOW the carrier on both assets (BTC -0.71 -> -0.99, "
-            "ETH -0.49 -> -0.68; not seed-paired by design)",
+            "main_result": "0/10 seeds positive. On the MEAN FOLD-TEST SHARPE the seed "
+            "distribution sits below the carrier's on both assets (BTC -0.71 -> -0.99, "
+            "ETH -0.49 -> -0.68); other metrics were not all compared and no claim is "
+            "made about them. The comparison is NOT seed-paired and does NOT causally "
+            "isolate the macro filter (reduced carrier grid, budget shared with gate "
+            "parameters)",
             "closure": "Hypothesis falsified as pre-registered (N := N+1); outside the closure",
         },
     ]
@@ -405,14 +430,53 @@ def _concat_ledger(run_dir: Path, engine: str) -> pl.DataFrame:
     for f in range(15):
         p = run_dir / f"{engine}_fold{f}_test_equity.parquet"
         if p.exists():
-            frames.append(pl.read_parquet(p).select("open_time", "net_return", "oo_return"))
+            frames.append(
+                pl.read_parquet(p).select(
+                    "open_time", "net_return", "oo_return", "funding_rate_in_bar"
+                )
+            )
     return pl.concat(frames).sort("open_time")
+
+
+# The tabulated buy-and-hold is the ALWAYS-LONG PERP baseline of the study:
+# market (oo_return) minus the ledger's own per-bar funding minus one entry at
+# the contract cost rate (evaluation/baselines.py::_evaluate). Curves must use
+# the same recipe as the table; drawing raw price-only cumprod here once
+# produced a ~+48pt gap on BTC (funding on a perp long is not a rounding term).
+CONTRACT_COST_RATE = (4.0 + 1.0) / 1e4
+
+
+def _funded_bh_equity(led: pl.DataFrame) -> np.ndarray:
+    market = np.nan_to_num(led["oo_return"].to_numpy().astype(float))
+    funding = np.nan_to_num(led["funding_rate_in_bar"].to_numpy().astype(float))
+    net = market - funding
+    net[0] -= CONTRACT_COST_RATE  # single entry, |diff([0->1])| = 1 unit of turnover
+    return np.cumprod(1.0 + net)
+
+
+# Every drawn curve is asserted against its tabulated total return before any
+# figure is written. Tolerance is explicit and absolute on final equity.
+CURVE_TOLERANCE = 1e-6
+_curve_checks: list[tuple[str, float, float]] = []
+
+
+def _check_curve(label: str, curve_end: float, table_total: float) -> None:
+    _curve_checks.append((label, curve_end, 1.0 + table_total))
+    if abs(curve_end - (1.0 + table_total)) > CURVE_TOLERANCE:
+        raise AssertionError(
+            f"curve/table mismatch for {label}: curve ends at {curve_end:.8f} but the "
+            f"table implies {1.0 + table_total:.8f} (tolerance {CURVE_TOLERANCE})"
+        )
 
 
 def _equity_curves(
     round_: str, family: str, symbol: str
 ) -> tuple[list[tuple[int, np.ndarray, np.ndarray]], np.ndarray, np.ndarray]:
-    """Per-seed cumulative equity (RS engine) plus buy & hold on the union of bars."""
+    """Per-seed cumulative equity (RS engine) plus the funded B&H baseline.
+
+    Both series come from the same concatenated OOS ledgers and match the
+    tabulated totals in ch7_results_units.csv (asserted, tolerance 1e-6).
+    """
     sub = UNITS.filter(
         (pl.col("round") == round_)
         & (pl.col("family") == family)
@@ -425,10 +489,20 @@ def _equity_curves(
         led = _concat_ledger(Path(row["run_dir"]), "random_search")
         t = led["open_time"].to_numpy()
         eq = np.cumprod(1.0 + led["net_return"].to_numpy())
+        _check_curve(
+            f"{family}/{symbol}/seed={row['seed']}/strategy",
+            float(eq[-1]),
+            float(row["total_return_net"]),
+        )
         curves.append((row["seed"], t, eq))
         if bench_t is None or t.size > bench_t.size:
             bench_t = t
-            bench_v = np.cumprod(1.0 + led["oo_return"].to_numpy())
+            bench_v = _funded_bh_equity(led)
+            _check_curve(
+                f"{family}/{symbol}/buy_and_hold(funded)",
+                float(bench_v[-1]),
+                float(row["bh_total_return"]),
+            )
     return curves, bench_t, bench_v
 
 
@@ -447,7 +521,7 @@ for ax, sym in zip(axes, SYMBOLS, strict=True):
             color="#0072B2",
             label="strategy, one curve per seed" if i == 0 else None,
         )
-    ax.plot(bt, bv, lw=1.8, color="#555555", ls="--", label="buy & hold (same OOS bars)")
+    ax.plot(bt, bv, lw=1.8, color="#555555", ls="--", label="buy & hold, funded perp (same bars)")
     ax.axhline(1.0, color="black", lw=0.8)
     ax.set_title(f"{sym} - {len(curves)} RS seeds")
     ax.set_ylabel("growth of 1 unit (net of costs)")
@@ -526,7 +600,7 @@ for i, (_seed, t, eq) in enumerate(curves):
         color="#0072B2",
         label="strategy, one curve per seed" if i == 0 else None,
     )
-axB.plot(bt, bv, lw=1.8, color="#555555", ls="--", label="buy & hold")
+axB.plot(bt, bv, lw=1.8, color="#555555", ls="--", label="buy & hold, funded perp")
 axB.axhline(1.0, color="black", lw=0.8)
 axB.set_ylabel("growth of 1 unit")
 axB.set_title("(b) OOS equity, all 10 RS seeds")
@@ -548,7 +622,7 @@ for i, (_seed, t, eq) in enumerate(curves):
         color="#0072B2",
         label="strategy, one curve per seed" if i == 0 else None,
     )
-axA.plot(bt, bv, lw=1.8, color="#555555", ls="--", label="buy & hold")
+axA.plot(bt, bv, lw=1.8, color="#555555", ls="--", label="buy & hold, funded perp")
 axA.axhline(1.0, color="black", lw=0.8)
 axA.set_ylabel("growth of 1 unit")
 axA.set_title(
@@ -674,8 +748,173 @@ fig.suptitle(
 fig.tight_layout()
 _save(fig, "fig_7_6_rounds_synthesis")
 
+# --- fig 7.7: ILLUSTRATIVE pdl_reclaim_long mechanics ------------------------
+# One REAL archived trade, chosen by a declared rule with no cherry-picking:
+# the chronologically FIRST trade of fold 0 of the FIRST seed (891022, RS) on
+# BTC, whatever its outcome. Bars come from the development partition; the
+# previous-day low is recomputed deterministically (UTC calendar day, same
+# definition as crt/ranges.daily_ranges). The engine ledger records the exit
+# only as a position change ("signal_close"); no stop/target label is invented.
+# The figure illustrates the mechanics and is NOT additional evidence.
+
+
+def _fig_crt_example() -> None:
+    rob = _read_json(Path("artifacts/runs/crt_v1_budget100/pdl_reclaim_long/study_robustness.json"))
+    entry = rob["per_run"]["BTCUSDT|seed=891022|random_search"]
+    run_dir = Path(entry["run_dir"])
+    trades = pl.read_parquet(run_dir / "random_search_fold0_test_trades.parquet").sort(
+        "entry_time"
+    )
+    trade = trades.row(0, named=True)
+    winners = _read_json(run_dir / "random_search_fold_winners.json")
+    params = next(w["params"] for w in winners if w.get("fold") == 0)
+
+    bars = pl.read_parquet("data/processed/BTCUSDT/1h_development.parquet")
+    t_entry = trade["entry_time"]
+    t_exit = trade["exit_time"]
+    lo = t_entry - np.timedelta64(40, "h").astype("timedelta64[ms]").item()
+    hi = t_exit + np.timedelta64(14, "h").astype("timedelta64[ms]").item()
+    win = bars.filter((pl.col("open_time") >= lo) & (pl.col("open_time") <= hi)).sort("open_time")
+
+    prev_day = (t_entry.date() - np.timedelta64(1, "D").astype("timedelta64[D]").item()).isoformat()
+    pdl = float(
+        bars.filter(pl.col("open_time").dt.date().cast(pl.Utf8) == prev_day)["low"].min()
+    )
+
+    times = win["open_time"].to_list()
+    o = win["open"].to_numpy()
+    h = win["high"].to_numpy()
+    low = win["low"].to_numpy()
+    c = win["close"].to_numpy()
+
+    fig, ax = plt.subplots(figsize=(12.6, 6.0))
+    for i, t in enumerate(times):
+        color = "#009E73" if c[i] >= o[i] else "#D55E00"
+        ax.plot([t, t], [low[i], h[i]], color=color, lw=1.0)
+        ax.plot([t, t], [min(o[i], c[i]), max(o[i], c[i])], color=color, lw=4.0, alpha=0.9)
+
+    ax.axhline(pdl, color="#0072B2", lw=1.6, ls="--")
+    ax.text(times[0], pdl, "  previous-day low (PDL)", color="#0072B2", fontsize=9, va="bottom")
+
+    swept = [i for i, t in enumerate(times) if t < t_entry and low[i] < pdl]
+    reclaimed = [i for i in swept if c[i] > pdl]
+    if swept:
+        i0 = swept[0]
+        ax.annotate(
+            "sweep: low pierces the PDL",
+            xy=(times[i0], low[i0]),
+            xytext=(0.03, 0.06),
+            textcoords="axes fraction",
+            fontsize=9,
+            arrowprops={"arrowstyle": "->", "color": "#555555"},
+        )
+    if reclaimed:
+        i1 = reclaimed[-1]
+        ax.annotate(
+            "reclaim: close back above the level",
+            xy=(times[i1], c[i1]),
+            xytext=(0.03, 0.90),
+            textcoords="axes fraction",
+            fontsize=9,
+            arrowprops={"arrowstyle": "->", "color": "#555555"},
+        )
+
+    i_e = min(range(len(times)), key=lambda i: abs((times[i] - t_entry).total_seconds()))
+    i_x = min(range(len(times)), key=lambda i: abs((times[i] - t_exit).total_seconds()))
+    ax.scatter([times[i_e]], [o[i_e]], marker="^", s=130, color="#009E73", zorder=5)
+    ax.annotate(
+        f"entry (long, next-bar open)\n{str(t_entry)[:16]} UTC",
+        xy=(times[i_e], o[i_e]),
+        xytext=(0.40, 0.06),
+        textcoords="axes fraction",
+        fontsize=9,
+        arrowprops={"arrowstyle": "->", "color": "#009E73"},
+    )
+    ax.scatter([times[i_x]], [c[i_x]], marker="v", s=130, color="#D62728", zorder=5)
+    ax.annotate(
+        f"exit ({trade['exit_reason']}, engine ledger)\n"
+        f"net {trade['net_return']:+.2%} after costs and funding",
+        xy=(times[i_x], c[i_x]),
+        xytext=(0.68, 0.90),
+        textcoords="axes fraction",
+        fontsize=9,
+        arrowprops={"arrowstyle": "->", "color": "#D62728"},
+    )
+
+    param_str = ", ".join(f"{k}={v}" for k, v in params.items())
+    ax.set_title(
+        "ILLUSTRATIVE EXAMPLE - pdl_reclaim_long mechanics on one real archived trade\n"
+        f"(first trade, fold 0, seed 891022, RS; winner params: {param_str})",
+        fontsize=11,
+    )
+    ax.set_ylabel("BTCUSDT price (USDT)")
+    fig.autofmt_xdate()
+    ax.text(
+        0.5,
+        -0.16,
+        "Chosen by a fixed rule (chronologically first trade of the first seed's fold 0), "
+        "not by outcome. Mechanics illustration only - NOT additional evidence of "
+        "profitability.",
+        transform=ax.transAxes,
+        ha="center",
+        fontsize=9,
+        color="#8a4000",
+    )
+    fig.tight_layout()
+    _save(fig, "fig_7_7_crt_example_illustrative")
+
+
+_fig_crt_example()
+
+# --- figure captions (EN), with engine/assets/seeds/period/aggregation -------
+CAPTIONS = """# Chapter 7 figure captions (English)
+
+Common frame unless stated: engine = random_search (the study's confirmatory
+engine); assets = BTCUSDT and ETHUSDT; 10 seeds per cell; OOS window =
+concatenated walk-forward test slices 2022-03-31 to 2025-12-09 (32,385 bars of
+1h); unit of analysis = one seed's concatenated OOS series. Spread across
+seeds is DISPERSION under search randomness, never a confidence interval, and
+seeds are not independent market histories (they share the same bars).
+Benchmark in every equity figure = the study's funded always-long perp
+baseline (real per-bar funding + 5 bps entry at the contract cost rate), the
+same series behind `bh_total_return`; a price-only benchmark would differ
+(+100.7% vs +52.3% on BTC) and is deliberately not drawn.
+
+- **Fig 7.1 (fig_7_1_r2_oos_equity).** R2 momentum: concatenated OOS equity of
+  all 10 RS seeds against the funded buy-and-hold baseline on the same bars,
+  BTC and ETH. Curve endpoints equal the tabulated totals (checked, tol 1e-6).
+- **Fig 7.2 (fig_7_2_r3_families).** R3: per-seed annualised Sharpe of the
+  concatenated OOS series for the five families, both assets; dash = mean
+  across seeds. Aggregation differs from the fold-mean Sharpe used in Fig 7.5.
+- **Fig 7.3 (fig_7_3_volbreakout_partial_signal).** volatility_breakout on
+  BTC: (a) seeds passing each evaluated criterion vs the 6/10 majority;
+  (b) OOS equity of all 10 seeds vs the funded benchmark.
+- **Fig 7.4 (fig_7_4_crt_complementary).** CRT round: (a) pdl_reclaim_long BTC
+  equity, all 10 seeds vs funded benchmark - positive on every seed yet
+  unpromotable (no bootstrap CI excludes zero); (b) ETHUSDT criteria map,
+  complementing the BTC map in chapter 6 (j05).
+- **Fig 7.5 (fig_7_5_s3_seed_distributions).** Gate S3: per-seed MEAN
+  FOLD-TEST Sharpe (each seed: mean over its 15 fold-test evaluations) of the
+  overlay vs the R2 carrier. NOT seed-paired and not a causal isolation of the
+  calendar filter (reduced carrier grid; budget shared with gate parameters).
+  This fold-weighted aggregation differs numerically from the bar-weighted
+  concatenated Sharpe of Figs 7.2/7.6.
+- **Fig 7.6 (fig_7_6_rounds_synthesis).** All sixteen full-study families:
+  mean and min-max across seeds of the concatenated-OOS annualised Sharpe,
+  by round. S1/S2 pilots excluded (1 and 3 seeds, budget 25 - different
+  design; see the pilot tables).
+- **Fig 7.7 (fig_7_7_crt_example_illustrative).** Mechanics of
+  pdl_reclaim_long on one real archived trade (first trade of fold 0, seed
+  891022, RS - selection rule fixed in advance, not by outcome): previous-day
+  low, sweep, reclaim, next-bar-open entry and the engine-recorded exit. The
+  engine ledger does not label CRT-internal exits (stop/target/time), so the
+  exit is annotated only as recorded. Illustrative; not additional evidence.
+"""
+(OUT / "ch7_figure_captions.md").write_text(CAPTIONS, encoding="utf-8")
+
 print(
-    f"\nUnits: {UNITS.height} rows | criteria: {CRIT.height} | "
+    f"\nUnits: {UNITS.height} rows | criteria: {CRIT.height} | veto: {VETO.height} | "
     f"S1-B: {S1B.height} | S2-B: {S2B.height}"
 )
+print(f"curve/table consistency: {len(_curve_checks)} checks, tolerance {CURVE_TOLERANCE}")
 print(f"Written under {OUT}")

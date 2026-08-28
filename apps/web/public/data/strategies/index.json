@@ -1,6 +1,6 @@
 {
- "generated_at": "2026-08-27T23:23:42.151594+00:00",
- "code_commit": "401544613f64dd939020e04110724fc57de00b83",
+ "generated_at": "2026-08-28T15:31:01.277506+00:00",
+ "code_commit": "71c4ff2f6d906b9894bd3f016aa91aeffea1f362",
  "engine": "random_search",
  "note": "Development walk-forward out-of-sample only. No study figure is final holdout performance; nothing here is promoted or promotable.",
  "studies": [
