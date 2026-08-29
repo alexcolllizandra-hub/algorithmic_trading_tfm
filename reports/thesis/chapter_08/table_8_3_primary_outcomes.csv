@@ -1,0 +1,3 @@
+family,block,n_paths,terminal_p05,terminal_p50,terminal_p95,prob_terminal_below_1,prob_terminal_below_1_mc_se,prob_loss_gt_20,expected_shortfall_5pct_terminal_return,prob_recovered_peak
+pdl_reclaim_long,167,4000,0.879523,1.142035,1.504307,0.204250,0.006374,0.012500,-0.171938,0.543000
+volatility_breakout,168,4000,0.264625,0.961671,3.786454,0.519000,0.007900,0.405000,-0.801154,0.307500

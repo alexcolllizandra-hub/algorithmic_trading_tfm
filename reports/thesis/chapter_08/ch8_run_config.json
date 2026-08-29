@@ -1,0 +1,40 @@
+{
+ "master_seed": 20260829,
+ "primary_method": "stationary_block_bootstrap (frozen notebook-07 precedent)",
+ "blocks": {
+  "pdl_reclaim_long": {
+   "suggested_block": 167,
+   "last_significant_lag": 167,
+   "noise_band": 0.011113684020977972
+  },
+  "volatility_breakout": {
+   "suggested_block": 168,
+   "last_significant_lag": 168,
+   "noise_band": 0.011113684020977972
+  }
+ },
+ "median_seeds": {
+  "pdl_reclaim_long": 671194,
+  "volatility_breakout": 671194
+ },
+ "budgets": {
+  "per_seed": 1000,
+  "hierarchical": 4000,
+  "sensitivity": 2000
+ },
+ "multipliers": [
+  0.25,
+  0.5,
+  0.75,
+  1.0,
+  1.25,
+  1.5,
+  2.0
+ ],
+ "barriers": [
+  0.9,
+  0.8,
+  0.7,
+  0.5
+ ]
+}

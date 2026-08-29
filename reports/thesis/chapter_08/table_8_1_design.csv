@@ -1,0 +1,4 @@
+layer,what_varies,unit,n,status
+Search uncertainty,the RS search seed (10 observed seeds),one seed's OOS record,10,"observed, frozen in chapter 7"
+Path uncertainty,temporal resampling within one seed,"simulated path (32,385 bars)",1000,post-hoc diagnostic (frozen method core)
+Combined diagnostic,"uniform seed pick, then path resample",simulated path,4000,post-hoc diagnostic; NOT ten independent markets

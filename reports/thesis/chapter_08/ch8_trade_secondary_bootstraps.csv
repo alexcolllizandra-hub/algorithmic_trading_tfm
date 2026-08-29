@@ -1,0 +1,7 @@
+family,seed,method,n_resamples,trade_block,total_return_p05,total_return_p50,total_return_p95,observed_total_return
+pdl_reclaim_long,671194,iid_trade,1000,,-0.04201232,0.22836770,0.58654076,0.23543549
+pdl_reclaim_long,671194,block_trade,1000,11,0.00335614,0.23540390,0.50758984,0.23543549
+pdl_reclaim_long,671194,order_permutation,1000,,0.23543549,0.23543549,0.23543549,0.23543549
+volatility_breakout,671194,iid_trade,1000,,-0.51543598,0.11828870,1.93783921,0.16007473
+volatility_breakout,671194,block_trade,1000,12,-0.38515444,0.18177016,1.26864911,0.16007473
+volatility_breakout,671194,order_permutation,1000,,0.16007473,0.16007473,0.16007473,0.16007473
