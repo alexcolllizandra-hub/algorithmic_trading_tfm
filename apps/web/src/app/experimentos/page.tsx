@@ -325,11 +325,13 @@ function ComparisonTab({ runId }: { runId: string }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* Stacked, not side by side: seven columns need the full width or the
+          last ones clip behind the horizontal scroll without any affordance. */}
+      <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader
             title={rb.methodComparison}
-            subtitle={data.comparison_metric ?? undefined}
+            subtitle={rb.methodComparisonSubtitle}
             right={
               data.best_out_of_sample_method ? (
                 <Badge tone="accent">Mejor OOS: {data.best_out_of_sample_method}</Badge>
@@ -351,7 +353,7 @@ function ComparisonTab({ runId }: { runId: string }) {
               <InfoTip text={metricHelp("budget") ?? ""} label="budget" />
             </span>
           }
-          subtitle={data.fair_budget.definition ?? undefined}
+          subtitle={rb.fairBudgetSubtitle}
           right={
             <Badge tone={data.fair_budget.ok ? "positive" : "negative"}>
               {data.fair_budget.ok ? rb.budgetMatch : rb.budgetMismatch}

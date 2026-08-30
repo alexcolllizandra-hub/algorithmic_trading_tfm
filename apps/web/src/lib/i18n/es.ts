@@ -1366,7 +1366,7 @@ export const es = {
     strategyLabel: "Estrategia",
     testsTitle: "Batería de contraste (out-of-sample)",
     testsSubtitle:
-      "Cuatro comprobaciones sobre la fase que la estrategia no ha visto al elegir parámetros. " +
+      "Siete comprobaciones sobre la fase que la estrategia no ha visto al elegir parámetros. " +
       "Superarlas es condición necesaria, jamás suficiente.",
     testReturn: "Retorno neto positivo",
     testReturnDesc:
@@ -1415,9 +1415,9 @@ export const es = {
       "Si toda la ganancia vive en un solo régimen, la regla no captura una ventaja: captura " +
       "un tipo de época — y las épocas no se eligen de antemano.",
     testsDisclaimer:
-      "Aunque las cuatro salgan verdes: el estudio exigió además diez semillas, quince pliegues " +
+      "Aunque las siete salgan verdes: el estudio exigió además diez semillas, quince pliegues " +
       "walk-forward y corrección de Holm por todas las familias probadas — y ninguna sobrevivió. " +
-      "Un 4/4 aquí es una invitación a desconfiar, no un descubrimiento.",
+      "Un 7/7 aquí es una invitación a desconfiar, no un descubrimiento.",
     equityTitle: "Curva de equity",
     equitySubtitle:
       "Capital compuesto barra a barra, neto de costes y funding. La zona sombreada es la fase " +

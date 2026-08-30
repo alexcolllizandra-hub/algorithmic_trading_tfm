@@ -1366,7 +1366,7 @@ export const en = {
     strategyLabel: "Strategy",
     testsTitle: "Test battery (out-of-sample)",
     testsSubtitle:
-      "Four checks on the phase the strategy has not seen while choosing parameters. Passing " +
+      "Seven checks on the phase the strategy has not seen while choosing parameters. Passing " +
       "them is a necessary condition, never a sufficient one.",
     testReturn: "Positive net return",
     testReturnDesc: "The out-of-sample compound return, net of all costs, is greater than zero.",
@@ -1413,9 +1413,9 @@ export const en = {
       "If all the gains live in a single regime, the rule is not capturing an edge: it is " +
       "capturing a kind of era — and eras cannot be chosen in advance.",
     testsDisclaimer:
-      "Even with all four green: the study additionally required ten seeds, fifteen " +
+      "Even with all seven green: the study additionally required ten seeds, fifteen " +
       "walk-forward folds, and Holm correction across every family tried — and none survived. " +
-      "A 4/4 here is an invitation to distrust, not a discovery.",
+      "A 7/7 here is an invitation to distrust, not a discovery.",
     equityTitle: "Equity curve",
     equitySubtitle:
       "Capital compounded bar by bar, net of costs and funding. The shaded zone is the " +

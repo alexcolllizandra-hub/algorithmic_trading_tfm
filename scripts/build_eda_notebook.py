@@ -2267,7 +2267,7 @@ for sym in SYMBOLS:
         ".",
         ms=2.5,
         color=color,
-        label=f"{sym[:3]} (Hill α={hill['alpha']:.2f}±{hill['se']:.2f})",
+        label=f"{sym[:3]} (Hill \N{GREEK SMALL LETTER ALPHA}={hill['alpha']:.2f}±{hill['se']:.2f})",
     )
     grid = np.logspace(np.log10(hill["threshold"]), np.log10(float(np.abs(r).max())), 50)
     ax.loglog(grid, 0.02 * (grid / hill["threshold"]) ** (-hill["alpha"]), "--", color=color, lw=1.0)
@@ -2307,7 +2307,7 @@ for sym in SYMBOLS:
     frame = RET[sym]["1h"].drop_nulls("log_return")
     r = frame["log_return"].to_numpy()
     profile = variance_ratio_profile(r, [2, 4, 8, 16, 24, 48])
-    for q, vr, z in zip(profile["q"], profile["vr"], profile["z_robust"]):
+    for q, vr, z in zip(profile["q"], profile["vr"], profile["z_robust"], strict=True):
         vr_rows.append({"symbol": sym, "q_hours": int(q), "vr": round(vr, 3), "z_robust": round(z, 2)})
     axes[0].plot(profile["q"].to_list(), profile["vr"].to_list(), "o-", color=color, label=sym[:3])
     rh = rolling_hurst(frame)

@@ -30,8 +30,8 @@
     "return_kind": "log",
     "rolling_moment_window_days": 30
   },
-  "generated_at": "2026-08-30T10:16:47.268081+00:00",
-  "code_commit": "a44399ed505de4042b86e15cb4ff440a7ea0db56",
+  "generated_at": "2026-08-30T16:44:15.665747+00:00",
+  "code_commit": "0920e423d63e188744296b29e80089f9ee836747",
   "output_path": "reports/figures/eda/f11_liquidity_activity_risk.png",
   "kind": "figure",
   "dpi": 300,

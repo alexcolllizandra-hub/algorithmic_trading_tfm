@@ -35,7 +35,12 @@ const es = {
   meanOosReturn: "Retorno OOS medio",
   foldWinners: "Ganadores fold",
   methodComparison: "Comparación de métodos",
+  methodComparisonSubtitle:
+    "Sharpe TEST out-of-sample agregado de los ganadores por pliegue",
   aggOosSharpe: "Sharpe OOS agregado",
+  fairBudgetSubtitle:
+    "El presupuesto limita las evaluaciones ÚNICAS del objetivo y se agota por completo " +
+    "en CADA pliegue exterior; se excluyen inválidas, duplicadas y cacheadas",
   budgetMatch: "COINCIDE",
   budgetMismatch: "DISCREPANCIA",
   inBudget: "En budget",
@@ -127,7 +132,11 @@ const en: RunBrowserCopy = {
   meanOosReturn: "Mean OOS return",
   foldWinners: "Fold winners",
   methodComparison: "Method comparison",
+  methodComparisonSubtitle: "Aggregate out-of-sample TEST Sharpe of per-fold winners",
   aggOosSharpe: "Aggregate OOS Sharpe",
+  fairBudgetSubtitle:
+    "The budget caps UNIQUE objective evaluations and is spent in full inside EVERY " +
+    "outer fold; invalid, duplicate and cached evaluations are excluded",
   budgetMatch: "MATCHES",
   budgetMismatch: "MISMATCH",
   inBudget: "On budget",

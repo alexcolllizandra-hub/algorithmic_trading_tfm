@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-08-30T10:18:28.080554+00:00",
+  "generated_at": "2026-08-30T16:46:22.406910+00:00",
   "results": [
     {
       "notebook": "01_comprehensive_exploratory_data_analysis.ipynb",
       "status": "ok",
-      "started_at": "2026-08-30T10:13:08.332107+00:00",
-      "elapsed_s": 319.7,
+      "started_at": "2026-08-30T16:39:46.454229+00:00",
+      "elapsed_s": 395.9,
       "error": ""
     }
   ]
