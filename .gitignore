@@ -38,10 +38,13 @@ node_modules/
 docs/history/
 .cursor/
 .claude/
-supabase/
 logs/
 reports/landing/
 reports/figures/experiments/
+
+# Supabase CLI local state: project ref, pooler URL and version pins. The edge
+# function and the mail templates are tracked; this directory is machine state.
+supabase/.temp/
 
 # --- Data lake (large, reproducible from the data contract) ---
 data/raw/
