@@ -228,9 +228,7 @@ class GMMRegime(_ClusterRegime):
         return np.asarray(self._model.means_)  # type: ignore[attr-defined]
 
 
-# --------------------------------------------------------------------------- #
 # Shared helpers
-# --------------------------------------------------------------------------- #
 def _attach_labels(df: pl.DataFrame, labels: np.ndarray, n_regimes: int) -> pl.DataFrame:
     names = regime_names(n_regimes)
     name_series = [names[i] if i != UNKNOWN_LABEL and i < len(names) else None for i in labels]

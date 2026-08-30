@@ -331,9 +331,7 @@ class ErrorResponse(BaseModel):
     request_id: str | None = None
 
 
-# ---------------------------------------------------------------------------
 # Research dashboard (narrative layer)
-# ---------------------------------------------------------------------------
 
 
 class ResearchSummaryResponse(BaseModel):
@@ -459,9 +457,7 @@ class MethodologyResponse(BaseModel):
     source_run_id: str | None = None
 
 
-# --------------------------------------------------------------------------- #
 # Study closure — the whole study rather than a single run
-# --------------------------------------------------------------------------- #
 
 
 class StudyCriterion(BaseModel):

@@ -91,9 +91,7 @@ def arrow(ax, x1, y1, x2, y2, color=GREY, style="-|>", ls="-", label=None, lfs=7
         ax.text((x1 + x2) / 2, (y1 + y2) / 2 + dy, label, ha="center", fontsize=lfs, color=color)
 
 
-# --------------------------------------------------------------------------- #
 # Fig 4.1 — end-to-end architecture, real module names
-# --------------------------------------------------------------------------- #
 def fig_4_1() -> str:
     fig, ax = plt.subplots(figsize=(8.4, 6.2))
     ax.set_xlim(0, 12)
@@ -263,9 +261,7 @@ def fig_4_1() -> str:
     return save(fig, "fig_4_1_architecture")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 4.2 — ingestion DAG (real pipeline from perp_lab/data/download.py)
-# --------------------------------------------------------------------------- #
 def fig_4_2() -> str:
     fig, ax = plt.subplots(figsize=(8.4, 4.6))
     ax.set_xlim(0, 12)
@@ -365,9 +361,7 @@ def fig_4_2() -> str:
     return save(fig, "fig_4_2_data_dag")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 4.3 — storage layout + integrity model (real paths and row counts)
-# --------------------------------------------------------------------------- #
 def fig_4_3() -> str:
     fig, ax = plt.subplots(figsize=(8.4, 5.2))
     ax.axis("off")
@@ -411,9 +405,7 @@ def fig_4_3() -> str:
     return save(fig, "fig_4_3_storage_layout")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 4.4 — QC outcomes recomputed from the real validated data
-# --------------------------------------------------------------------------- #
 def fig_4_4() -> str:
     # Panel A: the frozen QC assessment (reports/tables/eda/s2) — verified values.
     rows = [
@@ -492,9 +484,7 @@ def fig_4_4() -> str:
     return save(fig, "fig_4_4_qc_outcomes")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 4.5 — causal aggregation timing (5m -> 1h)
-# --------------------------------------------------------------------------- #
 def fig_4_5() -> str:
     fig, ax = plt.subplots(figsize=(8.2, 3.4))
     ax.set_xlim(-0.4, 15.2)
@@ -555,9 +545,7 @@ def fig_4_5() -> str:
     return save(fig, "fig_4_5_causal_aggregation")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 4.6 — engine sequence for one complete trade (real conventions)
-# --------------------------------------------------------------------------- #
 def fig_4_6() -> str:
     fig, ax = plt.subplots(figsize=(8.4, 4.4))
     ax.set_xlim(0, 14)
@@ -609,9 +597,7 @@ def fig_4_6() -> str:
     return save(fig, "fig_4_6_engine_sequence")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 4.7 — search orchestration with budget parity (real numbers)
-# --------------------------------------------------------------------------- #
 def fig_4_7() -> str:
     fig, ax = plt.subplots(figsize=(8.4, 4.8))
     ax.set_xlim(0, 12)
@@ -699,9 +685,7 @@ def fig_4_7() -> str:
     return save(fig, "fig_4_7_search_orchestration")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 4.8 — registry entity model (real tables from catalog/models.py)
-# --------------------------------------------------------------------------- #
 def fig_4_8() -> str:
     fig, ax = plt.subplots(figsize=(8.4, 4.8))
     ax.set_xlim(0, 12)
@@ -747,9 +731,7 @@ def fig_4_8() -> str:
     return save(fig, "fig_4_8_registry_model")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 4.9 — reproducibility chain (corrected semantics)
-# --------------------------------------------------------------------------- #
 def fig_4_9() -> str:
     fig, ax = plt.subplots(figsize=(8.4, 4.9))
     ax.set_xlim(0, 12)
@@ -828,9 +810,7 @@ def fig_4_9() -> str:
     return save(fig, "fig_4_9_reproducibility_chain")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 4.10 — CI pipeline, real stages from .github/workflows/ci.yml
-# --------------------------------------------------------------------------- #
 def fig_4_10() -> str:
     fig, ax = plt.subplots(figsize=(8.8, 3.6))
     ax.set_xlim(0, 14.8)
@@ -897,12 +877,10 @@ def fig_4_10() -> str:
     return save(fig, "fig_4_10_ci_pipeline")
 
 
-# =========================================================================== #
 # Final-draft composites and engineering-depth figures (module map, catalogue
 # ERD, config lifecycle, seed derivation). fig_4_3/fig_4_4 are the two-panel
 # composites the final chapter text describes; the fig_4x_* files are
 # insertable engineering figures whose numbers the author assigns.
-# =========================================================================== #
 def fig_4_3_temporal_contract() -> str:
     """Figure 4.3 of the final draft: causal aggregation (A) + execution (B)."""
     fig, (axa, axb) = plt.subplots(2, 1, figsize=(8.6, 6.4), height_ratios=[1, 1.15])

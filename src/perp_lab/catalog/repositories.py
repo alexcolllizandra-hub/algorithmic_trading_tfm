@@ -105,9 +105,7 @@ class SearchEvaluationRecord:
     params: dict[str, Any] = field(default_factory=dict)
 
 
-# --------------------------------------------------------------------------- #
 # Internals
-# --------------------------------------------------------------------------- #
 
 
 def _upsert[M: Base](
@@ -153,9 +151,7 @@ def metric_values(status: ResultStatus, metrics: MetricValues | None) -> dict[st
     return {name: supplied.get(name) for name in CORE_METRIC_COLUMNS}
 
 
-# --------------------------------------------------------------------------- #
 # Study structure
-# --------------------------------------------------------------------------- #
 
 
 def upsert_study(
@@ -269,9 +265,7 @@ def upsert_spec(
     )
 
 
-# --------------------------------------------------------------------------- #
 # Execution
-# --------------------------------------------------------------------------- #
 
 
 def upsert_run(
@@ -555,9 +549,7 @@ def bulk_upsert_search_evaluations(
     return len(rows)
 
 
-# --------------------------------------------------------------------------- #
 # Measurements and verdicts
-# --------------------------------------------------------------------------- #
 
 
 def upsert_metric(
@@ -647,9 +639,7 @@ def upsert_gate_result(
     )
 
 
-# --------------------------------------------------------------------------- #
 # Bulk evidence and the frozen partition
-# --------------------------------------------------------------------------- #
 
 
 def register_artifact(
@@ -796,9 +786,7 @@ def upsert_holdout_entry(
     )
 
 
-# --------------------------------------------------------------------------- #
 # Queries
-# --------------------------------------------------------------------------- #
 
 
 def get_study(session: Session, key: str) -> Study | None:

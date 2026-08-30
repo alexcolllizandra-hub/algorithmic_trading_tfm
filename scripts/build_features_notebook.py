@@ -26,9 +26,7 @@ def code(src: str) -> None:
     CELLS.append(nbf.v4.new_code_cell(src.strip("\n")))
 
 
-# =========================================================================== #
 # SECTION 1 - Executive summary
-# =========================================================================== #
 md(
     r"""
 # Causal Feature Engineering and Leakage Control
@@ -89,9 +87,7 @@ observation is loaded, built into a feature, plotted or used to compute any stat
 """
 )
 
-# =========================================================================== #
 # SECTION 2 - Configuration and data loading
-# =========================================================================== #
 md(
     r"""
 ## 2. Configuration, data loading and holdout gates
@@ -259,9 +255,7 @@ print("HOLDOUT GATE: PASSED - no observation at or after "
 """
 )
 
-# =========================================================================== #
 # SECTION 3 - The feature contract
-# =========================================================================== #
 md(
     r"""
 ## 3. The feature contract: a registry, not a pile of functions
@@ -372,9 +366,7 @@ approximation computed from aggregated taker volume, and every downstream claim 
 """
 )
 
-# =========================================================================== #
 # SECTION 4 - The operational feature set
-# =========================================================================== #
 md(
     r"""
 ## 4. The operational feature set and its warm-up cost
@@ -521,9 +513,7 @@ constraint is enforced later, in the validation layer.
 """
 )
 
-# =========================================================================== #
 # SECTION 5 - Causality guarantees, tested on real data
-# =========================================================================== #
 md(
     r"""
 ## 5. Causality guarantees, exercised on real data
@@ -700,9 +690,7 @@ optimistic results.
 """
 )
 
-# =========================================================================== #
 # SECTION 6 - What leakage actually looks like
-# =========================================================================== #
 md(
     r"""
 ## 6. What leakage looks like: a controlled counter-example
@@ -952,9 +940,7 @@ disappointment; it is the baseline against which every later claim of edge must 
 """
 )
 
-# =========================================================================== #
 # SECTION 7 - Distributions
-# =========================================================================== #
 md(
     r"""
 ## 7. Distributional shape: what a model would actually receive
@@ -1059,9 +1045,7 @@ choice applied inside the training window* and never a silent edit to the datase
 """
 )
 
-# =========================================================================== #
 # SECTION 8 - Redundancy
-# =========================================================================== #
 md(
     r"""
 ## 8. Redundancy: how many independent signals are there really?
@@ -1190,9 +1174,7 @@ calibrated against this reality.
 """
 )
 
-# =========================================================================== #
 # SECTION 9 - Temporal stability
-# =========================================================================== #
 md(
     r"""
 ## 9. Temporal stability: is a feature the same variable in 2020 and in 2025?
@@ -1284,9 +1266,7 @@ in notebook `05`; assuming the first without checking the second is a common and
 """
 )
 
-# =========================================================================== #
 # SECTION 10 - Context features
-# =========================================================================== #
 md(
     r"""
 ## 10. Contextual features: cross-asset and funding, joined without hindsight
@@ -1416,9 +1396,7 @@ slightly better than it is.
 """
 )
 
-# =========================================================================== #
 # SECTION 11 - Timestamp roles
-# =========================================================================== #
 md(
     r"""
 ## 11. Four timestamps, not one
@@ -1524,9 +1502,7 @@ more useful than silently omitting it, because it makes the absence auditable.
 """
 )
 
-# =========================================================================== #
 # SECTION 12 - Findings
-# =========================================================================== #
 md(
     r"""
 ## 12. Findings and implications for the experimental design

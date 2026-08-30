@@ -17,10 +17,17 @@ A JSON execution report is written to
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+
+# matplotlib stamps a CreationDate into every PDF, so two identical runs would
+# differ in metadata alone. Pinning it here covers all eight notebooks, which
+# is where the figures are actually written; the chapter builders pin the same
+# value for the packages they own.
+os.environ.setdefault("SOURCE_DATE_EPOCH", "946684800")
 
 import nbformat
 from nbclient import NotebookClient

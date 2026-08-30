@@ -66,9 +66,7 @@ def save(fig: plt.Figure, name: str) -> str:
 RES = json.loads(RESULTS.read_text(encoding="utf-8"))
 
 
-# --------------------------------------------------------------------------- #
 # Fig V1 — per-fold QLIKE, HAR vs the three LSTM seeds
-# --------------------------------------------------------------------------- #
 def fig_v1() -> str:
     fig, axes = plt.subplots(1, 2, figsize=(8.6, 3.4), sharey=False)
     for ax, sym in zip(axes, SYMBOLS, strict=True):
@@ -95,9 +93,7 @@ def fig_v1() -> str:
     return save(fig, "fig_v1_per_fold_qlike")
 
 
-# --------------------------------------------------------------------------- #
 # Fig V2 — a sample OOS window: predicted vs realized log RV
-# --------------------------------------------------------------------------- #
 def fig_v2() -> str:
     frame = pl.read_parquet("artifacts/volforecast/oos_predictions_BTCUSDT.parquet").sort(
         "open_time"
@@ -131,9 +127,7 @@ def fig_v2() -> str:
     return save(fig, "fig_v2_oos_sample")
 
 
-# --------------------------------------------------------------------------- #
 # Fig V3 — concatenated-OOS summary + the frozen decision rule
-# --------------------------------------------------------------------------- #
 def fig_v3() -> str:
     fig, axes = plt.subplots(1, 2, figsize=(8.6, 3.6))
     models = ["naive", "har", "lstm_mean_of_seeds"]

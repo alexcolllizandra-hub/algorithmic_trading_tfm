@@ -28,6 +28,21 @@ dist/
 .env.*
 !.env.example
 
+# --- Node ---
+node_modules/
+.next/
+
+# --- Working material kept out of the repository ---
+# Superseded drafts, audits, roadmaps, inventories and thesis working files.
+# They stay on disk under docs/history/ and are simply not tracked.
+docs/history/
+.cursor/
+.claude/
+supabase/
+logs/
+reports/landing/
+reports/figures/experiments/
+
 # --- Data lake (large, reproducible from the data contract) ---
 data/raw/
 data/validated/

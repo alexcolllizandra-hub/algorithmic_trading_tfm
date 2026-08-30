@@ -49,7 +49,6 @@ def fig(name: str) -> str:
     return f"![{name}](../reports/figures/{name}.png)"
 
 
-# --------------------------------------------------------------------------- #
 md(
     r"""
 # The complete argument, in one reading

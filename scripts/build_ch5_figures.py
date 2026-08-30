@@ -118,9 +118,7 @@ def cached_frame(name: str, params: dict, compute) -> pl.DataFrame:
     return frame
 
 
-# --------------------------------------------------------------------------- #
 # Data loading (development partition only, gated)
-# --------------------------------------------------------------------------- #
 CONTRACT = load_data_contract()
 EXP = load_experiment_config()
 LAKE = DataLake(CONTRACT)
@@ -140,9 +138,7 @@ def rets(sym: str, tf: str = "1h") -> np.ndarray:
     return arr[np.isfinite(arr)]
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.1 — coverage per month + QC incidents (zero-volume bars)
-# --------------------------------------------------------------------------- #
 def fig_5_1() -> str:
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8.2, 4.4), sharex=True)
     zero_months: dict[str, pl.DataFrame] = {}
@@ -205,9 +201,7 @@ def fig_5_1() -> str:
     return save(fig, "fig_5_1_coverage")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.2 — return distribution vs fitted normal, log scale (1h)
-# --------------------------------------------------------------------------- #
 def fig_5_2() -> str:
     fig, axes = plt.subplots(1, 2, figsize=(8.2, 3.3), sharey=True)
     for ax, sym in zip(axes, SYMBOLS, strict=True):
@@ -227,9 +221,7 @@ def fig_5_2() -> str:
     return save(fig, "fig_5_2_distribution_vs_normal")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.3 — QQ plots vs normal and Student-t, per timeframe (BTC)
-# --------------------------------------------------------------------------- #
 def fig_5_3() -> str:
     fig, axes = plt.subplots(1, 3, figsize=(8.6, 3.1))
     tfits = {}
@@ -258,9 +250,7 @@ def fig_5_3() -> str:
     return save(fig, "fig_5_3_qq_plots")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.4 — excess kurtosis vs aggregation horizon
-# --------------------------------------------------------------------------- #
 def fig_5_4() -> str:
     fig, ax = plt.subplots(figsize=(6.4, 3.2))
     from matplotlib.ticker import NullFormatter
@@ -325,9 +315,7 @@ def fig_5_5() -> str:
     return save(fig, "fig_5_5_acf")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.6 — rolling realized volatility with regime shading
-# --------------------------------------------------------------------------- #
 REGIME_LABELS = {
     "covid_crash": "COVID\ncrash",
     "expansion_2020_21": "2020–21 expansion",
@@ -396,9 +384,7 @@ def fig_5_6() -> str:
     return save(fig, "fig_5_6_rolling_vol_regimes")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.7 — intraday profile: |return| and volume per UTC hour
-# --------------------------------------------------------------------------- #
 def fig_5_7() -> str:
     fig, axes = plt.subplots(1, 2, figsize=(8.2, 3.2))
     profiles = {}
@@ -447,9 +433,7 @@ def fig_5_7() -> str:
     return save(fig, "fig_5_7_intraday_profile")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.8 — volatility heatmap, UTC hour x weekday
-# --------------------------------------------------------------------------- #
 def fig_5_8() -> str:
     frame = (
         BARS[("BTCUSDT", "1h")]
@@ -489,9 +473,7 @@ def fig_5_8() -> str:
     return save(fig, "fig_5_8_heatmap_hour_weekday")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.9 — funding distribution and autocorrelation (BTC)
-# --------------------------------------------------------------------------- #
 def fig_5_9() -> str:
     fig, axes = plt.subplots(1, 2, figsize=(8.2, 3.1))
     fr = FUNDING["BTCUSDT"]["funding_rate"].to_numpy() * 1e4
@@ -520,9 +502,7 @@ def fig_5_9() -> str:
     return save(fig, "fig_5_9_funding")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.10 — mean forward return conditional on funding quantile
-# --------------------------------------------------------------------------- #
 def fig_5_10() -> str:
     horizon = 8  # hours after each settlement
     n_boot, block = 500, 24
@@ -593,9 +573,7 @@ def fig_5_10() -> str:
     return save(fig, "fig_5_10_funding_conditional")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.11 — rolling BTC-ETH correlation + lagged cross-correlation
-# --------------------------------------------------------------------------- #
 def fig_5_11() -> str:
     joined = (
         BARS[("BTCUSDT", "1h")]
@@ -649,9 +627,7 @@ def fig_5_11() -> str:
     return save(fig, "fig_5_11_cross_asset")
 
 
-# --------------------------------------------------------------------------- #
 # Feature matrix (shared by 5.12 and 5.16)
-# --------------------------------------------------------------------------- #
 def _feature_frame() -> tuple[pl.DataFrame, list[str]]:
     specs = resolve_feature_set(EXP.features.feature_set)
     frame, resolved = build_feature_frame(
@@ -661,9 +637,7 @@ def _feature_frame() -> tuple[pl.DataFrame, list[str]]:
     return frame, cols
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.12 — feature correlation matrix + PCA scree
-# --------------------------------------------------------------------------- #
 def fig_5_12() -> str:
     frame, cols = _feature_frame()
     corr = feature_correlation_matrix(frame, cols)
@@ -716,9 +690,7 @@ def fig_5_12() -> str:
     return save(fig, "fig_5_12_features")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.13 — survival function log-log + Hill fit
-# --------------------------------------------------------------------------- #
 def fig_5_13() -> str:
     fig, ax = plt.subplots(figsize=(6.6, 3.6))
     tail_fraction = 0.02
@@ -751,9 +723,7 @@ def fig_5_13() -> str:
     return save(fig, "fig_5_13_tails_hill")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.14 — variance ratios + rolling Hurst
-# --------------------------------------------------------------------------- #
 def fig_5_14() -> str:
     horizons = [2, 4, 8, 16, 24, 48]
     fig, axes = plt.subplots(1, 2, figsize=(8.4, 3.3))
@@ -812,9 +782,7 @@ def fig_5_14() -> str:
     return save(fig, "fig_5_14_variance_ratio_hurst")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.15 — volume vs |return| (contemporaneous)
-# --------------------------------------------------------------------------- #
 def fig_5_15() -> str:
     fig, axes = plt.subplots(1, 2, figsize=(8.2, 3.4), sharey=True)
     for ax, sym in zip(axes, SYMBOLS, strict=True):
@@ -838,9 +806,7 @@ def fig_5_15() -> str:
     return save(fig, "fig_5_15_volume_volatility")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 5.16 — mutual information vs horizon with permutation floor
-# --------------------------------------------------------------------------- #
 def fig_5_16() -> str:
     frame, cols = _feature_frame()
     # Raw price-level features (moving averages, ATR in price units) are
@@ -925,9 +891,7 @@ def fig_5_16() -> str:
     return save(fig, "fig_5_16_mutual_information")
 
 
-# --------------------------------------------------------------------------- #
 # Tables and remaining values
-# --------------------------------------------------------------------------- #
 def compute_table_5_1() -> str:
     lines = [
         "| Symbol | Timeframe | n | Mean (bps) | Std (bps) | Skew | Exc. kurtosis | Min (%) | Max (%) |",

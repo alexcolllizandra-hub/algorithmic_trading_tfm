@@ -116,9 +116,7 @@ def _logret(ret: dict, sym: str, tf: str) -> np.ndarray:
     return ret[sym][tf].select("log_return").drop_nulls().to_series().to_numpy()
 
 
-# --------------------------------------------------------------------------- #
 # Analysis 1 - block-bootstrap confidence intervals
-# --------------------------------------------------------------------------- #
 def analysis_bootstrap(ctx: ArtifactContext, ret: dict, meta: dict) -> pl.DataFrame:
     symbols = meta["symbols"]
     timeframes = meta["timeframes"]
@@ -279,9 +277,7 @@ def _plot_bootstrap(ctx: ArtifactContext, table: pl.DataFrame, symbols, timefram
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
 # Analysis 2 - regime comparison (Kruskal-Wallis + Dunn + effect size)
-# --------------------------------------------------------------------------- #
 def analysis_regimes(ctx: ArtifactContext, ret: dict, funding: dict, meta: dict) -> pl.DataFrame:
     btc = meta["symbols"][0]
     tagged = eda.tag_trend_volatility_regimes(ret[btc]["1h"], trend_window=168, vol_window=24)
@@ -368,9 +364,7 @@ def _plot_regimes(ctx: ArtifactContext, tagged: pl.DataFrame, summary: pl.DataFr
     plt.close(fig)
 
 
-# --------------------------------------------------------------------------- #
 # Analysis 3 - extreme-tail dependence
-# --------------------------------------------------------------------------- #
 def analysis_stress(ctx: ArtifactContext, ret: dict, meta: dict) -> pl.DataFrame:
     btc, eth = meta["symbols"][0], meta["symbols"][1]
     left, right = ret[btc]["1h"], ret[eth]["1h"]

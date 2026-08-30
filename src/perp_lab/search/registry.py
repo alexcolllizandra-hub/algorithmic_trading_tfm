@@ -715,12 +715,10 @@ def _xasset_spread_reversion_space(exp: ExperimentConfig, symbol: str) -> Search
     )
 
 
-# --------------------------------------------------------------------------- #
 # Gate S2 batch. Every family below reads the taker aggressor side from the raw
 # klines and therefore declares no feature-engine items: the flow windows are
 # strategy parameters being searched, so materialising one column per candidate
 # window would tie the feature frame to the search space.
-# --------------------------------------------------------------------------- #
 
 
 def _taker_flow_extreme_space(exp: ExperimentConfig, symbol: str) -> SearchSpace:

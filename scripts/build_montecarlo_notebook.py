@@ -27,9 +27,7 @@ def code(src: str) -> None:
     CELLS.append(nbf.v4.new_code_cell(src.strip("\n")))
 
 
-# --------------------------------------------------------------------------- #
 # Opening
-# --------------------------------------------------------------------------- #
 md(
     r"""
 # Monte Carlo: the best strategy inside the distribution of chance
@@ -74,9 +72,7 @@ print.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # Setup + contract
-# --------------------------------------------------------------------------- #
 code(
     r"""
 import os
@@ -198,9 +194,7 @@ def show(fig, name, caption=""):
 """
 )
 
-# --------------------------------------------------------------------------- #
 # 1. The ten real runs
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 1. The ten real runs, and which one narrates the detail — `DESCRIPTIVE`
@@ -250,9 +244,7 @@ print(f"\nmedian seed: {median_row['seed']} | return {REAL['total_return']:+.4f}
 """
 )
 
-# --------------------------------------------------------------------------- #
 # 2. Bootstraps
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 2. Two bootstraps, and why both are needed — `DESCRIPTIVE`
@@ -332,9 +324,7 @@ backtest number is an anecdote, not a measurement.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # 3. Permutation and the null
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 3. Isolating sequencing luck, then removing the signal entirely — `DESCRIPTIVE`
@@ -450,9 +440,7 @@ beats it.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # 4. Costs
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 4. Cost sensitivity — `DESCRIPTIVE`
@@ -495,9 +483,7 @@ show(fig, "k04_barrido_costes",
 """
 )
 
-# --------------------------------------------------------------------------- #
 # 5. Funded accounts: real firm rules, and the coin flip
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 5. Funded-account rules: real firms, the strategy, and a coin flip — `DESCRIPTIVE`
@@ -625,9 +611,7 @@ them on here would be a second search wearing a helmet.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # Close
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 6. What this notebook establishes — and what would have contradicted it

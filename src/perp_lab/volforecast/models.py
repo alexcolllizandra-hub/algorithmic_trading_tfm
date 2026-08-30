@@ -14,17 +14,13 @@ import numpy as np
 from perp_lab.volforecast.data import VolDataset
 
 
-# --------------------------------------------------------------------------- #
 # Naive persistence
-# --------------------------------------------------------------------------- #
 def predict_naive(dataset: VolDataset, mask: np.ndarray) -> np.ndarray:
     """Forecast log RV(next 24h) with the trailing 24h log RV (column 0)."""
     return dataset.har_features[mask, 0]
 
 
-# --------------------------------------------------------------------------- #
 # HAR-RV (Corsi 2009), plain OLS on the three log-RV components
-# --------------------------------------------------------------------------- #
 @dataclass(frozen=True)
 class HarModel:
     coef: np.ndarray  # (4,) intercept + three components
@@ -44,9 +40,7 @@ def predict_har(model: HarModel, dataset: VolDataset, mask: np.ndarray) -> np.nd
     return design @ model.coef
 
 
-# --------------------------------------------------------------------------- #
 # LSTM (optional torch)
-# --------------------------------------------------------------------------- #
 LSTM_WINDOW = 96
 LSTM_HIDDEN = 32
 LSTM_MAX_EPOCHS = 40

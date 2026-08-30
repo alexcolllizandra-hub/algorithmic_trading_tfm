@@ -148,9 +148,7 @@ class FamilyResult:
         return payload
 
 
-# --------------------------------------------------------------------------- #
 # Inventory: which searches were actually run, according to the gate reports
-# --------------------------------------------------------------------------- #
 
 
 def _read_json(path: Path) -> Any:
@@ -231,9 +229,7 @@ def build_inventory(root: Path) -> list[StudyUnit]:
     return units
 
 
-# --------------------------------------------------------------------------- #
 # Out-of-sample series
-# --------------------------------------------------------------------------- #
 
 
 def _unit_oos_returns(run_dir: Path, engine: str) -> pl.DataFrame:
@@ -366,9 +362,7 @@ def family_results(
     return sorted(results, key=lambda r: r.p_value)
 
 
-# --------------------------------------------------------------------------- #
 # Study-level corrections
-# --------------------------------------------------------------------------- #
 
 
 def aligned_matrix(series: dict[str, pl.DataFrame]) -> tuple[list[str], np.ndarray]:

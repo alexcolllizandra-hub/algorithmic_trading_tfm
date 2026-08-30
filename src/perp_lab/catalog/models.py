@@ -165,9 +165,7 @@ CORE_METRIC_COLUMNS: tuple[str, ...] = (
 """Names of the typed metric columns, for validation and bulk assignment."""
 
 
-# --------------------------------------------------------------------------- #
 # Study structure
-# --------------------------------------------------------------------------- #
 
 
 class Study(Base):
@@ -281,9 +279,7 @@ class StrategySpec(Base, ProvenanceMixin):
     family: Mapped[StrategyFamily] = relationship(back_populates="specs")
 
 
-# --------------------------------------------------------------------------- #
 # Execution
-# --------------------------------------------------------------------------- #
 
 
 class Run(Base, StatusMixin, ProvenanceMixin):
@@ -504,9 +500,7 @@ class GateResult(Base, StatusMixin, ProvenanceMixin):
     detail: Mapped[dict[str, Any]] = mapped_column(JSON_VARIANT, nullable=False, default=dict)
 
 
-# --------------------------------------------------------------------------- #
 # Bulk evidence and the frozen partition
-# --------------------------------------------------------------------------- #
 
 
 class Artifact(Base, StatusMixin, ProvenanceMixin):

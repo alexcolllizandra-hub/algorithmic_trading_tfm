@@ -21,9 +21,7 @@ def code(src: str) -> None:
     CELLS.append(nbf.v4.new_code_cell(src.strip("\n")))
 
 
-# =========================================================================== #
 # SECTION 1
-# =========================================================================== #
 md(
     r"""
 # Strategy Search and the Measurement of Overfitting
@@ -74,9 +72,7 @@ test slices, which are out of sample with respect to selection but are *not* the
 """
 )
 
-# =========================================================================== #
 # SECTION 2
-# =========================================================================== #
 md(
     r"""
 ## 2. Loading the study evidence
@@ -216,9 +212,7 @@ display(WINNERS.head(5))
 """
 )
 
-# =========================================================================== #
 # SECTION 3 - Search space vs budget
-# =========================================================================== #
 md(
     r"""
 ## 3. How large is the space, and how much of it was searched?
@@ -365,9 +359,7 @@ a reader, which is not true of a model with learned weights.
 """
 )
 
-# =========================================================================== #
 # SECTION 4 - Selection optimism
-# =========================================================================== #
 md(
     r"""
 ## 4. Selection optimism: the price of having chosen
@@ -504,9 +496,7 @@ it will not survive contact with new data.
 """
 )
 
-# =========================================================================== #
 # SECTION 5 - Where the optimism lives
-# =========================================================================== #
 md(
     r"""
 ## 5. Where does the optimism live?
@@ -643,9 +633,7 @@ strategy; it is reporting the size of its own search.
 """
 )
 
-# =========================================================================== #
 # SECTION 6 - RS vs GA and budget parity
-# =========================================================================== #
 md(
     r"""
 ## 6. Random Search versus the Genetic Algorithm, on a verified equal budget
@@ -836,9 +824,7 @@ cell out of five is exactly what that machinery exists to resist.
 """
 )
 
-# =========================================================================== #
 # SECTION 7 - Seed instability
-# =========================================================================== #
 md(
     r"""
 ## 7. Seed instability: how much of a result is the seed?
@@ -969,9 +955,7 @@ root of ten and manufacture significance out of nothing.
 """
 )
 
-# =========================================================================== #
 # SECTION 8 - Convergence
-# =========================================================================== #
 md(
     r"""
 ## 8. What does the search converge to?
@@ -1078,9 +1062,7 @@ records.
 """
 )
 
-# =========================================================================== #
 # SECTION 9 - Findings
-# =========================================================================== #
 md(
     r"""
 ## 9. Findings and implications

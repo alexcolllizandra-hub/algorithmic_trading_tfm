@@ -25,9 +25,7 @@ def code(src: str) -> None:
     CELLS.append(nbf.v4.new_code_cell(src.strip("\n")))
 
 
-# --------------------------------------------------------------------------- #
 # Opening
-# --------------------------------------------------------------------------- #
 md(
     r"""
 # Study closure: results, robustness and multiple testing
@@ -101,9 +99,7 @@ not depend on that number.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # Inventory
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 2. The study inventory — `DESCRIPTIVE`
@@ -298,9 +294,7 @@ from significance the study lands; the verdict does not hang on them.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # Promotion criteria
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 3. The promotion criteria, family by family — `INFERENTIAL — closed`
@@ -407,9 +401,7 @@ interpreted.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # Multiple testing
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 4. Correcting for the number of hypotheses — `INFERENTIAL — closed`
@@ -552,9 +544,7 @@ argument exists in which some family survives.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # DSR and PBO
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 5. How likely is the best result to be an artefact? — `INFERENTIAL — closed`
@@ -674,9 +664,7 @@ used to pick a winner, however good the candidates might individually be.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # Regime
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 6. Does conditioning on regime rescue anything? — `INFERENTIAL — closed (exploratory)`
@@ -774,9 +762,7 @@ no candidate was promoted from it.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # Holdout
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 7. The frozen holdout: opened, recorded, deliberately unpublished — `DESCRIPTIVE`
@@ -841,9 +827,7 @@ print("\nNo holdout metric is computed, displayed or exported by this notebook."
 """
 )
 
-# --------------------------------------------------------------------------- #
 # Post-closure confirmatory rounds
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 8. Confirmatory rounds outside the closure — `INFERENTIAL — closed`
@@ -1155,9 +1139,7 @@ stands. That, in miniature, is the discipline this whole chapter argues for.
 """
 )
 
-# --------------------------------------------------------------------------- #
 # Conclusions
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 9. What a negative of this shape establishes — `DESCRIPTIVE`

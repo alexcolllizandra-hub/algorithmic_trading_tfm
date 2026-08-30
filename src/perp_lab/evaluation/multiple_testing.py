@@ -358,9 +358,7 @@ def benjamini_hochberg_correction(
     )
 
 
-# --------------------------------------------------------------------------- #
 # Data-snooping tests over a whole set of candidates (White RC / Hansen SPA)
-# --------------------------------------------------------------------------- #
 
 
 def stationary_bootstrap_indices(

@@ -1,4 +1,4 @@
-﻿"""Build the chapter-7 export package (tables + figures) from closed artifacts.
+"""Build the chapter-7 export package (tables + figures) from closed artifacts.
 
 Run with: ``uv run python scripts/build_ch7_results.py``
 
@@ -103,9 +103,7 @@ def _mean_fold_sharpe(run_dir: Path, engine: str) -> tuple[float | None, int]:
     return (float(np.mean(vals)) if vals else None), len(vals)
 
 
-# --------------------------------------------------------------------------- #
 # 1. Unit-level results for the full studies
-# --------------------------------------------------------------------------- #
 unit_rows: list[dict] = []
 crit_rows: list[dict] = []
 veto_rows: list[dict] = []
@@ -271,9 +269,7 @@ with (OUT / "ch7_results_units.md").open("w", encoding="utf-8") as fh:
     fh.write(_md_table(digest))
     fh.write("\n")
 
-# --------------------------------------------------------------------------- #
 # 2. Pilot tables (their own contracts; not the 10-seed rules)
-# --------------------------------------------------------------------------- #
 s1b = _read_json(Path("reports/gate_s1b/s1b_pilot_report.json"))
 s1_rows = []
 for fam, famblk in sorted(s1b["per_family"].items()):
@@ -332,9 +328,7 @@ for arm in s2b["arms"]:
 S2B = pl.DataFrame(s2_rows).sort("family", "symbol", "seed", "engine")
 S2B.write_csv(OUT / "ch7_results_pilots_s2b.csv")
 
-# --------------------------------------------------------------------------- #
 # 3. Round summary: hypothesis -> main result -> closure reason
-# --------------------------------------------------------------------------- #
 ROUNDS = pl.DataFrame(
     [
         {
@@ -412,9 +406,7 @@ with (OUT / "ch7_rounds_summary.md").open("w", encoding="utf-8") as fh:
         "for CRT and S3 they are **not computed** (chapter 6, MANIFEST scope note).\n"
     )
 
-# --------------------------------------------------------------------------- #
 # 4. Figures
-# --------------------------------------------------------------------------- #
 FIG_DPI = 300
 
 
@@ -762,9 +754,7 @@ def _fig_crt_example() -> None:
     rob = _read_json(Path("artifacts/runs/crt_v1_budget100/pdl_reclaim_long/study_robustness.json"))
     entry = rob["per_run"]["BTCUSDT|seed=891022|random_search"]
     run_dir = Path(entry["run_dir"])
-    trades = pl.read_parquet(run_dir / "random_search_fold0_test_trades.parquet").sort(
-        "entry_time"
-    )
+    trades = pl.read_parquet(run_dir / "random_search_fold0_test_trades.parquet").sort("entry_time")
     trade = trades.row(0, named=True)
     winners = _read_json(run_dir / "random_search_fold_winners.json")
     params = next(w["params"] for w in winners if w.get("fold") == 0)
@@ -777,9 +767,7 @@ def _fig_crt_example() -> None:
     win = bars.filter((pl.col("open_time") >= lo) & (pl.col("open_time") <= hi)).sort("open_time")
 
     prev_day = (t_entry.date() - np.timedelta64(1, "D").astype("timedelta64[D]").item()).isoformat()
-    pdl = float(
-        bars.filter(pl.col("open_time").dt.date().cast(pl.Utf8) == prev_day)["low"].min()
-    )
+    pdl = float(bars.filter(pl.col("open_time").dt.date().cast(pl.Utf8) == prev_day)["low"].min())
 
     times = win["open_time"].to_list()
     o = win["open"].to_numpy()

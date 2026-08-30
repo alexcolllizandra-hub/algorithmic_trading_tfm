@@ -88,9 +88,7 @@ def save(fig: plt.Figure, name: str) -> str:
     return f"{OUT / name}.png|.pdf"
 
 
-# --------------------------------------------------------------------------- #
 # Fig A1 — Fear & Greed vs BTC price and realized volatility
-# --------------------------------------------------------------------------- #
 def fig_a1() -> str:
     fg_dev = FG.filter(pl.col("date") >= pl.datetime(2020, 1, 1, time_zone="UTC"))
     btc = BARS["BTCUSDT"]
@@ -127,9 +125,7 @@ def fig_a1() -> str:
     return save(fig, "fig_a1_fear_greed_series")
 
 
-# --------------------------------------------------------------------------- #
 # Fig A2 — forward return / vol conditional on F&G quintile
-# --------------------------------------------------------------------------- #
 def fig_a2() -> str:
     fig, axes = plt.subplots(1, 2, figsize=(8.4, 3.4), sharey=True)
     for ax, sym in zip(axes, SYMBOLS, strict=True):
@@ -167,9 +163,7 @@ def fig_a2() -> str:
     return save(fig, "fig_a2_fg_conditional")
 
 
-# --------------------------------------------------------------------------- #
 # Fig A3 — event study around CPI and FOMC (BTC, 1h)
-# --------------------------------------------------------------------------- #
 def fig_a3() -> str:
     fig, axes = plt.subplots(1, 2, figsize=(8.4, 3.4), sharey=True)
     baseline = float(np.nanmean(np.abs(BARS["BTCUSDT"]["log_return"].to_numpy())) * 1e4)
@@ -212,9 +206,7 @@ def fig_a3() -> str:
     return save(fig, "fig_a3_event_study")
 
 
-# --------------------------------------------------------------------------- #
 # Fig A4 — event bar vs seasonality-matched control
-# --------------------------------------------------------------------------- #
 def fig_a4() -> str:
     fig, ax = plt.subplots(figsize=(6.8, 3.4))
     kinds = ("cpi_release", "fomc_decision")

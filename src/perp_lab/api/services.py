@@ -24,9 +24,7 @@ _OBJ_PREFIX = "obj_"
 _FOLD_RE = re.compile(r"_fold(\d+)_test_(equity|trades)\.parquet$")
 
 
-# --------------------------------------------------------------------------- #
 # Runs
-# --------------------------------------------------------------------------- #
 def list_run_summaries(settings: ApiSettings) -> list[m.RunSummaryModel]:
     runs = loader.discover_runs(settings.runs_dir)
     return [
@@ -104,9 +102,7 @@ def comparison(run_dir: Path) -> m.ComparisonResponse:
     )
 
 
-# --------------------------------------------------------------------------- #
 # Candidates
-# --------------------------------------------------------------------------- #
 def _parse_params(value: Any) -> dict[str, Any]:
     if isinstance(value, str):
         try:
@@ -150,9 +146,7 @@ def paginate_candidates(run_dir: Path, method: str, params: PageParams) -> m.Can
     return m.CandidatesResponse(run_id=run_dir.name, method=method, items=items, meta=meta)
 
 
-# --------------------------------------------------------------------------- #
 # Folds
-# --------------------------------------------------------------------------- #
 def folds(run_dir: Path) -> m.FoldsResponse:
     art = loader.load_run(run_dir)
     folds_df = loader.folds_frame(art)
@@ -176,9 +170,7 @@ def folds(run_dir: Path) -> m.FoldsResponse:
     )
 
 
-# --------------------------------------------------------------------------- #
 # Search analytics
-# --------------------------------------------------------------------------- #
 def search_analytics(run_dir: Path) -> m.SearchAnalyticsResponse:
     art = loader.load_run(run_dir)
     convergence: dict[str, list[m.ConvergencePoint]] = {}
@@ -202,9 +194,7 @@ def search_analytics(run_dir: Path) -> m.SearchAnalyticsResponse:
     )
 
 
-# --------------------------------------------------------------------------- #
 # Performance / equity / trades
-# --------------------------------------------------------------------------- #
 def _fold_winners_map(run_dir: Path) -> dict[tuple[str, int], dict[str, Any]]:
     """Map (method, fold) -> fold-winner record when artifacts exist."""
     out: dict[tuple[str, int], dict[str, Any]] = {}
@@ -349,9 +339,7 @@ def trades(run_dir: Path, method: str, fold: int, params: PageParams) -> m.Trade
     return m.TradesResponse(run_id=run_dir.name, method=method, fold=fold, items=window, meta=meta)
 
 
-# --------------------------------------------------------------------------- #
 # Artifacts
-# --------------------------------------------------------------------------- #
 def artifacts(run_dir: Path) -> m.ArtifactsResponse:
     art = loader.load_run(run_dir)
     failed: dict[str, list[dict[str, Any]]] = {}
@@ -375,9 +363,7 @@ def artifacts(run_dir: Path) -> m.ArtifactsResponse:
     )
 
 
-# --------------------------------------------------------------------------- #
 # Market coverage (manifest-based; holdout-safe, no data read)
-# --------------------------------------------------------------------------- #
 def market_coverage(settings: ApiSettings) -> m.MarketCoverageResponse:
     from perp_lab.config import load_data_contract
     from perp_lab.data.provenance import _classify

@@ -88,9 +88,7 @@ def arrow(ax, x1, y1, x2, y2, color=GREY, style="-|>", ls="-", label=None, lfs=8
         ax.text((x1 + x2) / 2, (y1 + y2) / 2 + 0.22, label, ha="center", fontsize=lfs, color=color)
 
 
-# --------------------------------------------------------------------------- #
 # Fig 3.1 — pre-registration cycle
-# --------------------------------------------------------------------------- #
 def fig_3_1() -> str:
     fig, ax = plt.subplots(figsize=(7.6, 3.9))
     ax.set_xlim(0, 12)
@@ -166,9 +164,7 @@ def fig_3_1() -> str:
     return save(fig, "fig_3_1_preregistration")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 3.2 — temporal layout (real contract dates)
-# --------------------------------------------------------------------------- #
 def fig_3_2() -> str:
     d = mdates.date2num
     dev_start = d(datetime(2020, 1, 1))
@@ -221,9 +217,7 @@ def fig_3_2() -> str:
     return save(fig, "fig_3_2_temporal_layout")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 3.3 — three-phase funnel with the study's real parameters
-# --------------------------------------------------------------------------- #
 def fig_3_3() -> str:
     fig, ax = plt.subplots(figsize=(7.6, 5.4))
     ax.set_xlim(0, 12)

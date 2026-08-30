@@ -21,9 +21,7 @@ def code(src: str) -> None:
     CELLS.append(nbf.v4.new_code_cell(src.strip("\n")))
 
 
-# =========================================================================== #
 # SECTION 1
-# =========================================================================== #
 md(
     r"""
 # Execution, Costs and Temporal Validation
@@ -75,9 +73,7 @@ signal's cleverness. Section 5 measures that crossing point directly.
 """
 )
 
-# =========================================================================== #
 # SECTION 2
-# =========================================================================== #
 md(
     r"""
 ## 2. Configuration, data and the feature substrate
@@ -220,9 +216,7 @@ print(f"HOLDOUT GATE   : PASSED (nothing at or after {HOLDOUT_START.isoformat()}
 """
 )
 
-# =========================================================================== #
 # SECTION 3 - Execution semantics
-# =========================================================================== #
 md(
     r"""
 ## 3. Execution semantics: what the ledger records
@@ -364,9 +358,7 @@ understate the cost of exactly the behaviour these strategies exhibit most.
 """
 )
 
-# =========================================================================== #
 # SECTION 4 - Cost decomposition
-# =========================================================================== #
 md(
     r"""
 ## 4. Where the money goes
@@ -516,9 +508,7 @@ the strategy earned.
 """
 )
 
-# =========================================================================== #
 # SECTION 5 - Turnover
-# =========================================================================== #
 md(
     r"""
 ## 5. The turnover boundary: where a gross edge dies
@@ -667,9 +657,7 @@ where the difference between this mechanical sweep and a genuine result lies.
 """
 )
 
-# =========================================================================== #
 # SECTION 6 - Funding
-# =========================================================================== #
 md(
     r"""
 ## 6. Funding: the cashflow that only exists in perpetuals
@@ -779,9 +767,7 @@ simplification; it is a systematic bias with a known sign.
 """
 )
 
-# =========================================================================== #
 # SECTION 7 - Walk-forward
-# =========================================================================== #
 md(
     r"""
 ## 7. Walk-forward geometry: manufacturing genuine out-of-sample data
@@ -966,9 +952,7 @@ can verify the arithmetic rather than trusting a number.
 """
 )
 
-# =========================================================================== #
 # SECTION 9 - Baselines
-# =========================================================================== #
 md(
     r"""
 ## 9. What a searched strategy must beat
@@ -1095,9 +1079,7 @@ positive number.
 """
 )
 
-# =========================================================================== #
 # SECTION 10 - Holdout isolation
-# =========================================================================== #
 md(
     r"""
 ## 10. The holdout guards fail closed
@@ -1173,9 +1155,7 @@ print(f"\nAll guards fail closed: {bool(GUARDS['raised'].all())}")
 """
 )
 
-# =========================================================================== #
 # SECTION 11 - Findings
-# =========================================================================== #
 md(
     r"""
 ## 11. Findings and implications

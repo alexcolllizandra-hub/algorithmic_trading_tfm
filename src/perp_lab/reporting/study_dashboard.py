@@ -111,9 +111,7 @@ def _read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-# --------------------------------------------------------------------------- #
 # Series
-# --------------------------------------------------------------------------- #
 
 
 def collect_series(units: list[StudyUnit], *, symbol: str, engine: str) -> list[FamilySeries]:
@@ -195,9 +193,7 @@ def _summary(returns: np.ndarray) -> dict[str, float]:
     }
 
 
-# --------------------------------------------------------------------------- #
 # Resampling fan
-# --------------------------------------------------------------------------- #
 
 
 def monte_carlo_fan(
@@ -273,9 +269,7 @@ def monte_carlo_fan(
     }
 
 
-# --------------------------------------------------------------------------- #
 # Assembly
-# --------------------------------------------------------------------------- #
 
 
 def criteria_matrix(root: Path) -> dict[str, dict[str, Any]]:

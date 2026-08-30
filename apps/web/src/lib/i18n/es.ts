@@ -982,7 +982,7 @@ export const es = {
   explorer: {
     title: "Explorador de estrategias",
     subtitle:
-      "Las quince familias con estudio multi-semilla completo: curvas de equity fuera de muestra reales y el conjunto íntegro de métricas, por activo y por semilla.",
+      "Quince de las dieciséis familias con estudio multi-semilla completo (macro_event_brake, de la ronda S3, no está exportada aquí): curvas de equity fuera de muestra reales y el conjunto íntegro de métricas, por activo y por semilla.",
     que: "¿Qué muestra esta sección?",
     queAnswer:
       "Cada familia evaluada, con la curva de equity de sus diez semillas sobre la ventana out-of-sample concatenada y todas las métricas que calculó la batería de robustez. Nada está simulado: cada punto es la equity exacta de ese instante.",
@@ -1519,8 +1519,8 @@ export const es = {
     },
     pretrainedTitle: "Las familias ya estudiadas",
     pretrainedBody:
-      "Las quince familias del estudio formal — con sus diez semillas, su walk-forward completo y " +
-      "sus métricas de cierre — se consultan en el explorador de estrategias.",
+      "Las familias del estudio formal exportadas al explorador (quince de las dieciséis con " +
+      "estudio completo) se consultan allí con sus diez semillas, su walk-forward y sus métricas.",
     pretrainedLink: "Abrir el explorador de estrategias →",
   },
 } as const;

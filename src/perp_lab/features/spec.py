@@ -62,9 +62,7 @@ class KindDef:
     allowed_sources: tuple[str, ...] = ()
 
 
-# --------------------------------------------------------------------------- #
 # The registry. Windows are in bars of the primary timeframe.
-# --------------------------------------------------------------------------- #
 KIND_REGISTRY: dict[str, KindDef] = {
     "log_return": KindDef(
         family="returns",

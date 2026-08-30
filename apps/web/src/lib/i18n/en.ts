@@ -985,7 +985,7 @@ export const en = {
   explorer: {
     title: "Strategy explorer",
     subtitle:
-      "All fifteen families with a complete multiseed study: real out-of-sample equity curves and the full metric set, per asset and per seed.",
+      "Fifteen of the sixteen families with a complete multi-seed study (macro_event_brake, from round S3, is not exported here): real out-of-sample equity curves and the full metric set, per asset and per seed.",
     que: "What does this section show?",
     queAnswer:
       "Every family evaluated, with the equity curve of its ten seeds over the concatenated out-of-sample window and every metric the robustness battery computed. Nothing is simulated: each point is the exact equity at that instant.",
@@ -1517,8 +1517,8 @@ export const en = {
     },
     pretrainedTitle: "The families already studied",
     pretrainedBody:
-      "The fifteen families of the formal study — with their ten seeds, full walk-forward, and " +
-      "closure metrics — live in the strategy explorer.",
+      "The formal-study families exported to the explorer (fifteen of the sixteen with a complete " +
+      "study) live there with their ten seeds, walk-forward and metrics.",
     pretrainedLink: "Open the strategy explorer →",
   },
 } as const;

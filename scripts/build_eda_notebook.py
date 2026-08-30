@@ -28,9 +28,7 @@ def code(src: str) -> None:
     CELLS.append(nbf.v4.new_code_cell(src.strip("\n")))
 
 
-# =========================================================================== #
 # SECTION 1 - Executive Summary and Reproducibility
-# =========================================================================== #
 md(
     r"""
 # Exploratory Data Analysis - BTC/ETH USDT-M Perpetual Futures
@@ -87,9 +85,7 @@ frozen holdout and via a cost-aware backtest in a later phase.
 """
 )
 
-# =========================================================================== #
 # SECTION 2 - Configuration and Data Loading
-# =========================================================================== #
 md(
     r"""
 ## 2. Configuration and data loading
@@ -119,6 +115,10 @@ os.chdir(_root)
 if str(_root / "src") not in sys.path:
     sys.path.insert(0, str(_root / "src"))
 REPO_ROOT = _root
+
+# matplotlib stamps a CreationDate into every PDF; pinning this keeps two runs
+# of the notebook byte-identical instead of differing in metadata alone.
+os.environ.setdefault("SOURCE_DATE_EPOCH", "946684800")
 print(f"Repository root: {REPO_ROOT}")
 """
 )
@@ -316,9 +316,7 @@ COVERAGE_COMPLETE = True
 )
 
 
-# =========================================================================== #
 # SECTION 3 - Data Sources and Analytical Scope
-# =========================================================================== #
 md(
     r"""
 ## 3. Data sources and analytical scope
@@ -406,9 +404,7 @@ proceed with all three timeframes; open interest is excluded as unavailable for 
 """
 )
 
-# =========================================================================== #
 # SECTION 4 - Data Integrity and Coverage
-# =========================================================================== #
 md(
     r"""
 ## 4. Data integrity and coverage
@@ -625,9 +621,7 @@ and retained.
 )
 
 
-# =========================================================================== #
 # SECTION 5 - Price Dynamics and Market Episodes
-# =========================================================================== #
 md(
     r"""
 ## 5. Price dynamics and market episodes
@@ -774,9 +768,7 @@ chronological validation windows that must each cover several volatility cycles 
 """
 )
 
-# =========================================================================== #
 # SECTION 6 - Return Distributions and Tail Risk
-# =========================================================================== #
 md(
     r"""
 ## 6. Return distributions and tail risk
@@ -955,9 +947,7 @@ for robust/rank-based features; the kurtosis-timeframe trade-off feeds timeframe
 )
 
 
-# =========================================================================== #
 # SECTION 7 - Volatility and Temporal Dependence
-# =========================================================================== #
 md(
     r"""
 ## 7. Volatility and temporal dependence
@@ -1125,9 +1115,7 @@ chronological validation windows to span several volatility cycles.
 """
 )
 
-# =========================================================================== #
 # SECTION 8 - Market Activity, Order Flow and Seasonality
-# =========================================================================== #
 md(
     r"""
 ## 8. Market activity, order flow and seasonality
@@ -1309,9 +1297,7 @@ confirmed out-of-sample, never a standalone signal.
 """
 )
 
-# =========================================================================== #
 # SECTION 9 - Funding Rates and Mark-Price Basis
-# =========================================================================== #
 md(
     r"""
 ## 9. Funding rates and mark-price basis
@@ -1444,9 +1430,7 @@ conditioning variables (backward joins only), not as direct return predictors.
 )
 
 
-# =========================================================================== #
 # SECTION 10 - BTC-ETH Dependence
-# =========================================================================== #
 md(
     r"""
 ## 10. BTC-ETH dependence
@@ -1543,9 +1527,7 @@ context is a candidate feature, but no naive lead-lag arbitrage is warranted.
 """
 )
 
-# =========================================================================== #
 # SECTION 11 - Multi-Timeframe Comparison
-# =========================================================================== #
 md(
     r"""
 ## 11. Multi-timeframe comparison
@@ -1624,9 +1606,7 @@ compromise for this thesis, not a claim of universal optimality.
 """
 )
 
-# =========================================================================== #
 # SECTION 12 - Preliminary Market-Regime Analysis
-# =========================================================================== #
 md(
     r"""
 ## 12. Preliminary market-regime analysis
@@ -1776,9 +1756,7 @@ causally with thresholds fitted inside each walk-forward training window.
 """
 )
 
-# =========================================================================== #
 # SECTION 13 - Main Findings and Methodological Implications
-# =========================================================================== #
 md(
     r"""
 ## 13. Main findings and methodological implications
@@ -1914,9 +1892,7 @@ exposure**. The 1h selection (F9) and multi-regime span (F1-F4) fix **temporal v
 """
 )
 
-# =========================================================================== #
 # SECTION 14 - Appendix Diagnostics
-# =========================================================================== #
 md(
     r"""
 ## 14. Appendix diagnostics
@@ -2000,9 +1976,7 @@ print("Notebook complete: all sections executed on development data only; holdou
 )
 
 
-# =========================================================================== #
 # SECTION 15 - Advanced dependence: bootstrap CIs, regime tests, tail dependence
-# =========================================================================== #
 md(
     r"""
 ## 15. Advanced dependence analyses (inferential depth)
@@ -2250,10 +2224,8 @@ on tail co-movement, not on the average correlation.
 )
 
 
-# --------------------------------------------------------------------------- #
 # SECTION 16 - Thesis chapter-5 extensions: tails, random-walk diagnostics,
 # dated regimes, cointegration, labels and alternative data
-# --------------------------------------------------------------------------- #
 md(
     r"""
 ## 16. Chapter-5 extensions: tails, random-walk tests, dated regimes and alternative data

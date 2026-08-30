@@ -206,7 +206,10 @@ def regime_duration_table(df: pl.DataFrame, regime_col: str = "regime") -> pl.Da
             else pl.lit(0.0).alias("occupancy")
         )
         .drop("_bars")
-        .sort("occupancy", descending=True)
+        # regime name breaks occupancy ties: two regimes can share an occupancy
+        # and polars does not promise a stable order, which made the exported
+        # table swap rows between runs
+        .sort(["occupancy", regime_col], descending=[True, False])
     )
 
 
@@ -252,7 +255,6 @@ def regime_context(
     )
 
 
-# --------------------------------------------------------------------------- #
 # Date-defined market regimes (Chapter 5, Figure 5.6 and Table 5.3).
 #
 # These windows are fixed BY DATE in code — not fitted to the data — so that
@@ -261,7 +263,6 @@ def regime_context(
 # the COVID crash, the 2020-21 expansion, the 2022 contraction with its credit
 # failures, the 2023 recovery and the progressively institutionalised 2024-25
 # market. End dates are exclusive.
-# --------------------------------------------------------------------------- #
 MARKET_REGIMES: tuple[tuple[str, str, str], ...] = (
     ("covid_crash", "2020-01-01", "2020-04-01"),
     ("expansion_2020_21", "2020-04-01", "2021-12-01"),

@@ -86,9 +86,7 @@ def save(fig: plt.Figure, name: str) -> str:
     return f"{OUT / name}.png|.svg"
 
 
-# --------------------------------------------------------------------------- #
 # Load the artifact folds and cross-check against the live splitter
-# --------------------------------------------------------------------------- #
 def load_folds() -> list[dict]:
     data = json.loads((CANONICAL_RUN / "folds.json").read_text(encoding="utf-8"))
     folds = data["folds"]
@@ -128,9 +126,7 @@ def parse(f: dict) -> dict:
     return out
 
 
-# --------------------------------------------------------------------------- #
 # Figure 3.4 — expanding walk-forward with the real exclusions
-# --------------------------------------------------------------------------- #
 def fig_3_4(folds: list[dict]) -> str:
     parsed = [parse(f) for f in folds]
     fig = plt.figure(figsize=(6.6, 7.2), constrained_layout=True)
@@ -337,9 +333,7 @@ def fig_3_4(folds: list[dict]) -> str:
     return save(fig, "fig_3_4_walk_forward")
 
 
-# --------------------------------------------------------------------------- #
 # Figure 3.2 — data partitions and access rules (governance metadata only)
-# --------------------------------------------------------------------------- #
 def fig_3_2(folds: list[dict]) -> str:
     fig = plt.figure(figsize=(6.6, 6.2), constrained_layout=True)
     gs = fig.add_gridspec(2, 1, height_ratios=[0.85, 1.55])
@@ -543,9 +537,7 @@ def fig_3_2(folds: list[dict]) -> str:
     return save(fig, "fig_3_2_partitions_access")
 
 
-# --------------------------------------------------------------------------- #
 # Sidecar data + sources note
-# --------------------------------------------------------------------------- #
 def write_sidecars(folds: list[dict]) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     with (OUT / "fold_boundaries.csv").open("w", newline="", encoding="utf-8") as fh:

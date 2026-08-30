@@ -30,8 +30,8 @@
     "return_kind": "log",
     "rolling_moment_window_days": 30
   },
-  "generated_at": "2026-08-26T17:23:26.414236+00:00",
-  "code_commit": "de5b9d82a591ac5f95f35b438516d5511c14330f",
+  "generated_at": "2026-08-30T10:16:57.716198+00:00",
+  "code_commit": "a44399ed505de4042b86e15cb4ff440a7ea0db56",
   "output_path": "reports/tables/eda/t27_funding_runs.md",
   "kind": "table",
   "n_rows": 4,

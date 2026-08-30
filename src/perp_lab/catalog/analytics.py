@@ -44,9 +44,7 @@ class AnalyticsError(RuntimeError):
     """Raised when a query cannot be run against the given Parquet sources."""
 
 
-# --------------------------------------------------------------------------- #
 # SQL
-# --------------------------------------------------------------------------- #
 
 SQL_AGGREGATE_METRICS_ACROSS_RUNS = """
 SELECT
@@ -114,9 +112,7 @@ VALID_TRUNCATION_UNITS: frozenset[str] = frozenset(
 )
 
 
-# --------------------------------------------------------------------------- #
 # Plumbing
-# --------------------------------------------------------------------------- #
 
 
 @contextmanager
@@ -171,9 +167,7 @@ def _checked_column(name: str, available: Sequence[str], *, role: str) -> str:
     return _quote_identifier(name)
 
 
-# --------------------------------------------------------------------------- #
 # Queries
-# --------------------------------------------------------------------------- #
 
 
 def aggregate_metrics_across_runs(
@@ -234,9 +228,7 @@ def resample_equity(
         return connection.execute(statement, {"files": files, "unit": normalised_unit}).pl()
 
 
-# --------------------------------------------------------------------------- #
 # Getting remote objects onto a local disk DuckDB can read
-# --------------------------------------------------------------------------- #
 
 
 def materialise(store: ObjectStore, key: str, cache_dir: str | Path) -> Path:

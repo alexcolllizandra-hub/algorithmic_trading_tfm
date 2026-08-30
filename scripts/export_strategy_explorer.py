@@ -232,9 +232,7 @@ def main() -> int:
                 # A raw price-only cumprod would disagree with the table by the
                 # whole funding bill (~+48pt on BTC over the OOS window).
                 market = np.nan_to_num(ledger["oo_return"].to_numpy().astype(float))
-                funding = np.nan_to_num(
-                    ledger["funding_rate_in_bar"].to_numpy().astype(float)
-                )
+                funding = np.nan_to_num(ledger["funding_rate_in_bar"].to_numpy().astype(float))
                 bh_net = market - funding
                 bh_net[0] -= 5.0 / 1e4
                 bh_equity = np.cumprod(1.0 + bh_net)
@@ -263,9 +261,7 @@ def main() -> int:
             asset["average_curve"] = decimate(np.cumprod(1.0 + mean_net))
             asset["average_metrics"] = {k: round(v, 6) for k, v in path_metrics(mean_net).items()}
             # Monte Carlo on the median seed by total return: no seed cherry-pick.
-            by_ret = sorted(
-                asset["seeds"], key=lambda s: s["metrics"].get("total_return") or 0.0
-            )
+            by_ret = sorted(asset["seeds"], key=lambda s: s["metrics"].get("total_return") or 0.0)
             median_seed = by_ret[len(by_ret) // 2]["seed"]
             asset["monte_carlo"] = monte_carlo_block(nets[median_seed], median_seed)
             meta = closure.get(family, {}).get(symbol, {})

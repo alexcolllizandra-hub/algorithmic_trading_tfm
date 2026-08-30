@@ -553,7 +553,6 @@ class CrossAssetSpreadFamily(_Strict):
         return self
 
 
-# --------------------------------------------------------------------------- #
 # Round CRT_INTRADAY_V1: Candle Range Theory families.
 #
 # The grids below are deliberately short. Every distinct configuration counts
@@ -562,7 +561,6 @@ class CrossAssetSpreadFamily(_Strict):
 # Mechanics that are *fixed* rather than searched are declared as scalars in
 # ``CrtIntradayMechanics`` so they remain configuration rather than constants
 # buried in code.
-# --------------------------------------------------------------------------- #
 
 # Mirrored from perp_lab.crt.exits.StopKind and perp_lab.crt.strategies.TARGET_PLANS.
 # Repeated here so the config layer does not import the strategy layer; a unit

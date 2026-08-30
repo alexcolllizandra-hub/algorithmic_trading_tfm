@@ -1,4 +1,4 @@
-﻿"""Build the chapter-8 evidence package: conditional risk simulation.
+"""Build the chapter-8 evidence package: conditional risk simulation.
 
 Run with: ``uv run python scripts/build_ch8_results.py``
 
@@ -121,9 +121,7 @@ def rng_for(*key_parts: object) -> np.random.Generator:
     )
 
 
-# --------------------------------------------------------------------------- #
 # 1. Load candidate ledgers and trades (with fold ids)
-# --------------------------------------------------------------------------- #
 def unit_rows(family: str) -> pl.DataFrame:
     return UNITS7.filter(
         (pl.col("family") == family) & (pl.col("symbol") == SYMBOL) & (pl.col("engine") == ENGINE)
@@ -189,9 +187,7 @@ for _round, family in CANDIDATES:
         }
 
 
-# --------------------------------------------------------------------------- #
 # 2. Input files
-# --------------------------------------------------------------------------- #
 returns_frames = []
 for _round, family in CANDIDATES:
     for seed, d in sorted(DATA[family].items()):
@@ -250,9 +246,7 @@ TRADES_ALL = pl.concat(trade_frames)
 TRADES_ALL.write_csv(OUT / "ch8_input_trades.csv", float_precision=8)
 
 
-# --------------------------------------------------------------------------- #
 # 3. Observed per-seed metrics + reconciliation against chapter 7
-# --------------------------------------------------------------------------- #
 def longest_true_run(mask: np.ndarray) -> int:
     if not mask.any():
         return 0
@@ -377,9 +371,7 @@ for _r, family in CANDIDATES:
     }
 
 
-# --------------------------------------------------------------------------- #
 # 4. Vectorised resampling core
-# --------------------------------------------------------------------------- #
 def stationary_indices(
     rng: np.random.Generator, n: int, length: int, mean_block: float, rows: int
 ) -> np.ndarray:
@@ -516,9 +508,7 @@ def binom_ci(p: float, n: int) -> tuple[float, float, float]:
     return se, max(centre - half, 0.0), min(centre + half, 1.0)
 
 
-# --------------------------------------------------------------------------- #
 # 5. Run scenarios
-# --------------------------------------------------------------------------- #
 print("running simulations (deterministic, master seed 20260829)...")
 summary_rows: list[dict] = []
 fanq_rows: list[dict] = []
@@ -787,9 +777,7 @@ for family in [f for _r, f in CANDIDATES]:
     check(f"breach(50%) monotone in multiplier ({family})", bool(np.all(np.diff(mono) >= -1e-12)))
 
 
-# --------------------------------------------------------------------------- #
 # 6. Trade-level secondary analyses and concentration
-# --------------------------------------------------------------------------- #
 def trade_seq_equity(r: np.ndarray) -> np.ndarray:
     return np.cumprod(1.0 + r)
 
@@ -931,9 +919,7 @@ with (OUT / "ch8_results_units.md").open("w", encoding="utf-8") as fh:
     )
 
 
-# --------------------------------------------------------------------------- #
 # 7. Tables 8.1-8.7 (markdown; CSVs above are the sources)
-# --------------------------------------------------------------------------- #
 def md_table(df: pl.DataFrame, fmt: str = ".4f") -> str:
     def cell(v: object) -> str:
         if isinstance(v, float):
@@ -1067,9 +1053,7 @@ else:
 (OUT / "ch8_tables.md").write_text("\n\n".join(tables_md) + "\n", encoding="utf-8")
 
 
-# --------------------------------------------------------------------------- #
 # 8. Figures
-# --------------------------------------------------------------------------- #
 FAM_COLOR = {"pdl_reclaim_long": "#0072B2", "volatility_breakout": "#D55E00"}
 FAM_LIST = [f for _r, f in CANDIDATES]
 

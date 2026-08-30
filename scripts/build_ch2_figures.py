@@ -65,9 +65,7 @@ def save(fig: plt.Figure, name: str) -> str:
     return f"{OUT / name}.png|.pdf"
 
 
-# --------------------------------------------------------------------------- #
 # Fig 2.1 — funding mechanism (schematic)
-# --------------------------------------------------------------------------- #
 def fig_2_1() -> str:
     rng = np.random.default_rng(SEED)
     t = np.linspace(0, 6, 400)
@@ -121,9 +119,7 @@ def fig_2_1() -> str:
     return save(fig, "fig_2_1_funding_mechanism")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 2.2 — real funding rates with marginal distributions
-# --------------------------------------------------------------------------- #
 def fig_2_2() -> str:
     fig, axes = plt.subplots(
         2,
@@ -175,9 +171,7 @@ def fig_2_2() -> str:
     return save(fig, "fig_2_2_funding_rates")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 2.3 — validation geometries (walk-forward panel uses real fold dates)
-# --------------------------------------------------------------------------- #
 def fig_2_3() -> str:
     meta = json.loads((FOLDS_RUN / "folds.json").read_text(encoding="utf-8"))
     folds = meta["folds"]
@@ -321,9 +315,7 @@ def fig_2_3() -> str:
     return save(fig, "fig_2_3_validation_geometries")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 2.4 — triple barrier on a real BTCUSDT 5m segment
-# --------------------------------------------------------------------------- #
 def fig_2_4() -> str:
     bars = (
         pl.read_parquet("data/validated/BTCUSDT/5m.parquet")
@@ -410,9 +402,7 @@ def fig_2_4() -> str:
     return save(fig, "fig_2_4_triple_barrier")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 2.5 — meta-labeling architecture (diagram)
-# --------------------------------------------------------------------------- #
 def fig_2_5() -> str:
     fig, ax = plt.subplots(figsize=(7.6, 3.6))
     ax.set_xlim(0, 10)
@@ -476,9 +466,7 @@ def fig_2_5() -> str:
     return save(fig, "fig_2_5_meta_labeling")
 
 
-# --------------------------------------------------------------------------- #
 # Fig 2.6 — data snooping: max Sharpe of N random strategies vs theory
-# --------------------------------------------------------------------------- #
 def fig_2_6() -> str:
     bars = pl.read_parquet("data/processed/BTCUSDT/1h_development.parquet").sort("open_time")
     close = bars["close"].to_numpy()

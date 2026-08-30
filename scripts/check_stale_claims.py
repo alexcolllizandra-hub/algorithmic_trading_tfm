@@ -32,6 +32,10 @@ PHRASES = (
 SCAN_DIRS = ("docs", "scripts")
 SCAN_SUFFIXES = {".md", ".py", ".yaml", ".yml", ".txt"}
 
+# Archived working material, kept on disk and out of the repository. Its wording
+# is frozen at the date it was written and is not part of what the thesis cites.
+SKIP_PREFIXES = ("docs/history/",)
+
 # Frozen bodies whose wording is historical and governed by a dated status
 # note in the same file. Path separators normalised to '/'.
 ALLOWLIST: dict[str, set[str]] = {
@@ -47,17 +51,9 @@ ALLOWLIST: dict[str, set[str]] = {
     "docs/decisions/0012-outer-fold-contamination-in-candidate-search.md": {"holdout untouched"},
     "docs/decisions/0015-r3-family-evaluation-negative.md": {"never opened"},
     "docs/methodology/final_holdout_evaluation.md": {"never opened"},
-    "docs/roadmap/gate_s1_batch_01.md": {"holdout untouched"},
-    "docs/roadmap/gate_s1b_outcome.md": {"holdout untouched"},
-    "docs/roadmap/gate_s2b_outcome.md": {"holdout untouched"},
-    "docs/audit/03_reorganizacion_propuesta.md": {"holdout untouched"},
-    "docs/roadmap.md": {"holdout untouched"},
-    # This checker and the audit documents quote the phrases in order to ban
-    # or report them.
+    "docs/methodology/gate_s1_batch_01.md": {"holdout untouched"},
+    # This checker quotes the phrases in order to ban them.
     "scripts/check_stale_claims.py": set(PHRASES),
-    "docs/audit/00_resumen_ejecutivo.md": set(PHRASES),
-    "docs/audit/02_auditoria_calidad.md": set(PHRASES),
-    "docs/thesis/incidente_holdout.md": set(PHRASES),
     "docs/methodology/holdout_audit_status.md": set(PHRASES),
 }
 
@@ -73,6 +69,8 @@ def main() -> int:
             if not path.is_file() or path.suffix.lower() not in SCAN_SUFFIXES:
                 continue
             rel = path.relative_to(root).as_posix()
+            if rel.startswith(SKIP_PREFIXES):
+                continue
             try:
                 text = path.read_text(encoding="utf-8", errors="ignore").lower()
             except OSError:
