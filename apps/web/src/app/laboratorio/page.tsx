@@ -43,6 +43,7 @@ import {
 import { STRATEGIES, type StrategyDef, type StrategyId } from "@/lib/lab/strategies";
 import { useAttempts } from "@/lib/lab/attempts";
 import { paramSummary, useHistory, type HistoryEntry } from "@/lib/lab/history";
+import { expectedMaxSharpe } from "@/lib/lab/walkforward";
 import {
   applyExitOverlay,
   applyRegimeGate,
@@ -57,9 +58,10 @@ import {
   type RegimeRow,
   type TornadoRow,
 } from "@/lib/lab/tests";
+import { OptimizerSection } from "./OptimizerSection";
 import { WalkForwardSection } from "./WalkForwardSection";
 
-const ACCENT = "var(--accent)";
+const ACCENT = "rgb(var(--accent))";
 const CHART = {
   grid: "rgb(148 163 184 / 0.15)",
   axis: "rgb(148 163 184)",
@@ -274,7 +276,10 @@ function EquityPanel({ result, t }: { result: RunResult; t: Dictionary }) {
           <Tooltip
             formatter={(value: number, name: string) => [Number(value).toFixed(3) + "×", name]}
             labelFormatter={(v) => new Date(Number(v) * 1000).toISOString().slice(0, 10)}
-            contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+            contentStyle={{
+              background: "rgb(var(--surface-2))",
+              border: "1px solid rgb(var(--border))",
+            }}
           />
           <ReferenceLine y={1} stroke={CHART.axis} strokeDasharray="4 3" />
           <ReferenceLine x={splitTime} stroke={CHART.amber} strokeDasharray="4 3" />
@@ -487,7 +492,10 @@ function SignalsPanel({
               const r = item.payload;
               return [`O ${r.o} · H ${r.h} · L ${r.l} · C ${r.c}`, "OHLC"];
             }}
-            contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+            contentStyle={{
+              background: "rgb(var(--surface-2))",
+              border: "1px solid rgb(var(--border))",
+            }}
           />
           <Bar dataKey="hl" isAnimationActive={false} shape={CandleShape} name="OHLC" />
           <Scatter
@@ -524,7 +532,7 @@ function SignalsPanel({
           max={Math.max(0, n - 1)}
           value={center}
           onChange={(event) => setCenter(Number(event.target.value))}
-          className="mt-1 w-full accent-[var(--accent)]"
+          className="mt-1 w-full accent-accent"
         />
       </label>
     </Card>
@@ -582,7 +590,10 @@ function MaeMfePanel({ result, t }: { result: RunResult; t: Dictionary }) {
             />
             <Tooltip
               formatter={(value: number) => `${Number(value).toFixed(2)}%`}
-              contentStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+              contentStyle={{
+                background: "rgb(var(--surface-2))",
+                border: "1px solid rgb(var(--border))",
+              }}
             />
             <ReferenceLine y={0} stroke={CHART.axis} strokeDasharray="4 3" />
             <Scatter
@@ -976,8 +987,39 @@ function HistoryPanel({ t }: { t: Dictionary }) {
   );
 }
 
-const _historyEntryType: HistoryEntry | null = null;
-void _historyEntryType;
+function VerdictPanel({
+  t,
+  attempts,
+  nBars,
+  entries,
+}: {
+  t: Dictionary;
+  attempts: number;
+  nBars: number;
+  entries: HistoryEntry[];
+}) {
+  const best = entries.length ? Math.max(...entries.map((e) => e.oosSharpe)) : null;
+  const noise = expectedMaxSharpe(attempts, nBars);
+  return (
+    <Card>
+      <CardHeader title={t.lab.verdict.title} subtitle={t.lab.verdict.subtitle} />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Tile label={t.lab.verdict.attempts} value={fmtInt(attempts)} />
+        <Tile
+          label={t.lab.verdict.noise}
+          value={attempts > 0 ? fmtNumber(noise, 2) : t.lab.verdict.none}
+        />
+        <Tile
+          label={t.lab.verdict.bestOos}
+          value={best == null ? t.lab.verdict.none : fmtNumber(best, 2)}
+          tone={best == null ? undefined : best > noise ? "good" : "bad"}
+        />
+      </div>
+      <p className="mt-3 text-[11px] text-muted/80">{t.lab.verdict.noiseNote}</p>
+      <p className="mt-4 text-sm leading-relaxed text-muted">{t.lab.verdict.body}</p>
+    </Card>
+  );
+}
 
 /* ------------------------------------------------------------------------ */
 /* Page                                                                      */
@@ -1007,9 +1049,12 @@ export default function LaboratorioPage() {
   const [trendGate, setTrendGate] = useState(false);
   const [allowedRegimes, setAllowedRegimes] = useState<Regime[]>(["low", "mid", "high"]);
   const [running, setRunning] = useState(false);
-  const { add: addAttempts } = useAttempts();
+  const { attempts, add: addAttempts } = useAttempts();
   const { add: addHistory } = useHistory();
   const [result, setResult] = useState<RunResult | null>(null);
+  const [step, setStep] = useState(1);
+  const [optimized, setOptimized] = useState(false);
+  const { entries: historyEntries } = useHistory();
 
   const pickStrategy = (id: StrategyId) => {
     setStrategyId(id);
@@ -1017,14 +1062,15 @@ export default function LaboratorioPage() {
     setValues(Object.fromEntries(nextDef.params.map((p) => [p.key, p.default])));
   };
 
-  const run = () => {
+  const run = (override?: Record<string, number | string>) => {
     if (!data) return;
+    const vals = override ?? values;
     setRunning(true);
     // Yield one frame so the "running" state paints before the compute burst.
     setTimeout(() => {
       try {
         const costs = { feeBpsPerSide: feeBps, slippageBpsPerSide: slipBps };
-        let side = def.run(data.bars, values, { funding: data.funding });
+        let side = def.run(data.bars, vals, { funding: data.funding });
         // Composable gates and exit overlays (blocks B1/B2): gates first,
         // exits after, so an exit episode is defined on the gated stream.
         if (trendGate) side = applyTrendGate(side, data.bars, 200);
@@ -1059,7 +1105,7 @@ export default function LaboratorioPage() {
         const stressMetrics = computeMetrics(stressLedger, [], splitIdx, n);
         let twin: { symbol: string; totalReturn: number } | null = null;
         if (twinData) {
-          const twinSide = def.run(twinData.bars, values, { funding: twinData.funding });
+          const twinSide = def.run(twinData.bars, vals, { funding: twinData.funding });
           const twinLedger = runBacktest(twinData.bars, twinSide, costs, twinData.funding);
           const tn = twinLedger.net.length;
           const tSplit = Math.max(1, Math.min(tn - 2, Math.floor((splitPct / 100) * tn)));
@@ -1071,7 +1117,7 @@ export default function LaboratorioPage() {
         const oosReturn = computeMetrics(ledger, [], splitIdx, n).total_return;
         const tornado = perturbationTornado(
           def,
-          values,
+          vals,
           data.bars,
           data.funding,
           costs,
@@ -1096,7 +1142,7 @@ export default function LaboratorioPage() {
           ts: Date.now(),
           strategyId,
           symbol,
-          params: { ...values },
+          params: { ...vals },
           oosReturn: outMetrics.total_return,
           oosSharpe: outMetrics.sharpe,
           maxDd: outMetrics.max_drawdown,
@@ -1121,38 +1167,85 @@ export default function LaboratorioPage() {
           twin,
           tornado,
           regimes,
-          params: { ...values },
+          params: { ...vals },
           symbol,
           strategyId,
         });
+        setStep(2);
       } finally {
         setRunning(false);
       }
     }, 30);
   };
 
-  const flowSteps = [
-    { href: "#lab-design", label: t.lab.flow.design, desc: t.lab.flow.designDesc, done: true },
+  const steps = [
+    { key: 1, label: t.lab.flow.design, desc: t.lab.flow.designDesc, done: result != null },
+    { key: 2, label: t.lab.flow.backtest, desc: t.lab.flow.backtestDesc, done: result != null },
     {
-      href: "#lab-backtest",
-      label: t.lab.flow.backtest,
-      desc: t.lab.flow.backtestDesc,
-      done: result != null,
+      key: 3,
+      label: t.lab.flow.compare,
+      desc: t.lab.steps.compareDesc,
+      done: historyEntries.length > 0,
     },
-    {
-      href: "#lab-walkforward",
-      label: t.lab.flow.validate,
-      desc: t.lab.flow.validateDesc,
-      done: false,
-    },
-    { href: "#lab-compare", label: t.lab.flow.compare, desc: t.lab.flow.compareDesc, done: false },
+    { key: 4, label: t.lab.steps.optimize, desc: t.lab.steps.optimizeDesc, done: optimized },
+    { key: 5, label: t.lab.flow.validate, desc: t.lab.flow.validateDesc, done: false },
+    { key: 6, label: t.lab.steps.verdict, desc: t.lab.steps.verdictDesc, done: false },
   ];
+  const goto = (k: number) => {
+    setStep(Math.max(1, Math.min(steps.length, k)));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const loadConfig = (vals: Record<string, number | string>) => {
+    setValues(vals);
+    run(vals);
+    setStep(2);
+  };
+
+  const footer = (k: number) => (
+    <div className="flex items-center justify-between border-t border-border pt-4">
+      <button
+        type="button"
+        onClick={() => goto(k - 1)}
+        disabled={k === 1}
+        className="rounded-md border border-border px-4 py-2 text-sm text-muted hover:text-fg disabled:opacity-40"
+      >
+        ← {t.lab.steps.prev}
+      </button>
+      <span className="text-xs text-muted">
+        {t.lab.steps.stepOf.replace("{k}", String(k)).replace("{n}", String(steps.length))}
+      </span>
+      <button
+        type="button"
+        onClick={() => goto(k + 1)}
+        disabled={k === steps.length}
+        className="rounded-md px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+        style={{ background: ACCENT }}
+      >
+        {t.lab.steps.next} →
+      </button>
+    </div>
+  );
+
+  const needRun = (
+    <Card>
+      <p className="text-sm text-muted">{t.lab.steps.needRun}</p>
+      <button
+        type="button"
+        onClick={() => goto(1)}
+        className="mt-3 rounded-md border border-border px-3 py-1.5 text-sm text-accent hover:border-accent/50"
+      >
+        {t.lab.steps.goDesign}
+      </button>
+    </Card>
+  );
 
   return (
     <PageShell title={t.lab.title}>
       <ExploratoryBanner message={t.lab.banner} />
 
-      {/* The guided flow: same order as the study's own pipeline. */}
+      {/* The guided flow: same order as the study's own pipeline. Each step
+          is a screen of its own; hidden steps stay mounted so the walk-forward
+          worker and the optimiser keep their results while you move around. */}
       <nav
         aria-label={t.lab.flow.title}
         className="rounded-card border border-border bg-surface p-4"
@@ -1160,323 +1253,381 @@ export default function LaboratorioPage() {
         <p className="text-xs font-semibold uppercase tracking-wide text-muted">
           {t.lab.flow.title}
         </p>
-        <ol className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {flowSteps.map((step, i) => (
-            <li key={step.href}>
-              <a
-                href={step.href}
-                className="group flex items-start gap-3 rounded-md border border-border bg-surface-2/60 px-3 py-2.5 transition-colors hover:border-accent/40"
-              >
-                <span
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                    step.done ? "bg-accent text-accent-fg" : "border border-border text-muted"
+        <ol className="mt-3 grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+          {steps.map((s, i) => {
+            const active = step === s.key;
+            return (
+              <li key={s.key}>
+                <a
+                  href={`#lab-step-${s.key}`}
+                  aria-current={active ? "step" : undefined}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    goto(s.key);
+                  }}
+                  className={`group flex h-full items-start gap-3 rounded-md border px-3 py-2.5 transition-colors ${
+                    active
+                      ? "border-accent/60 bg-accent/10"
+                      : "border-border bg-surface-2/60 hover:border-accent/40"
                   }`}
                 >
-                  {step.done ? "✓" : i + 1}
-                </span>
-                <span>
-                  <span className="block text-sm font-medium text-fg group-hover:text-accent">
-                    {step.label}
+                  <span
+                    className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                      s.done || active
+                        ? "bg-accent text-accent-fg"
+                        : "border border-border text-muted"
+                    }`}
+                  >
+                    {s.done ? "✓" : i + 1}
                   </span>
-                  <span className="block text-xs text-muted">{step.desc}</span>
-                </span>
-              </a>
-            </li>
-          ))}
+                  <span>
+                    <span className="block text-sm font-medium text-fg group-hover:text-accent">
+                      {s.label}
+                    </span>
+                    <span className="block text-xs text-muted">{s.desc}</span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
         </ol>
       </nav>
 
-      <Card>
-        <CardHeader title={t.lab.title} subtitle={t.lab.subtitle} />
-        <dl className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {[
-            { q: t.lab.que, a: t.lab.queAnswer },
-            { q: t.lab.comoFunciona, a: t.lab.comoFuncionaAnswer },
-            { q: t.lab.queNo, a: t.lab.queNoAnswer },
-          ].map(({ q, a }) => (
-            <div key={q} className="rounded-md border border-border bg-surface-2 px-4 py-3">
-              <dt className="text-xs font-semibold uppercase tracking-wide text-accent">{q}</dt>
-              <dd className="mt-2 text-sm text-muted">{a}</dd>
-            </div>
-          ))}
-        </dl>
-      </Card>
-
-      {/* Strategy picker with schematic mini-panels. */}
-      <div id="lab-design" className="grid scroll-mt-24 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {STRATEGIES.map((s) => {
-          const copy = t.lab.strategies[s.id];
-          const active = s.id === strategyId;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => pickStrategy(s.id)}
-              aria-pressed={active}
-              className={`flex h-full flex-col gap-2 rounded-card border p-4 text-left transition-colors ${
-                active
-                  ? "border-accent/60 bg-surface"
-                  : "border-border bg-surface/60 hover:border-accent/30"
-              }`}
-            >
-              <p className="text-sm font-semibold">{copy.name}</p>
-              <p className="text-xs text-muted">{copy.tagline}</p>
-              <div className="mt-1 rounded-md border border-border bg-surface-2 p-2">
-                <StrategySketch id={s.id} />
+      {/* Step 1: design. */}
+      <section id="lab-step-1" hidden={step !== 1} className="space-y-6">
+        <Card>
+          <CardHeader title={t.lab.title} subtitle={t.lab.subtitle} />
+          <dl className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {[
+              { q: t.lab.que, a: t.lab.queAnswer },
+              { q: t.lab.comoFunciona, a: t.lab.comoFuncionaAnswer },
+              { q: t.lab.queNo, a: t.lab.queNoAnswer },
+            ].map(({ q, a }) => (
+              <div key={q} className="rounded-md border border-border bg-surface-2 px-4 py-3">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-accent">{q}</dt>
+                <dd className="mt-2 text-sm text-muted">{a}</dd>
               </div>
-              <p className="text-xs leading-relaxed text-muted">{copy.how}</p>
-              <p className="mt-auto pt-1 text-[10px] uppercase tracking-wide text-muted/70">
-                {t.lab.exampleCaption}
-              </p>
-            </button>
-          );
-        })}
-      </div>
+            ))}
+          </dl>
+        </Card>
 
-      {/* Configuration + run. */}
-      <Card>
-        <CardHeader title={t.lab.paramsTitle} subtitle={t.lab.studyValuesNote} />
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {def.params.map((p) => (
-              <label key={p.key} className="block text-sm">
-                <span className="font-mono text-xs text-muted">{p.key}</span>
-                {p.kind === "choice" ? (
-                  <select
-                    value={String(values[p.key])}
-                    onChange={(event) => setValues((v) => ({ ...v, [p.key]: event.target.value }))}
-                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm"
-                  >
-                    {p.studyValues.map((option) => (
-                      <option key={String(option)} value={String(option)}>
-                        {String(option)}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <>
-                    <input
-                      type="number"
-                      value={Number(values[p.key])}
-                      min={p.min}
-                      max={p.max}
-                      step={p.step ?? 1}
+        {/* Strategy picker with schematic mini-panels. */}
+        <div id="lab-design" className="grid scroll-mt-24 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {STRATEGIES.map((s) => {
+            const copy = t.lab.strategies[s.id];
+            const active = s.id === strategyId;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => pickStrategy(s.id)}
+                aria-pressed={active}
+                className={`flex h-full flex-col gap-2 rounded-card border p-4 text-left transition-colors ${
+                  active
+                    ? "border-accent/60 bg-surface"
+                    : "border-border bg-surface/60 hover:border-accent/30"
+                }`}
+              >
+                <p className="text-sm font-semibold">{copy.name}</p>
+                <p className="text-xs text-muted">{copy.tagline}</p>
+                <div className="mt-1 rounded-md border border-border bg-surface-2 p-2">
+                  <StrategySketch id={s.id} />
+                </div>
+                <p className="text-xs leading-relaxed text-muted">{copy.how}</p>
+                <p className="mt-auto pt-1 text-[10px] uppercase tracking-wide text-muted/70">
+                  {t.lab.exampleCaption}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Configuration + run. */}
+        <Card>
+          <CardHeader title={t.lab.paramsTitle} subtitle={t.lab.studyValuesNote} />
+          <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {def.params.map((p) => (
+                <label key={p.key} className="block text-sm">
+                  <span className="font-mono text-xs text-muted">{p.key}</span>
+                  {p.kind === "choice" ? (
+                    <select
+                      value={String(values[p.key])}
                       onChange={(event) =>
-                        setValues((v) => ({ ...v, [p.key]: Number(event.target.value) }))
+                        setValues((v) => ({ ...v, [p.key]: event.target.value }))
                       }
                       className="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm"
-                    />
-                    <span className="mt-1.5 flex flex-wrap gap-1.5">
+                    >
                       {p.studyValues.map((option) => (
-                        <button
-                          key={String(option)}
-                          type="button"
-                          onClick={() => setValues((v) => ({ ...v, [p.key]: Number(option) }))}
-                          className={`rounded border px-2 py-0.5 font-mono text-[11px] transition-colors ${
-                            Number(values[p.key]) === Number(option)
-                              ? "border-accent/60 bg-accent/10 text-accent"
-                              : "border-border text-muted hover:text-fg"
-                          }`}
-                        >
+                        <option key={String(option)} value={String(option)}>
                           {String(option)}
-                        </button>
+                        </option>
                       ))}
-                    </span>
-                  </>
-                )}
-              </label>
-            ))}
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                {t.lab.pickAsset}
-              </p>
-              <div className="mt-1.5 inline-flex rounded-md border border-border bg-surface-2 p-1">
-                {["BTCUSDT", "ETHUSDT"].map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setSymbol(s)}
-                    className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
-                      s === symbol ? "bg-[var(--accent)] text-white" : "text-muted hover:text-fg"
-                    }`}
-                  >
-                    {s.replace("USDT", "")}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                {t.lab.costsTitle}
-              </p>
-              <div className="mt-1.5 grid grid-cols-2 gap-3">
-                <label className="block text-xs text-muted">
-                  {t.lab.fee}
-                  <input
-                    type="number"
-                    value={feeBps}
-                    min={0}
-                    max={50}
-                    step={0.5}
-                    onChange={(event) => setFeeBps(Number(event.target.value))}
-                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-fg"
-                  />
-                </label>
-                <label className="block text-xs text-muted">
-                  {t.lab.slippage}
-                  <input
-                    type="number"
-                    value={slipBps}
-                    min={0}
-                    max={50}
-                    step={0.5}
-                    onChange={(event) => setSlipBps(Number(event.target.value))}
-                    className="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-fg"
-                  />
-                </label>
-              </div>
-              <p className="mt-1.5 text-[11px] text-muted/80">{t.lab.costsNote}</p>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted">
-                {t.lab.overlay.title}
-              </p>
-              <div className="mt-1.5 space-y-2">
-                {(
-                  [
-                    [t.lab.overlay.stop, stopAtr, setStopAtr, 2, 0.25],
-                    [t.lab.overlay.takeProfit, tpAtr, setTpAtr, 4, 0.25],
-                    [t.lab.overlay.trailing, trailAtr, setTrailAtr, 3, 0.25],
-                    [t.lab.overlay.maxBars, maxBars, setMaxBars, 48, 1],
-                  ] as const
-                ).map(([label, value, setter, def0, step]) => (
-                  <label key={label} className="flex items-center gap-2 text-xs text-muted">
-                    <input
-                      type="checkbox"
-                      checked={value != null}
-                      onChange={(e) => setter(e.target.checked ? def0 : null)}
-                      className="accent-[var(--accent)]"
-                    />
-                    <span className="w-36 shrink-0">{label}</span>
-                    <input
-                      type="number"
-                      value={value ?? def0}
-                      step={step}
-                      min={step}
-                      disabled={value == null}
-                      onChange={(e) => setter(Number(e.target.value))}
-                      className="w-20 rounded-md border border-border bg-surface-2 px-2 py-1 text-xs text-fg disabled:opacity-40"
-                    />
-                  </label>
-                ))}
-                <label className="flex items-center gap-2 text-xs text-muted">
-                  <input
-                    type="checkbox"
-                    checked={trendGate}
-                    onChange={(e) => setTrendGate(e.target.checked)}
-                    className="accent-[var(--accent)]"
-                  />
-                  {t.lab.overlay.trendGate}
-                </label>
-                <div className="flex items-center gap-3 text-xs text-muted">
-                  <span className="shrink-0">{t.lab.overlay.regimes}:</span>
-                  {(["low", "mid", "high"] as const).map((r) => (
-                    <label key={r} className="flex items-center gap-1">
+                    </select>
+                  ) : (
+                    <>
                       <input
-                        type="checkbox"
-                        checked={allowedRegimes.includes(r)}
-                        onChange={(e) =>
-                          setAllowedRegimes((prev) =>
-                            e.target.checked ? [...prev, r] : prev.filter((x) => x !== r)
-                          )
+                        type="number"
+                        value={Number(values[p.key])}
+                        min={p.min}
+                        max={p.max}
+                        step={p.step ?? 1}
+                        onChange={(event) =>
+                          setValues((v) => ({ ...v, [p.key]: Number(event.target.value) }))
                         }
-                        className="accent-[var(--accent)]"
+                        className="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm"
                       />
-                      {t.lab.overlay[r]}
-                    </label>
+                      <span className="mt-1.5 flex flex-wrap gap-1.5">
+                        {p.studyValues.map((option) => (
+                          <button
+                            key={String(option)}
+                            type="button"
+                            onClick={() => setValues((v) => ({ ...v, [p.key]: Number(option) }))}
+                            className={`rounded border px-2 py-0.5 font-mono text-[11px] transition-colors ${
+                              Number(values[p.key]) === Number(option)
+                                ? "border-accent/60 bg-accent/10 text-accent"
+                                : "border-border text-muted hover:text-fg"
+                            }`}
+                          >
+                            {String(option)}
+                          </button>
+                        ))}
+                      </span>
+                    </>
+                  )}
+                </label>
+              ))}
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {t.lab.pickAsset}
+                </p>
+                <div className="mt-1.5 inline-flex rounded-md border border-border bg-surface-2 p-1">
+                  {["BTCUSDT", "ETHUSDT"].map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setSymbol(s)}
+                      className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+                        s === symbol ? "bg-accent text-accent-fg" : "text-muted hover:text-fg"
+                      }`}
+                    >
+                      {s.replace("USDT", "")}
+                    </button>
                   ))}
                 </div>
-                <p className="text-[10px] leading-relaxed text-muted/70">{t.lab.overlay.note}</p>
               </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {t.lab.costsTitle}
+                </p>
+                <div className="mt-1.5 grid grid-cols-2 gap-3">
+                  <label className="block text-xs text-muted">
+                    {t.lab.fee}
+                    <input
+                      type="number"
+                      value={feeBps}
+                      min={0}
+                      max={50}
+                      step={0.5}
+                      onChange={(event) => setFeeBps(Number(event.target.value))}
+                      className="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-fg"
+                    />
+                  </label>
+                  <label className="block text-xs text-muted">
+                    {t.lab.slippage}
+                    <input
+                      type="number"
+                      value={slipBps}
+                      min={0}
+                      max={50}
+                      step={0.5}
+                      onChange={(event) => setSlipBps(Number(event.target.value))}
+                      className="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-fg"
+                    />
+                  </label>
+                </div>
+                <p className="mt-1.5 text-[11px] text-muted/80">{t.lab.costsNote}</p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {t.lab.overlay.title}
+                </p>
+                <div className="mt-1.5 space-y-2">
+                  {(
+                    [
+                      [t.lab.overlay.stop, stopAtr, setStopAtr, 2, 0.25],
+                      [t.lab.overlay.takeProfit, tpAtr, setTpAtr, 4, 0.25],
+                      [t.lab.overlay.trailing, trailAtr, setTrailAtr, 3, 0.25],
+                      [t.lab.overlay.maxBars, maxBars, setMaxBars, 48, 1],
+                    ] as const
+                  ).map(([label, value, setter, def0, step]) => (
+                    <label key={label} className="flex items-center gap-2 text-xs text-muted">
+                      <input
+                        type="checkbox"
+                        checked={value != null}
+                        onChange={(e) => setter(e.target.checked ? def0 : null)}
+                        className="accent-accent"
+                      />
+                      <span className="w-36 shrink-0">{label}</span>
+                      <input
+                        type="number"
+                        value={value ?? def0}
+                        step={step}
+                        min={step}
+                        disabled={value == null}
+                        onChange={(e) => setter(Number(e.target.value))}
+                        className="w-20 rounded-md border border-border bg-surface-2 px-2 py-1 text-xs text-fg disabled:opacity-40"
+                      />
+                    </label>
+                  ))}
+                  <label className="flex items-center gap-2 text-xs text-muted">
+                    <input
+                      type="checkbox"
+                      checked={trendGate}
+                      onChange={(e) => setTrendGate(e.target.checked)}
+                      className="accent-accent"
+                    />
+                    {t.lab.overlay.trendGate}
+                  </label>
+                  <div className="flex items-center gap-3 text-xs text-muted">
+                    <span className="shrink-0">{t.lab.overlay.regimes}:</span>
+                    {(["low", "mid", "high"] as const).map((r) => (
+                      <label key={r} className="flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          checked={allowedRegimes.includes(r)}
+                          onChange={(e) =>
+                            setAllowedRegimes((prev) =>
+                              e.target.checked ? [...prev, r] : prev.filter((x) => x !== r)
+                            )
+                          }
+                          className="accent-accent"
+                        />
+                        {t.lab.overlay[r]}
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-[10px] leading-relaxed text-muted/70">{t.lab.overlay.note}</p>
+                </div>
+              </div>
+
+              <label className="block text-xs text-muted">
+                {t.lab.splitLabel}: <span className="tabular font-medium text-fg">{splitPct}%</span>
+                <input
+                  type="range"
+                  min={40}
+                  max={90}
+                  value={splitPct}
+                  onChange={(event) => setSplitPct(Number(event.target.value))}
+                  className="mt-1 w-full accent-accent"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() => run()}
+                disabled={!data || running}
+                className="w-full rounded-md px-4 py-2.5 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+                style={{ background: ACCENT }}
+              >
+                {running ? t.lab.running : t.lab.run}
+              </button>
+
+              {isLoading && <p className="text-xs text-muted">{t.lab.dataLoading}</p>}
+              {error && <ErrorState title={t.lab.dataError} />}
+              {data && (
+                <p className="text-[11px] leading-relaxed text-muted/80">
+                  {t.lab.dataFootnote
+                    .replace("{n}", data.meta.n.toLocaleString(intl))
+                    .replace("{start}", data.meta.start.slice(0, 10))
+                    .replace("{end}", data.meta.end.slice(0, 10))
+                    .replace("{nf}", String(data.funding.t.length))}
+                </p>
+              )}
             </div>
-
-            <label className="block text-xs text-muted">
-              {t.lab.splitLabel}: <span className="tabular font-medium text-fg">{splitPct}%</span>
-              <input
-                type="range"
-                min={40}
-                max={90}
-                value={splitPct}
-                onChange={(event) => setSplitPct(Number(event.target.value))}
-                className="mt-1 w-full accent-[var(--accent)]"
-              />
-            </label>
-
-            <button
-              type="button"
-              onClick={run}
-              disabled={!data || running}
-              className="w-full rounded-md px-4 py-2.5 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-              style={{ background: ACCENT }}
-            >
-              {running ? t.lab.running : t.lab.run}
-            </button>
-
-            {isLoading && <p className="text-xs text-muted">{t.lab.dataLoading}</p>}
-            {error && <ErrorState title={t.lab.dataError} />}
-            {data && (
-              <p className="text-[11px] leading-relaxed text-muted/80">
-                {t.lab.dataFootnote
-                  .replace("{n}", data.meta.n.toLocaleString(intl))
-                  .replace("{start}", data.meta.start.slice(0, 10))
-                  .replace("{end}", data.meta.end.slice(0, 10))
-                  .replace("{nf}", String(data.funding.t.length))}
-              </p>
-            )}
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      {running && <Skeleton className="h-72 w-full" />}
+        {footer(1)}
+      </section>
 
       {/* Step 2: the single backtest's results, before validation on purpose —
           the flow mirrors the study: first the in-sample illusion, then the
           protocol that disciplines it. */}
-      {result && data && !running && (
-        <div id="lab-backtest" className="scroll-mt-24 space-y-6">
-          <TestsPanel result={result} t={t} />
-          <EquityPanel result={result} t={t} />
-          <SignalsPanel result={result} bars={data.bars} t={t} />
-          <MetricsTable result={result} t={t} />
-          <MaeMfePanel result={result} t={t} />
-          <TornadoPanel result={result} t={t} />
-          <RegimePanel2 result={result} t={t} />
-        </div>
-      )}
+      <section id="lab-step-2" hidden={step !== 2} className="space-y-6">
+        {running && <Skeleton className="h-72 w-full" />}
+        {result && data && !running ? (
+          <>
+            <TestsPanel result={result} t={t} />
+            <EquityPanel result={result} t={t} />
+            <SignalsPanel result={result} bars={data.bars} t={t} />
+            <MetricsTable result={result} t={t} />
+            <MaeMfePanel result={result} t={t} />
+            <TornadoPanel result={result} t={t} />
+            <RegimePanel2 result={result} t={t} />
+          </>
+        ) : (
+          !running && needRun
+        )}
+        {footer(2)}
+      </section>
 
-      <HistoryPanel t={t} />
+      {/* Step 3: every combination tried in this session, side by side. */}
+      <section id="lab-step-3" hidden={step !== 3} className="space-y-6">
+        {historyEntries.length > 0 ? (
+          <HistoryPanel t={t} />
+        ) : (
+          <Card>
+            <p className="text-sm text-muted">{t.lab.steps.noHistory}</p>
+          </Card>
+        )}
+        {footer(3)}
+      </section>
 
-      <div id="lab-walkforward" className="scroll-mt-24">
+      {/* Step 4: random search over the study grid, in-sample vs out-of-sample. */}
+      <section id="lab-step-4" hidden={step !== 4} className="space-y-6">
+        <OptimizerSection
+          data={data}
+          def={def}
+          costs={{ feeBpsPerSide: feeBps, slippageBpsPerSide: slipBps }}
+          splitPct={splitPct}
+          onLoad={loadConfig}
+          onDone={() => setOptimized(true)}
+        />
+        {footer(4)}
+      </section>
+
+      {/* Step 5: the study's protocol, miniaturised. */}
+      <section id="lab-step-5" hidden={step !== 5} className="space-y-6">
         <WalkForwardSection
           data={data}
           strategyId={strategyId}
           costs={{ feeBpsPerSide: feeBps, slippageBpsPerSide: slipBps }}
         />
-      </div>
+        {footer(5)}
+      </section>
 
-      <div id="lab-compare" className="scroll-mt-24">
+      {/* Step 6: the session, measured by the study's yardstick. */}
+      <section id="lab-step-6" hidden={step !== 6} className="space-y-6">
+        <VerdictPanel
+          t={t}
+          attempts={attempts}
+          nBars={data?.bars.t.length ?? 0}
+          entries={historyEntries}
+        />
         <Card>
           <CardHeader title={t.lab.pretrainedTitle} subtitle={t.lab.pretrainedBody} />
           <a href="/estrategias" className="text-sm font-medium text-accent hover:underline">
             {t.lab.pretrainedLink}
           </a>
         </Card>
-      </div>
+        {footer(6)}
+      </section>
     </PageShell>
   );
 }

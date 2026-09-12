@@ -34,9 +34,9 @@ import { expectedMaxSharpe, type FoldsFile, type WalkForwardResult } from "@/lib
 import type { WfResponse } from "@/lib/lab/wf.worker";
 
 const CHART = {
-  grid: "var(--border)",
-  axis: "var(--muted)",
-  accent: "var(--accent)",
+  grid: "rgb(var(--border))",
+  axis: "rgb(var(--muted))",
+  accent: "rgb(var(--accent))",
   negative: "rgb(248 113 113)",
 };
 
@@ -175,7 +175,7 @@ export function WalkForwardSection({
               step={10}
               value={budget}
               onChange={(event) => setBudget(Number(event.target.value))}
-              className="mt-1 w-full accent-[var(--accent)]"
+              className="mt-1 w-full accent-accent"
             />
           </label>
           <label className="block text-xs text-muted">
@@ -186,14 +186,14 @@ export function WalkForwardSection({
               max={5}
               value={nSeeds}
               onChange={(event) => setNSeeds(Number(event.target.value))}
-              className="mt-1 w-full accent-[var(--accent)]"
+              className="mt-1 w-full accent-accent"
             />
           </label>
           <button
             type="button"
             onClick={run}
             disabled={!data || !foldsFile || progress != null}
-            className="w-full rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+            className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
           >
             {progress != null ? t.lab.wf.running : t.lab.wf.run}
           </button>
@@ -202,7 +202,7 @@ export function WalkForwardSection({
             <div>
               <div className="h-2 overflow-hidden rounded-full bg-surface-2">
                 <div
-                  className="h-2 rounded-full bg-[var(--accent)] transition-all"
+                  className="h-2 rounded-full bg-accent transition-all"
                   style={{ width: `${Math.round(progress.pct * 100)}%` }}
                 />
               </div>
@@ -263,8 +263,8 @@ export function WalkForwardSection({
                     <Tooltip
                       formatter={(value: number) => `${Number(value).toFixed(3)}×`}
                       contentStyle={{
-                        background: "var(--surface-2)",
-                        border: "1px solid var(--border)",
+                        background: "rgb(var(--surface-2))",
+                        border: "1px solid rgb(var(--border))",
                       }}
                     />
                     {results.map((r) => (
@@ -314,8 +314,8 @@ export function WalkForwardSection({
                     <Tooltip
                       formatter={(value: number) => `${(Number(value) * 100).toFixed(1)}%`}
                       contentStyle={{
-                        background: "var(--surface-2)",
-                        border: "1px solid var(--border)",
+                        background: "rgb(var(--surface-2))",
+                        border: "1px solid rgb(var(--border))",
                       }}
                       cursor={{ fill: "rgb(127 127 127 / 0.06)" }}
                     />

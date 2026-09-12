@@ -45,10 +45,15 @@ test("7-8. el laboratorio guía el flujo completo del estudio", async ({ page })
   await expect(
     page.getByText("El flujo completo, en el mismo orden que el estudio")
   ).toBeVisible();
-  for (const step of ["Diseña", "Ejecuta", "Valida", "Compara"]) {
+  for (const step of ["Diseña", "Ejecuta", "Compara", "Optimiza", "Valida", "Veredicto"]) {
     await expect(page.getByRole("link", { name: new RegExp(step) }).first()).toBeVisible();
   }
   await expect(page.getByRole("button", { name: "Ejecutar backtest" })).toBeVisible();
+  // Steps are screens: the optimiser only shows once its step is selected.
+  await expect(page.getByText("Optimizador: búsqueda aleatoria")).toBeHidden();
+  await page.getByRole("link", { name: /Optimiza/ }).first().click();
+  await expect(page.getByText("Optimizador: búsqueda aleatoria")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Buscar" })).toBeVisible();
 });
 
 test("9. abre detalles técnicos en Diagnóstico", async ({ page }) => {
