@@ -1,0 +1,684 @@
+{
+  "code_commit": "2802a328659bea4b88d4469f78b29a27c7fde862",
+  "design": {
+    "fee_bps_per_side": 4.0,
+    "gate": "perp_lab.evaluation.study_robustness.analyse_run + evaluate_r3_promotion, unchanged",
+    "innovation": "Student-t (4 df) innovations, AR(1) with the scaffold's lag-1 autocorrelation, scaled by the scaffold's causal EWMA volatility path (half-life 24 bars); zero on bars without a position",
+    "levels": [
+      0.0,
+      0.3,
+      0.5,
+      1.0
+    ],
+    "master_seed": 20260912,
+    "n_synthetic_runs": 8000,
+    "replications_per_level": 50,
+    "scaffolds": {
+      "momentum": [
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T193926Z_e8a408",
+          "seed": 278037,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T192501Z_fef945",
+          "seed": 341110,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T193349Z_0b89f7",
+          "seed": 605142,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T193521Z_c234df",
+          "seed": 671194,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T192900Z_38a04b",
+          "seed": 683778,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T193214Z_cd763f",
+          "seed": 692467,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T192701Z_a217f6",
+          "seed": 693857,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T193710Z_fd7956",
+          "seed": 707014,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T193037Z_170f9b",
+          "seed": 765570,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T192310Z_0e9f5e",
+          "seed": 891022,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T212311Z_957b96",
+          "seed": 278037,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T194214Z_a4737b",
+          "seed": 341110,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T211613Z_59a084",
+          "seed": 605142,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T211831Z_fa1b15",
+          "seed": 671194,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T210925Z_629041",
+          "seed": 683778,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T211346Z_c5adcb",
+          "seed": 692467,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T194330Z_da2c46",
+          "seed": 693857,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T212045Z_a87258",
+          "seed": 707014,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T211100Z_b49ab7",
+          "seed": 765570,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_momentum_20260809T194054Z_f9453b",
+          "seed": 891022,
+          "symbol": "ETHUSDT"
+        }
+      ],
+      "volatility_breakout": [
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165249Z_2b3547",
+          "seed": 278037,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T164634Z_5c8ecd",
+          "seed": 341110,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165117Z_60ee2f",
+          "seed": 605142,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165146Z_a01e44",
+          "seed": 671194,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T164833Z_dd08f2",
+          "seed": 683778,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165024Z_7c9c87",
+          "seed": 692467,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T164734Z_f28272",
+          "seed": 693857,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165216Z_24a660",
+          "seed": 707014,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T164929Z_914e3a",
+          "seed": 765570,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T164530Z_807a3b",
+          "seed": 891022,
+          "symbol": "BTCUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165814Z_2c8939",
+          "seed": 278037,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165350Z_faab89",
+          "seed": 341110,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165631Z_298138",
+          "seed": 605142,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165707Z_969abd",
+          "seed": 671194,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165448Z_e7460d",
+          "seed": 683778,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165556Z_413076",
+          "seed": 692467,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165419Z_8c9fa6",
+          "seed": 693857,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165743Z_334bd0",
+          "seed": 707014,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165520Z_4dc080",
+          "seed": 765570,
+          "symbol": "ETHUSDT"
+        },
+        {
+          "run_dir": "artifacts\\runs\\search_volatility_breakout_20260810T165320Z_1d87b2",
+          "seed": 891022,
+          "symbol": "ETHUSDT"
+        }
+      ]
+    },
+    "slippage_bps_per_side": 1.0
+  },
+  "levels": [
+    {
+      "majority_pass_rate_btc_beats_buy_and_hold": 0.0,
+      "majority_pass_rate_btc_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_btc_not_confined_to_one_fold": 1.0,
+      "majority_pass_rate_btc_positive_total_return": 0.12,
+      "majority_pass_rate_btc_survives_double_costs": 0.04,
+      "majority_pass_rate_btc_survives_drop_top_trades": 0.0,
+      "majority_pass_rate_eth_beats_buy_and_hold": 0.26,
+      "majority_pass_rate_eth_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_eth_not_confined_to_one_fold": 1.0,
+      "majority_pass_rate_eth_positive_total_return": 0.08,
+      "majority_pass_rate_eth_survives_double_costs": 0.04,
+      "majority_pass_rate_eth_survives_drop_top_trades": 0.0,
+      "mean_net_sharpe": -0.020045742577030956,
+      "mean_realised_sharpe": -0.020045742577030956,
+      "mean_total_return": 0.0017103958471857883,
+      "n_promoted": 0,
+      "n_replications": 50,
+      "promotion_rate": 0.0,
+      "rejection_rate": 0.84,
+      "scaffold": "volatility_breakout",
+      "target_sharpe": 0.0
+    },
+    {
+      "majority_pass_rate_btc_beats_buy_and_hold": 0.12,
+      "majority_pass_rate_btc_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_btc_not_confined_to_one_fold": 0.98,
+      "majority_pass_rate_btc_positive_total_return": 0.6,
+      "majority_pass_rate_btc_survives_double_costs": 0.32,
+      "majority_pass_rate_btc_survives_drop_top_trades": 0.0,
+      "majority_pass_rate_eth_beats_buy_and_hold": 0.8,
+      "majority_pass_rate_eth_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_eth_not_confined_to_one_fold": 0.88,
+      "majority_pass_rate_eth_positive_total_return": 0.56,
+      "majority_pass_rate_eth_survives_double_costs": 0.4,
+      "majority_pass_rate_eth_survives_drop_top_trades": 0.0,
+      "mean_net_sharpe": 0.3199687389392437,
+      "mean_realised_sharpe": 0.3199687389392437,
+      "mean_total_return": 0.5680808914869744,
+      "n_promoted": 0,
+      "n_replications": 50,
+      "promotion_rate": 0.0,
+      "rejection_rate": 0.46,
+      "scaffold": "volatility_breakout",
+      "target_sharpe": 0.3
+    },
+    {
+      "majority_pass_rate_btc_beats_buy_and_hold": 0.26,
+      "majority_pass_rate_btc_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_btc_not_confined_to_one_fold": 0.96,
+      "majority_pass_rate_btc_positive_total_return": 0.84,
+      "majority_pass_rate_btc_survives_double_costs": 0.72,
+      "majority_pass_rate_btc_survives_drop_top_trades": 0.0,
+      "majority_pass_rate_eth_beats_buy_and_hold": 0.98,
+      "majority_pass_rate_eth_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_eth_not_confined_to_one_fold": 0.92,
+      "majority_pass_rate_eth_positive_total_return": 0.86,
+      "majority_pass_rate_eth_survives_double_costs": 0.58,
+      "majority_pass_rate_eth_survives_drop_top_trades": 0.0,
+      "mean_net_sharpe": 0.4759724030762353,
+      "mean_realised_sharpe": 0.4759724030762353,
+      "mean_total_return": 0.9548939749282325,
+      "n_promoted": 0,
+      "n_replications": 50,
+      "promotion_rate": 0.0,
+      "rejection_rate": 0.2,
+      "scaffold": "volatility_breakout",
+      "target_sharpe": 0.5
+    },
+    {
+      "majority_pass_rate_btc_beats_buy_and_hold": 0.98,
+      "majority_pass_rate_btc_bootstrap_sharpe_ci_excludes_zero": 0.5,
+      "majority_pass_rate_btc_not_confined_to_one_fold": 1.0,
+      "majority_pass_rate_btc_positive_total_return": 1.0,
+      "majority_pass_rate_btc_survives_double_costs": 1.0,
+      "majority_pass_rate_btc_survives_drop_top_trades": 0.5,
+      "majority_pass_rate_eth_beats_buy_and_hold": 1.0,
+      "majority_pass_rate_eth_bootstrap_sharpe_ci_excludes_zero": 0.36,
+      "majority_pass_rate_eth_not_confined_to_one_fold": 1.0,
+      "majority_pass_rate_eth_positive_total_return": 1.0,
+      "majority_pass_rate_eth_survives_double_costs": 1.0,
+      "majority_pass_rate_eth_survives_drop_top_trades": 0.38,
+      "mean_net_sharpe": 1.012951777018097,
+      "mean_realised_sharpe": 1.012951777018097,
+      "mean_total_return": 2.915191291292091,
+      "n_promoted": 7,
+      "n_replications": 50,
+      "promotion_rate": 0.14,
+      "rejection_rate": 0.0,
+      "scaffold": "volatility_breakout",
+      "target_sharpe": 1.0
+    },
+    {
+      "majority_pass_rate_btc_beats_buy_and_hold": 0.02,
+      "majority_pass_rate_btc_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_btc_not_confined_to_one_fold": 1.0,
+      "majority_pass_rate_btc_positive_total_return": 0.18,
+      "majority_pass_rate_btc_survives_double_costs": 0.02,
+      "majority_pass_rate_btc_survives_drop_top_trades": 0.0,
+      "majority_pass_rate_eth_beats_buy_and_hold": 0.46,
+      "majority_pass_rate_eth_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_eth_not_confined_to_one_fold": 0.96,
+      "majority_pass_rate_eth_positive_total_return": 0.18,
+      "majority_pass_rate_eth_survives_double_costs": 0.02,
+      "majority_pass_rate_eth_survives_drop_top_trades": 0.0,
+      "mean_net_sharpe": -0.003045809084335311,
+      "mean_realised_sharpe": -0.003045809084335311,
+      "mean_total_return": -0.018188111548393688,
+      "n_promoted": 0,
+      "n_replications": 50,
+      "promotion_rate": 0.0,
+      "rejection_rate": 0.92,
+      "scaffold": "momentum",
+      "target_sharpe": 0.0
+    },
+    {
+      "majority_pass_rate_btc_beats_buy_and_hold": 0.08,
+      "majority_pass_rate_btc_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_btc_not_confined_to_one_fold": 0.98,
+      "majority_pass_rate_btc_positive_total_return": 0.66,
+      "majority_pass_rate_btc_survives_double_costs": 0.16,
+      "majority_pass_rate_btc_survives_drop_top_trades": 0.0,
+      "majority_pass_rate_eth_beats_buy_and_hold": 0.84,
+      "majority_pass_rate_eth_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_eth_not_confined_to_one_fold": 1.0,
+      "majority_pass_rate_eth_positive_total_return": 0.64,
+      "majority_pass_rate_eth_survives_double_costs": 0.28,
+      "majority_pass_rate_eth_survives_drop_top_trades": 0.0,
+      "mean_net_sharpe": 0.2868058782234311,
+      "mean_realised_sharpe": 0.2868058782234311,
+      "mean_total_return": 0.39818885550326755,
+      "n_promoted": 0,
+      "n_replications": 50,
+      "promotion_rate": 0.0,
+      "rejection_rate": 0.66,
+      "scaffold": "momentum",
+      "target_sharpe": 0.3
+    },
+    {
+      "majority_pass_rate_btc_beats_buy_and_hold": 0.3,
+      "majority_pass_rate_btc_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_btc_not_confined_to_one_fold": 0.96,
+      "majority_pass_rate_btc_positive_total_return": 0.9,
+      "majority_pass_rate_btc_survives_double_costs": 0.54,
+      "majority_pass_rate_btc_survives_drop_top_trades": 0.0,
+      "majority_pass_rate_eth_beats_buy_and_hold": 1.0,
+      "majority_pass_rate_eth_bootstrap_sharpe_ci_excludes_zero": 0.0,
+      "majority_pass_rate_eth_not_confined_to_one_fold": 0.94,
+      "majority_pass_rate_eth_positive_total_return": 0.9,
+      "majority_pass_rate_eth_survives_double_costs": 0.62,
+      "majority_pass_rate_eth_survives_drop_top_trades": 0.04,
+      "mean_net_sharpe": 0.4798353769392934,
+      "mean_realised_sharpe": 0.4798353769392934,
+      "mean_total_return": 0.7798982257018541,
+      "n_promoted": 0,
+      "n_replications": 50,
+      "promotion_rate": 0.0,
+      "rejection_rate": 0.32,
+      "scaffold": "momentum",
+      "target_sharpe": 0.5
+    },
+    {
+      "majority_pass_rate_btc_beats_buy_and_hold": 0.98,
+      "majority_pass_rate_btc_bootstrap_sharpe_ci_excludes_zero": 0.4,
+      "majority_pass_rate_btc_not_confined_to_one_fold": 1.0,
+      "majority_pass_rate_btc_positive_total_return": 1.0,
+      "majority_pass_rate_btc_survives_double_costs": 1.0,
+      "majority_pass_rate_btc_survives_drop_top_trades": 0.92,
+      "majority_pass_rate_eth_beats_buy_and_hold": 1.0,
+      "majority_pass_rate_eth_bootstrap_sharpe_ci_excludes_zero": 0.42,
+      "majority_pass_rate_eth_not_confined_to_one_fold": 1.0,
+      "majority_pass_rate_eth_positive_total_return": 1.0,
+      "majority_pass_rate_eth_survives_double_costs": 1.0,
+      "majority_pass_rate_eth_survives_drop_top_trades": 0.86,
+      "mean_net_sharpe": 1.0082665656141625,
+      "mean_realised_sharpe": 1.0082665656141625,
+      "mean_total_return": 2.422379988288974,
+      "n_promoted": 11,
+      "n_replications": 50,
+      "promotion_rate": 0.22,
+      "rejection_rate": 0.0,
+      "scaffold": "momentum",
+      "target_sharpe": 1.0
+    }
+  ],
+  "per_run": [
+    {
+      "bh_total_return": 0.522747844787544,
+      "mean_n_trades": 141.6,
+      "mean_realised_sharpe": -0.03581177608722221,
+      "mean_total_return": -0.022412355986303045,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.142,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.03,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.822,
+      "pass_rate_positive_total_return": 0.364,
+      "pass_rate_survives_double_costs": 0.268,
+      "pass_rate_survives_drop_top_trades": 0.038,
+      "scaffold": "volatility_breakout",
+      "symbol": "BTCUSDT",
+      "target_sharpe": 0.0
+    },
+    {
+      "bh_total_return": -0.2190192992677874,
+      "mean_n_trades": 163.4,
+      "mean_realised_sharpe": -0.004279709066839683,
+      "mean_total_return": 0.025833147680674597,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.458,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.028,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.846,
+      "pass_rate_positive_total_return": 0.346,
+      "pass_rate_survives_double_costs": 0.284,
+      "pass_rate_survives_drop_top_trades": 0.026,
+      "scaffold": "volatility_breakout",
+      "symbol": "ETHUSDT",
+      "target_sharpe": 0.0
+    },
+    {
+      "bh_total_return": 0.522747844787544,
+      "mean_n_trades": 141.6,
+      "mean_realised_sharpe": 0.31749450260071077,
+      "mean_total_return": 0.47752619852572,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.352,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.126,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.808,
+      "pass_rate_positive_total_return": 0.586,
+      "pass_rate_survives_double_costs": 0.494,
+      "pass_rate_survives_drop_top_trades": 0.128,
+      "scaffold": "volatility_breakout",
+      "symbol": "BTCUSDT",
+      "target_sharpe": 0.3
+    },
+    {
+      "bh_total_return": -0.2190192992677874,
+      "mean_n_trades": 163.4,
+      "mean_realised_sharpe": 0.32244297527777666,
+      "mean_total_return": 0.6586355844482289,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.69,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.11,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.766,
+      "pass_rate_positive_total_return": 0.574,
+      "pass_rate_survives_double_costs": 0.506,
+      "pass_rate_survives_drop_top_trades": 0.1,
+      "scaffold": "volatility_breakout",
+      "symbol": "ETHUSDT",
+      "target_sharpe": 0.3
+    },
+    {
+      "bh_total_return": 0.522747844787544,
+      "mean_n_trades": 141.6,
+      "mean_realised_sharpe": 0.4729122083999299,
+      "mean_total_return": 0.7709518152963392,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.454,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.192,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.806,
+      "pass_rate_positive_total_return": 0.708,
+      "pass_rate_survives_double_costs": 0.636,
+      "pass_rate_survives_drop_top_trades": 0.2,
+      "scaffold": "volatility_breakout",
+      "symbol": "BTCUSDT",
+      "target_sharpe": 0.5
+    },
+    {
+      "bh_total_return": -0.2190192992677874,
+      "mean_n_trades": 163.4,
+      "mean_realised_sharpe": 0.47903259775254065,
+      "mean_total_return": 1.1388361345601257,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.786,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.17,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.79,
+      "pass_rate_positive_total_return": 0.682,
+      "pass_rate_survives_double_costs": 0.598,
+      "pass_rate_survives_drop_top_trades": 0.166,
+      "scaffold": "volatility_breakout",
+      "symbol": "ETHUSDT",
+      "target_sharpe": 0.5
+    },
+    {
+      "bh_total_return": 0.522747844787544,
+      "mean_n_trades": 141.6,
+      "mean_realised_sharpe": 1.0210383967915844,
+      "mean_total_return": 2.289589973041794,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.852,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.544,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.918,
+      "pass_rate_positive_total_return": 0.95,
+      "pass_rate_survives_double_costs": 0.924,
+      "pass_rate_survives_drop_top_trades": 0.534,
+      "scaffold": "volatility_breakout",
+      "symbol": "BTCUSDT",
+      "target_sharpe": 1.0
+    },
+    {
+      "bh_total_return": -0.2190192992677874,
+      "mean_n_trades": 163.4,
+      "mean_realised_sharpe": 1.0048651572446097,
+      "mean_total_return": 3.5407926095423883,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.976,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.494,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.896,
+      "pass_rate_positive_total_return": 0.946,
+      "pass_rate_survives_double_costs": 0.914,
+      "pass_rate_survives_drop_top_trades": 0.484,
+      "scaffold": "volatility_breakout",
+      "symbol": "ETHUSDT",
+      "target_sharpe": 1.0
+    },
+    {
+      "bh_total_return": 0.522747844787544,
+      "mean_n_trades": 306.3,
+      "mean_realised_sharpe": 0.005177116187051021,
+      "mean_total_return": -0.0006466584794601573,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.142,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.03,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.834,
+      "pass_rate_positive_total_return": 0.384,
+      "pass_rate_survives_double_costs": 0.206,
+      "pass_rate_survives_drop_top_trades": 0.072,
+      "scaffold": "momentum",
+      "symbol": "BTCUSDT",
+      "target_sharpe": 0.0
+    },
+    {
+      "bh_total_return": -0.2190192992677874,
+      "mean_n_trades": 231.7,
+      "mean_realised_sharpe": -0.011268734355721649,
+      "mean_total_return": -0.035729564617327236,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.506,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.02,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.796,
+      "pass_rate_positive_total_return": 0.372,
+      "pass_rate_survives_double_costs": 0.246,
+      "pass_rate_survives_drop_top_trades": 0.05,
+      "scaffold": "momentum",
+      "symbol": "ETHUSDT",
+      "target_sharpe": 0.0
+    },
+    {
+      "bh_total_return": 0.522747844787544,
+      "mean_n_trades": 306.3,
+      "mean_realised_sharpe": 0.28283956056379533,
+      "mean_total_return": 0.36167324112250915,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.32,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.088,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.804,
+      "pass_rate_positive_total_return": 0.598,
+      "pass_rate_survives_double_costs": 0.392,
+      "pass_rate_survives_drop_top_trades": 0.196,
+      "scaffold": "momentum",
+      "symbol": "BTCUSDT",
+      "target_sharpe": 0.3
+    },
+    {
+      "bh_total_return": -0.2190192992677874,
+      "mean_n_trades": 231.7,
+      "mean_realised_sharpe": 0.29077219588306696,
+      "mean_total_return": 0.4347044698840258,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.728,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.072,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.818,
+      "pass_rate_positive_total_return": 0.578,
+      "pass_rate_survives_double_costs": 0.462,
+      "pass_rate_survives_drop_top_trades": 0.138,
+      "scaffold": "momentum",
+      "symbol": "ETHUSDT",
+      "target_sharpe": 0.3
+    },
+    {
+      "bh_total_return": 0.522747844787544,
+      "mean_n_trades": 306.3,
+      "mean_realised_sharpe": 0.47063115675337924,
+      "mean_total_return": 0.666944804480954,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.466,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.142,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.808,
+      "pass_rate_positive_total_return": 0.742,
+      "pass_rate_survives_double_costs": 0.55,
+      "pass_rate_survives_drop_top_trades": 0.298,
+      "scaffold": "momentum",
+      "symbol": "BTCUSDT",
+      "target_sharpe": 0.5
+    },
+    {
+      "bh_total_return": -0.2190192992677874,
+      "mean_n_trades": 231.7,
+      "mean_realised_sharpe": 0.4890395971252077,
+      "mean_total_return": 0.8928516469227545,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.842,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.154,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.782,
+      "pass_rate_positive_total_return": 0.74,
+      "pass_rate_survives_double_costs": 0.598,
+      "pass_rate_survives_drop_top_trades": 0.256,
+      "scaffold": "momentum",
+      "symbol": "ETHUSDT",
+      "target_sharpe": 0.5
+    },
+    {
+      "bh_total_return": 0.522747844787544,
+      "mean_n_trades": 306.3,
+      "mean_realised_sharpe": 1.0046939921166087,
+      "mean_total_return": 2.06055398830438,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.818,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.512,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.92,
+      "pass_rate_positive_total_return": 0.95,
+      "pass_rate_survives_double_costs": 0.862,
+      "pass_rate_survives_drop_top_trades": 0.716,
+      "scaffold": "momentum",
+      "symbol": "BTCUSDT",
+      "target_sharpe": 1.0
+    },
+    {
+      "bh_total_return": -0.2190192992677874,
+      "mean_n_trades": 231.7,
+      "mean_realised_sharpe": 1.0118391391117165,
+      "mean_total_return": 2.784205988273567,
+      "n_runs": 500,
+      "pass_rate_beats_buy_and_hold": 0.958,
+      "pass_rate_bootstrap_sharpe_ci_excludes_zero": 0.504,
+      "pass_rate_min_oos_trades_met": 1.0,
+      "pass_rate_not_confined_to_one_fold": 0.922,
+      "pass_rate_positive_total_return": 0.942,
+      "pass_rate_survives_double_costs": 0.892,
+      "pass_rate_survives_drop_top_trades": 0.668,
+      "scaffold": "momentum",
+      "symbol": "ETHUSDT",
+      "target_sharpe": 1.0
+    }
+  ]
+}

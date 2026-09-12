@@ -60,6 +60,7 @@ data/processed/
 !reports/thesis/chapter_06/*.csv
 !reports/thesis/chapter_07/*.csv
 !reports/thesis/chapter_08/*.csv
+!reports/thesis/chapter_09/*.csv
 # ...but the 110 MB hourly input matrix stays out of git (regenerable from artifacts).
 reports/thesis/chapter_08/ch8_input_returns.csv
 *.db

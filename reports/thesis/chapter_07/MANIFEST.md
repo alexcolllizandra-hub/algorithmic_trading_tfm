@@ -91,3 +91,20 @@ extended global correction has been computed (see chapter 6 MANIFEST).
 DSR/PBO are study-level numbers and never appear as per-family columns here.
 Meta-labeling, HAR/LSTM and alt-data are annex layers on the same development
 data — not main-strategy rounds and not external validation.
+
+## Cost scenarios (reviewer addendum, section 7.8)
+
+`scripts/build_cost_decomposition.py` re-prices every seed run behind the 22
+closure units from its persisted ledger (`gross_return`, `fee`, `slippage`,
+`funding` per bar; positions and market returns unchanged) under four cost
+assumptions: taker 4 + 1 bps with funding (as studied), maker 2 bps with 1 bps
+slippage and funding, no fee and no slippage with funding, and fully gross.
+Buy-and-hold is re-priced under the same terms. Files: `ch7_cost_scenarios_units.csv`
+/ `.md` (22 units x 4 scenarios, means across seeds and seed counts),
+`ch7_cost_scenarios_summary.csv` / `.md` (one line per scenario),
+`ch7_cost_scenarios_seed_runs.csv` (142 seed runs x 4 scenarios, with the gate's
+block-bootstrap interval on the Sharpe), `fig_7_8_cost_scenarios.png` / `.pdf`,
+and the provenance sidecar `ch7_cost_scenarios_provenance.json` (inputs, scenario
+algebra, bootstrap settings, commit; no timestamp, so a rerun is byte-identical).
+Coverage: 6 full-study families x 2 assets x 10 seeds, 3 S2-B pilots x 2 assets
+x 3 seeds, 4 S1-B pilots x BTC x 1 seed.

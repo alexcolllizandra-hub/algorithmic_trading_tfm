@@ -1,0 +1,5 @@
+scenario,fee_bps_per_side,slippage_bps_per_side,funding_charged,n_units,n_units_mean_return_positive,n_units_majority_positive,n_units_majority_beat_bh,n_seed_runs,n_seed_runs_positive,n_seed_runs_ci_excludes_zero,median_unit_sharpe,best_unit_sharpe
+taker_4_1,4.0,1.0,True,22,3,1,1,142,12,0,-0.46310156741011027,0.11623004565835357
+maker_2_1,2.0,1.0,True,22,3,2,2,142,13,0,-0.292029271005097,0.21893641198759997
+no_fees,0.0,0.0,True,22,5,5,2,142,25,2,-0.12139161294860232,0.5177607412724002
+gross,0.0,0.0,False,22,5,5,1,142,27,2,-0.09283270192300538,0.536383812454643

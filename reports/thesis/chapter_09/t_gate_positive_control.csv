@@ -1,0 +1,9 @@
+scaffold,target_sharpe,n_replications,n_promoted,promotion_rate,rejection_rate,mean_realised_sharpe,mean_net_sharpe,mean_total_return,majority_pass_rate_btc_beats_buy_and_hold,majority_pass_rate_btc_bootstrap_sharpe_ci_excludes_zero,majority_pass_rate_btc_not_confined_to_one_fold,majority_pass_rate_btc_positive_total_return,majority_pass_rate_btc_survives_double_costs,majority_pass_rate_btc_survives_drop_top_trades,majority_pass_rate_eth_beats_buy_and_hold,majority_pass_rate_eth_bootstrap_sharpe_ci_excludes_zero,majority_pass_rate_eth_not_confined_to_one_fold,majority_pass_rate_eth_positive_total_return,majority_pass_rate_eth_survives_double_costs,majority_pass_rate_eth_survives_drop_top_trades
+volatility_breakout,0.0,50,0,0.0,0.84,-0.020045742577030956,-0.020045742577030956,0.0017103958471857883,0.0,0.0,1.0,0.12,0.04,0.0,0.26,0.0,1.0,0.08,0.04,0.0
+volatility_breakout,0.3,50,0,0.0,0.46,0.3199687389392437,0.3199687389392437,0.5680808914869744,0.12,0.0,0.98,0.6,0.32,0.0,0.8,0.0,0.88,0.56,0.4,0.0
+volatility_breakout,0.5,50,0,0.0,0.2,0.4759724030762353,0.4759724030762353,0.9548939749282325,0.26,0.0,0.96,0.84,0.72,0.0,0.98,0.0,0.92,0.86,0.58,0.0
+volatility_breakout,1.0,50,7,0.14,0.0,1.012951777018097,1.012951777018097,2.915191291292091,0.98,0.5,1.0,1.0,1.0,0.5,1.0,0.36,1.0,1.0,1.0,0.38
+momentum,0.0,50,0,0.0,0.92,-0.003045809084335311,-0.003045809084335311,-0.018188111548393688,0.02,0.0,1.0,0.18,0.02,0.0,0.46,0.0,0.96,0.18,0.02,0.0
+momentum,0.3,50,0,0.0,0.66,0.2868058782234311,0.2868058782234311,0.39818885550326755,0.08,0.0,0.98,0.66,0.16,0.0,0.84,0.0,1.0,0.64,0.28,0.0
+momentum,0.5,50,0,0.0,0.32,0.4798353769392934,0.4798353769392934,0.7798982257018541,0.3,0.0,0.96,0.9,0.54,0.0,1.0,0.0,0.94,0.9,0.62,0.04
+momentum,1.0,50,11,0.22,0.0,1.0082665656141625,1.0082665656141625,2.422379988288974,0.98,0.4,1.0,1.0,1.0,0.92,1.0,0.42,1.0,1.0,1.0,0.86
