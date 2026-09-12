@@ -96,11 +96,7 @@ validates no edge.
 
 ## Thesis material
 
-The written memoir is `TFM_Memoria.docx` and lives outside this repository. The
-evidence packages it cites are under `reports/thesis/chapter_06/`,
-`chapter_07/` and `chapter_08/`, each with a `MANIFEST.md` stating sources,
-units, aggregations and permitted readings.
-
-Working material that the thesis does not cite (superseded drafts, audits,
-roadmaps, inventories and notes) sits in `docs/history/`, which stays on disk
-and out of version control.
+The written memoir lives outside this repository. The evidence packages it
+cites are under `reports/thesis/chapter_06/`, `chapter_07/` and `chapter_08/`,
+each with a `MANIFEST.md` stating sources, units, aggregations and permitted
+readings.

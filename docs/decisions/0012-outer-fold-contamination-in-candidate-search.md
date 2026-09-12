@@ -38,8 +38,8 @@ operates on a candidate *pool*, and how that pool was produced differs by engine
   Tournament selection, elitism and convergence all read it. Its pool is directly
   shaped by validation windows in the future relative to earlier folds.
 
-This violates rule 3 of `.cursor/rules/research-integrity.mdc` (no look-ahead) and
-the temporal contract described in ADR 0004.
+This violates rule 3 of the project's research-integrity rules (no look-ahead)
+and the temporal contract described in ADR 0004.
 
 ## Decision
 

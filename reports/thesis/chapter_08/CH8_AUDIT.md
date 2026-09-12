@@ -11,7 +11,7 @@ Audit performed before computing anything. Paths are repo-relative.
 | Executed MC artifacts | `reports/figures/montecarlo/k01..k05`, `reports/tables/montecarlo/t01..t05`, `reports/metadata/montecarlo/` | Reproducible via `build_montecarlo_notebook.py` + `run_notebooks.py 07`; deterministic (verified in the release gates) |
 | Block-size precedent | `src/perp_lab/evaluation/study_robustness.py` (`BLOCK_SIZES = (24, 168, 720)`, C2 gate reads block_168, 500 resamples) | Frozen with the promotion contract |
 | Web-explorer MC | `scripts/export_strategy_explorer.py` (stationary, block 168, 500 paths, seed 42, median-return seed) | Executed 2026-08-28 for all 15 families |
-| Bench convention | `src/perp_lab/evaluation/baselines.py::_evaluate` (funded always-long perp) | Frozen; reconciled in ch7 (`INFORME_DISCREPANCIAS.md` §1) |
+| Bench convention | `src/perp_lab/evaluation/baselines.py::_evaluate` (funded always-long perp) | Frozen; benchmark convention reconciled during the ch7 package build |
 
 ## 2. Frozen before results vs new retrospective analysis
 

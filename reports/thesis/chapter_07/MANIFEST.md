@@ -16,9 +16,9 @@ ETH −21.9% over the OOS window; the price-only return (+100.7% / +0.9%) is a
 different quantity and is drawn nowhere. The builder asserts, on every
 regeneration, that each drawn curve's final equity equals its tabulated total
 (44 checks, absolute tolerance 1e-6 on final equity) — a mismatch aborts the
-build. `ch7_ready_to_write.md` is the drafting brief;
-`INFORME_DISCREPANCIAS.md` records the resolved discrepancies (benchmark
-convention, the withdrawn S1-B p=0.06, round-interpretation fixes).
+build. Earlier discrepancies (benchmark convention, the withdrawn S1-B
+p=0.06, round-interpretation fixes) were resolved before this package was
+frozen.
 
 ## Documents
 
@@ -55,7 +55,7 @@ dispersion across seeds, never a confidence interval.
 Additional tables/docs: `ch7_activity_veto.csv` (min-trades veto per cell —
 disqualifier, never a seventh criterion; 0/30 triggered),
 `ch7_figure_captions.md` (English captions with engine/assets/seeds/period/
-aggregation per figure), `ch7_ready_to_write.md`, `INFORME_DISCREPANCIAS.md`.
+aggregation per figure).
 
 `i06_convergence` is intentionally NOT included: its "unique evaluations"
 axis exceeds the per-fold budget of 100 and remains unexplained; do not cite

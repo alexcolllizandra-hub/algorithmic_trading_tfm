@@ -74,7 +74,7 @@ REFERENCE = ("R2", "momentum")  # observed negative reference only; never simula
 UNITS7 = pl.read_csv("reports/thesis/chapter_07/ch7_results_units.csv")
 CRIT7 = pl.read_csv("reports/thesis/chapter_07/ch7_criteria.csv")
 
-# Reconciliation targets supplied with the chapter-8 assignment (approximate).
+# Reconciliation targets recorded before the build (approximate).
 RECON = {
     "pdl_reclaim_long": {
         "n_positive": 10,
@@ -343,7 +343,7 @@ for _round, family in CANDIDATES:
             else abs(float(value) - float(target)) <= 0.006
         )
         if not ok:
-            DISCREPANCIES.append(f"{family}: {key} observed {value} vs assignment target {target}")
+            DISCREPANCIES.append(f"{family}: {key} observed {value} vs reference target {target}")
         check(f"reconcile {family}.{key}", ok, f"observed {value} vs target {target}")
 
 bh_btc = float(unit_rows(CANDIDATES[0][1])["bh_total_return"][0])
@@ -1318,12 +1318,12 @@ check(
 
 with (OUT / "CH8_DISCREPANCIES.md").open("w", encoding="utf-8") as fh:
     if DISCREPANCIES:
-        fh.write("# CH8 discrepancies vs the assignment's reference values\n\n")
+        fh.write("# CH8 discrepancies vs the pre-recorded reference values\n\n")
         fh.writelines(f"- {d}\n" for d in DISCREPANCIES)
     else:
         fh.write(
-            "# CH8 discrepancies\n\nNone detected: every reference value in the "
-            "assignment reconciled against ch7_results_units.csv / ch7_criteria.csv "
+            "# CH8 discrepancies\n\nNone detected: every pre-recorded reference value "
+            "reconciled against ch7_results_units.csv / ch7_criteria.csv "
             "within the stated tolerances (counts exact; means/ranges within 0.006).\n"
         )
 

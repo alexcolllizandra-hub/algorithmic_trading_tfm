@@ -16,6 +16,7 @@ Wired via:     .githooks/pre-commit  (git config core.hooksPath .githooks)
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -32,9 +33,25 @@ PHRASES = (
 SCAN_DIRS = ("docs", "scripts")
 SCAN_SUFFIXES = {".md", ".py", ".yaml", ".yml", ".txt"}
 
-# Archived working material, kept on disk and out of the repository. Its wording
-# is frozen at the date it was written and is not part of what the thesis cites.
-SKIP_PREFIXES = ("docs/history/",)
+
+def tracked_files(root: Path) -> set[str] | None:
+    """Paths git tracks under the scanned dirs; None when git is unavailable.
+
+    Only tracked prose can reach a reader, so untracked local files are not
+    this checker's business and must not fail the hook.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "ls-files", "--", *SCAN_DIRS],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return {line.strip() for line in out.splitlines() if line.strip()}
+
 
 # Frozen bodies whose wording is historical and governed by a dated status
 # note in the same file. Path separators normalised to '/'.
@@ -61,6 +78,7 @@ ALLOWLIST: dict[str, set[str]] = {
 def main() -> int:
     root = Path(__file__).resolve().parent.parent
     failures: list[str] = []
+    tracked = tracked_files(root)
     for scan_dir in SCAN_DIRS:
         base = root / scan_dir
         if not base.exists():
@@ -69,7 +87,7 @@ def main() -> int:
             if not path.is_file() or path.suffix.lower() not in SCAN_SUFFIXES:
                 continue
             rel = path.relative_to(root).as_posix()
-            if rel.startswith(SKIP_PREFIXES):
+            if tracked is not None and rel not in tracked:
                 continue
             try:
                 text = path.read_text(encoding="utf-8", errors="ignore").lower()

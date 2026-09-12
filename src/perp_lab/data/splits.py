@@ -1,6 +1,6 @@
 """Chronological splitting and the frozen final holdout.
 
-Research-integrity rules (see ``.cursor/rules/research-integrity.mdc``):
+Research-integrity rules:
 - Splits are strictly chronological. There are NO random train/test splits.
 - The holdout is the final contiguous block before the cutoff. It is frozen and
   never used for EDA-driven decisions or parameter selection.

@@ -13,7 +13,7 @@ registrarla.
 ## 1. Qué pasó
 
 La partición congelada `[2026-01-01, 2026-07-01)` **fue abierta** el
-`2026-08-13T11:13:37Z`, ejecutando la Pieza 3 del encargo anterior, que pedía
+`2026-08-13T11:13:37Z`, ejecutando la Pieza 3 de la instrucción anterior, que pedía
 explícitamente abrirla una sola vez sobre un candidato pre-declarado.
 
 ### 1.1 Qué candidato se evaluó
@@ -50,13 +50,13 @@ Horas en UTC; entre paréntesis la hora local (CEST, UTC+2) que muestra `git log
 | `2026-08-13T11:13:37Z` (13:13:37) | **Apertura de la partición** | `provenance.opened_at` |
 | `2026-08-13T18:02Z` (20:02) | Commit `0a0bf92`: resultado registrado | git |
 | `2026-08-13T18:26Z` (20:26) | Commit `0b6f002`: API del estudio, artefacto con las cifras embebidas | git |
-| Posterior | Instrucción de conservar la Pieza 3 sin commitear — ya estaba commiteada | encargo |
+| Posterior | Instrucción de conservar la Pieza 3 sin commitear — ya estaba commiteada | instrucción |
 | Posterior | Commit `4673b32`: bloqueo de publicación | git |
 
-> **Discrepancia registrada.** El encargo que motiva esta revisión sitúa la
+> **Discrepancia registrada.** La instrucción que motiva esta revisión sitúa la
 > apertura a las «12:04». Ningún artefacto ni commit del repositorio lleva esa
 > marca: la única hora de apertura registrada es `11:13:37Z` (13:13 local). Se
-> conserva aquí la hora que consta en la evidencia, no la del encargo, y se deja
+> conserva aquí la hora que consta en la evidencia, no la de la instrucción, y se deja
 > anotada la diferencia en lugar de reconciliarla en silencio.
 
 Posteriormente se indicó conservar la Pieza 3 como cambio local sin commitear.
